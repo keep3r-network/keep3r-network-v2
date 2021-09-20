@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.8.4 <0.9.0;
+
+import '../../../peripherals/jobs/Keep3rJobManager.sol';
+
+contract Keep3rJobManagerForTest is Keep3rJobManager {
+  using EnumerableSet for EnumerableSet.AddressSet;
+
+  constructor(
+    address _keep3rHelper,
+    address _keep3rV1,
+    address _keep3rV1Proxy,
+    address _kp3rWethPool
+  ) Keep3rParameters(_keep3rHelper, _keep3rV1, _keep3rV1Proxy, _kp3rWethPool) Keep3rRoles(msg.sender) {}
+
+  function isJobEnabled(address _job) external view returns (bool _isEnabled) {
+    _isEnabled = _jobs.contains(_job);
+  }
+}

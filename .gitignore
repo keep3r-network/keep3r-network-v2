@@ -1,0 +1,19 @@
+# General
+node_modules
+.DS_STORE
+
+# Coverage
+coverage.json
+coverage
+
+# Hardhat files
+cache
+artifacts
+deployments/hardhat
+deployments/localhost
+
+# Config files
+.env
+
+# Typechain files
+types

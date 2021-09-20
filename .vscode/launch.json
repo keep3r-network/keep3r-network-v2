@@ -1,0 +1,49 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Unit Tests",
+      "runtimeExecutable": "yarn",
+      "cwd": "${workspaceFolder}",
+      "args": ["test:unit"],
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": ["<node_internals>/**"],
+      "smartStep": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Unit Tests - No Compile",
+      "runtimeExecutable": "yarn",
+      "cwd": "${workspaceFolder}",
+      "args": ["test:unit:nocompile"],
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": ["<node_internals>/**"],
+      "smartStep": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "E2E Tests",
+      "runtimeExecutable": "yarn",
+      "cwd": "${workspaceFolder}",
+      "args": ["test:e2e"],
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": ["<node_internals>/**"],
+      "smartStep": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "E2E Tests - No Compile",
+      "runtimeExecutable": "yarn",
+      "cwd": "${workspaceFolder}",
+      "args": ["test:e2e:nocompile"],
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": ["<node_internals>/**"],
+      "smartStep": true
+    }
+  ]
+}
