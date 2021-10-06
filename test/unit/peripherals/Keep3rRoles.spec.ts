@@ -10,14 +10,13 @@ chai.use(smock.matchers);
 describe('Keep3rRoles', () => {
   let roles: MockContract<Keep3rRoles>;
   let governance: SignerWithAddress;
-  let pendingGovernance: SignerWithAddress;
   let rolesFactory: MockContractFactory<Keep3rRoles__factory>;
 
   const randomAddress = wallet.generateRandomAddress();
 
   before(async () => {
     rolesFactory = await smock.mock<Keep3rRoles__factory>('Keep3rRoles');
-    [, governance, pendingGovernance] = await ethers.getSigners();
+    [, governance] = await ethers.getSigners();
   });
 
   beforeEach(async () => {
@@ -39,7 +38,7 @@ describe('Keep3rRoles', () => {
 
     it('should emit event', async () => {
       const tx = await roles.connect(governance).addSlasher(randomAddress);
-      expect(tx).to.emit(roles, 'SlasherAdded').withArgs(randomAddress);
+      await expect(tx).to.emit(roles, 'SlasherAdded').withArgs(randomAddress);
     });
   });
 
@@ -59,7 +58,7 @@ describe('Keep3rRoles', () => {
     it('should emit event', async () => {
       await roles.setVariable('slashers', { [randomAddress]: true });
       const tx = await roles.connect(governance).removeSlasher(randomAddress);
-      expect(tx).to.emit(roles, 'SlasherRemoved').withArgs(randomAddress);
+      await expect(tx).to.emit(roles, 'SlasherRemoved').withArgs(randomAddress);
     });
   });
 
@@ -78,7 +77,7 @@ describe('Keep3rRoles', () => {
 
     it('should emit event', async () => {
       const tx = await roles.connect(governance).addDisputer(randomAddress);
-      expect(tx).to.emit(roles, 'DisputerAdded').withArgs(randomAddress);
+      await expect(tx).to.emit(roles, 'DisputerAdded').withArgs(randomAddress);
     });
   });
 
@@ -98,7 +97,7 @@ describe('Keep3rRoles', () => {
     it('should emit event', async () => {
       await roles.setVariable('disputers', { [randomAddress]: true });
       const tx = await roles.connect(governance).removeDisputer(randomAddress);
-      expect(tx).to.emit(roles, 'DisputerRemoved').withArgs(randomAddress);
+      await expect(tx).to.emit(roles, 'DisputerRemoved').withArgs(randomAddress);
     });
   });
 });

@@ -1,19 +1,13 @@
 import IUniswapV3PoolArtifact from '@artifacts/@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json';
-import IKeep3rV1Artifact from '@contracts/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rArtifact from '@contracts/interfaces/IKeep3r.sol/IKeep3r.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { BigNumber } from '@ethersproject/bignumber';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import {
-  IKeep3r,
-  IKeep3rV1,
-  IUniswapV3Pool,
-  Keep3rHelperForTest,
-  Keep3rHelperForTest__factory,
-  Keep3rLibrary,
-  ProxyForTest__factory,
-} from '@types';
+import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
+import IKeep3rArtifact from '@solidity/interfaces/IKeep3r.sol/IKeep3r.json';
+import { IKeep3r, IKeep3rV1, IUniswapV3Pool, Keep3rHelperForTest, Keep3rHelperForTest__factory, ProxyForTest__factory } from '@types';
+import { wallet } from '@utils';
 import { toGwei, toUnit } from '@utils/bn';
+import { MathUtils, mathUtilsFactory } from '@utils/math';
 import chai, { expect } from 'chai';
 import { solidity } from 'ethereum-waffle';
 import { ethers } from 'hardhat';
@@ -26,7 +20,6 @@ describe('Keep3rHelper', () => {
   let keep3rV1: FakeContract<IKeep3rV1>;
   let helperFactory: MockContractFactory<Keep3rHelperForTest__factory>;
   let helper: MockContract<Keep3rHelperForTest>;
-  let library: Keep3rLibrary;
 
   let kp3rV1Address: string;
   let oraclePoolAddress: string;
@@ -36,12 +29,12 @@ describe('Keep3rHelper', () => {
   let rewardPeriodTime: number;
   let oneTenth: number;
 
+  let mathUtils: MathUtils;
+
   before(async () => {
     [, randomKeeper] = await ethers.getSigners();
-    library = (await (await ethers.getContractFactory('Keep3rLibrary')).deploy()) as any as Keep3rLibrary;
-    helperFactory = await smock.mock<Keep3rHelperForTest__factory>('Keep3rHelperForTest', {
-      libraries: { Keep3rLibrary: library.address },
-    });
+
+    helperFactory = await smock.mock<Keep3rHelperForTest__factory>('Keep3rHelperForTest');
     keep3r = await smock.fake(IKeep3rArtifact);
     helper = await helperFactory.deploy(keep3r.address);
 
@@ -56,6 +49,8 @@ describe('Keep3rHelper', () => {
     /* Twap calculation:
     // 1.0001**(-23027) = 0.100000022 ~= 0.1
     */
+    mathUtils = mathUtilsFactory(0, 0);
+
     rewardPeriodTime = 100_000;
     oneTenth = -23027 * rewardPeriodTime;
     oraclePool.token1.returns(kp3rV1Address);
@@ -180,15 +175,149 @@ describe('Keep3rHelper', () => {
     });
 
     it('should return at least 110% boost on gasPrice', async () => {
-      expect(await helper.getRewardBoostFor(0)).to.be.deep.equal([baseFee.mul(11000), BigNumber.from(10000)]);
+      expect(await helper.getRewardBoostFor(0)).to.be.eq(baseFee.mul(11000));
     });
 
     it('should boost gasPrice depending on the bonded KP3R of the keeper', async () => {
-      expect((await helper.getRewardBoostFor(targetBond.sub(toUnit(1))))[0].div(baseFee)).to.be.within(11000, 12000);
+      expect((await helper.getRewardBoostFor(targetBond.sub(toUnit(1)))).div(baseFee)).to.be.within(11000, 12000);
     });
 
     it('should return at most a 120% boost on gasPrice', async () => {
-      expect(await helper.getRewardBoostFor(targetBond.mul(10))).to.be.deep.equal([baseFee.mul(12000), BigNumber.from(10000)]);
+      expect(await helper.getRewardBoostFor(targetBond.mul(10))).to.be.be.eq(baseFee.mul(12000));
+    });
+  });
+
+  describe('getPoolTokens', () => {
+    it('should return the underlying tokens of the requested pool', async () => {
+      const token0 = wallet.generateRandomAddress();
+      const token1 = wallet.generateRandomAddress();
+
+      oraclePool.token0.returns(token0);
+      oraclePool.token1.returns(token1);
+
+      expect(await helper.getPoolTokens(oraclePool.address)).to.deep.eq([token0, token1]);
+    });
+  });
+
+  describe('isKP3RToken0', () => {
+    it('should revert if none of the underlying tokens is KP3R', async () => {
+      oraclePool.token0.returns(wallet.generateRandomAddress());
+      oraclePool.token1.returns(wallet.generateRandomAddress());
+
+      await expect(helper.isKP3RToken0(oraclePool.address)).to.be.revertedWith('LiquidityPairInvalid()');
+    });
+
+    it('should return true if KP3R is token0 of the pool', async () => {
+      oraclePool.token0.returns(await helper.KP3R());
+      oraclePool.token1.returns(wallet.generateRandomAddress());
+
+      expect(await helper.isKP3RToken0(oraclePool.address)).to.be.true;
+    });
+
+    it('should return false if KP3R is token0 of the pool', async () => {
+      oraclePool.token0.returns(wallet.generateRandomAddress());
+      oraclePool.token1.returns(await helper.KP3R());
+
+      expect(await helper.isKP3RToken0(oraclePool.address)).to.be.false;
+    });
+  });
+
+  describe('observe', () => {
+    const secondsAgo = [10];
+    const tick1 = BigNumber.from(1);
+
+    beforeEach(() => {
+      oraclePool.observe.reset();
+      oraclePool.observe.returns([[tick1], []]);
+    });
+
+    it('should return false success when observe fails', async () => {
+      oraclePool.observe.reverts();
+      const result = await helper.callStatic.observe(oraclePool.address, secondsAgo);
+      expect(result).to.deep.equal([BigNumber.from(0), BigNumber.from(0), false]);
+    });
+
+    it('should call pool observe with given seconds ago', async () => {
+      await helper.callStatic.observe(oraclePool.address, secondsAgo);
+      expect(oraclePool.observe).to.be.calledOnceWith(secondsAgo);
+    });
+
+    it('should return response first item', async () => {
+      const result = await helper.callStatic.observe(oraclePool.address, secondsAgo);
+      expect(result).to.deep.equal([tick1, BigNumber.from(0), true]);
+    });
+
+    it('should return response first and second item if given', async () => {
+      const tick2 = BigNumber.from(2);
+      oraclePool.observe.returns([[tick1, tick2, 123], []]);
+      const result = await helper.callStatic.observe(oraclePool.address, secondsAgo);
+      expect(result).to.deep.equal([tick1, tick2, true]);
+    });
+  });
+
+  describe('getKP3RsAtTick', () => {
+    const precision = 1_000_000;
+    const liquidityAmount = toUnit(1);
+    const tickTimeDifference = 1;
+    const tick2 = 0;
+
+    it('should calculate the underlying tokens from a UniswapV3Pool liquidity', async () => {
+      /* Calculation
+      // liquidity = sqrt( x * y )
+      // sqrtPrice = sqrt( y / x )
+      // sqrtPrice = 1.0001 ^ tick/2 = 1.0001 ^ (t1-t2)/2*tickTimeDifference
+      // x = liquidity / sqrtPrice
+      */
+
+      const tick1 = 23027;
+
+      const sqrtPrice = 1.0001 ** (((tick1 - tick2) / 2) * tickTimeDifference);
+      const expectedKP3Rs = liquidityAmount.mul(precision).div(Math.floor(sqrtPrice * precision));
+
+      expect(await helper.getKP3RsAtTick(liquidityAmount, tick1 - tick2, tickTimeDifference)).to.be.closeTo(
+        expectedKP3Rs,
+        toUnit(0.0001).toNumber()
+      );
+    });
+
+    it('should return a decreased amount if tick is increased', async () => {
+      const tick1 = 1;
+
+      expect(await helper.getKP3RsAtTick(liquidityAmount, tick1 - tick2, tickTimeDifference)).to.be.closeTo(
+        mathUtils.decrease1Tick(liquidityAmount),
+        toUnit(0.0001).toNumber()
+      );
+    });
+
+    it('should return a increased amount if tick is decreased', async () => {
+      const tick1 = -1;
+
+      expect(await helper.getKP3RsAtTick(liquidityAmount, tick1 - tick2, tickTimeDifference)).to.be.closeTo(
+        mathUtils.increase1Tick(liquidityAmount),
+        toUnit(0.0001).toNumber()
+      );
+    });
+  });
+
+  describe('getQuoteAtTick', () => {
+    const precision = 1_000_000;
+    const baseAmount = toUnit(1);
+    const tickTimeDifference = 1;
+    const tick1 = 23027;
+    const tick2 = 0;
+
+    it('should calculate a token conversion from a tick', async () => {
+      /* Calculation
+      // liquidity = sqrt( x * y )
+      // sqrtPrice = sqrt( y / x )
+      // price = 1.0001 ^ tick = 1.0001 ^ (t2-t1)/tickTimeDifference
+      // x = price * y
+      */
+
+      const price = 1.0001 ** ((tick1 - tick2) / tickTimeDifference);
+      const expectedQuote = baseAmount.mul(precision).div(Math.floor(price * precision));
+
+      expect(await helper.getQuoteAtTick(baseAmount, tick1 - tick2, tickTimeDifference)).to.be.closeTo(expectedQuote, toUnit(0.0001).toNumber());
     });
   });
 });

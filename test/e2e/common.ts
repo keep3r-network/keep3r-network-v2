@@ -15,7 +15,6 @@ import {
 } from '@types';
 import { contracts, wallet } from '@utils';
 import { toUnit } from '@utils/bn';
-import { ZERO_ADDRESS } from '@utils/constants';
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 
@@ -51,27 +50,22 @@ export async function setupKeep3r(): Promise<{
   // deploy proxy and set it as Keep3rV1 governance
   const { keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance } = await setupKeep3rV1();
 
-  // deploy Keep3rLibrary
-  const library = await (await ethers.getContractFactory('Keep3rLibrary')).deploy();
-  const libraryLink = {
-    libraries: {
-      Keep3rLibrary: library.address,
-    },
-  };
+  const helperFactory = (await ethers.getContractFactory('Keep3rHelper')) as Keep3rHelper__factory;
+  const keep3rFactory = (await ethers.getContractFactory('Keep3r')) as Keep3r__factory;
 
-  const helperFactory = (await ethers.getContractFactory('Keep3rHelper', libraryLink)) as Keep3rHelper__factory;
-  const keep3rFactory = (await ethers.getContractFactory('Keep3r', libraryLink)) as Keep3r__factory;
+  // calculate keep3rV2 deployment address
+  const currentNonce = await ethers.provider.getTransactionCount(governance._address);
+  const keeperV2Address = ethers.utils.getContractAddress({ from: governance._address, nonce: currentNonce + 1 });
 
   // deploy Keep3rHelper and Keep3r contract
+  const helper = await helperFactory.deploy(keeperV2Address);
   const keep3r = await keep3rFactory.deploy(
     governance._address,
-    ZERO_ADDRESS,
+    helper.address,
     keep3rV1.address,
     keep3rV1Proxy.address,
     KP3R_WETH_V3_POOL_ADDRESS
   );
-  const helper = await helperFactory.deploy(keep3r.address);
-  await keep3r.connect(governance).setKeep3rHelper(helper.address);
 
   // set Keep3r as proxy minter
   await keep3rV1Proxy.connect(keep3rV1ProxyGovernance).setMinter(keep3r.address);
@@ -112,7 +106,7 @@ export async function createJobForTest(keep3rAddress: string, jobOwner: JsonRpcS
 
 export async function createLiquidityPair(governance: JsonRpcSigner): Promise<UniV3PairManager> {
   return await ((await ethers.getContractFactory('UniV3PairManager')) as UniV3PairManager__factory).deploy(
-    '0x11B7a6bc0259ed6Cf9DB8F499988F9eCc7167bf5',
+    KP3R_WETH_V3_POOL_ADDRESS,
     governance._address
   );
 }
@@ -122,10 +116,14 @@ export async function addLiquidityToPair(
   pair: UniV3PairManager,
   amount: BigNumber,
   jobOwner: JsonRpcSigner
-): Promise<BigNumber> {
+): Promise<{
+  liquidity: BigNumber;
+  spentKp3rs: BigNumber;
+}> {
   const weth = (await ethers.getContractAt('ERC20ForTest', WETH_ADDRESS)) as ERC20ForTest;
   const keep3rV1 = (await ethers.getContractAt('ERC20', KP3R_V1_ADDRESS)) as ERC20;
 
+  const initialBalance = await keep3rV1.balanceOf(richGuy._address);
   // fund RICH_KP3R address with WETH
   await weth.connect(richGuy).deposit(amount, { value: amount });
   // make ERC20 approvals to mint liquidity
@@ -138,5 +136,7 @@ export async function addLiquidityToPair(
   // transfers, approves and adds liquidity to job
   await pair.connect(richGuy).transfer(jobOwner._address, liquidity);
 
-  return liquidity;
+  const spentKp3rs = initialBalance.sub(await keep3rV1.balanceOf(richGuy._address));
+
+  return { liquidity, spentKp3rs };
 }

@@ -14,7 +14,7 @@
       "@e2e/*": ["test/e2e/*"],
       "@unit/*": ["test/unit/*"],
       "@artifacts/*": ["artifacts/*"],
-      "@contracts/*": ["artifacts/contracts/*"]
+      "@solidity/*": ["artifacts/solidity/*"]
     }
   },
   "include": ["./scripts", "./deploy", "./test"],

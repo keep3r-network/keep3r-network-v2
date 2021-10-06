@@ -1,10 +1,10 @@
-import IUniswapV3PoolArtifact from '@contracts/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@contracts/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@contracts/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@contracts/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
+import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
+import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
+import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
+import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20,
   IKeep3rV1,
@@ -13,13 +13,10 @@ import {
   Keep3rHelper,
   Keep3rKeeperFundableForTest,
   Keep3rKeeperFundableForTest__factory,
-  Keep3rLibrary,
 } from '@types';
 import { toUnit } from '@utils/bn';
 import chai, { expect } from 'chai';
-import { BigNumber, Event } from 'ethers';
 import { ethers } from 'hardhat';
-import moment from 'moment';
 
 chai.use(smock.matchers);
 
@@ -32,18 +29,11 @@ describe('Keep3rKeeperFundable', () => {
   let keep3rV1Proxy: FakeContract<IKeep3rV1Proxy>;
   let erc20: FakeContract<ERC20>;
   let oraclePool: FakeContract<IUniswapV3Pool>;
-  let library: Keep3rLibrary;
-
-  const bondTime = moment.duration(3, 'days').as('seconds');
 
   before(async () => {
     [, randomKeeper] = await ethers.getSigners();
-    library = (await (await ethers.getContractFactory('Keep3rLibrary')).deploy()) as any as Keep3rLibrary;
-    keeperFundableFactory = await smock.mock<Keep3rKeeperFundableForTest__factory>('Keep3rKeeperFundableForTest', {
-      libraries: {
-        Keep3rLibrary: library.address,
-      },
-    });
+
+    keeperFundableFactory = await smock.mock<Keep3rKeeperFundableForTest__factory>('Keep3rKeeperFundableForTest');
   });
 
   beforeEach(async () => {
@@ -73,19 +63,13 @@ describe('Keep3rKeeperFundable', () => {
     });
 
     it('should emit event', async () => {
+      const bondingAmount = toUnit(1);
       erc20.balanceOf.returnsAtCall(0, toUnit(0));
       erc20.balanceOf.returnsAtCall(1, toUnit(1));
 
-      const receipt = await (await keeperFundable.connect(randomKeeper).bond(erc20.address, toUnit(1))).wait();
-      const event = (receipt.events as Event[])[0];
-      const lastBlock = await ethers.provider.getBlock('latest');
-
-      expect(event.args).to.deep.equal([
-        randomKeeper.address,
-        BigNumber.from(lastBlock.number),
-        BigNumber.from(lastBlock.timestamp + bondTime),
-        toUnit(1),
-      ]);
+      await expect(keeperFundable.connect(randomKeeper).bond(erc20.address, bondingAmount))
+        .to.emit(keeperFundable, 'Bonding')
+        .withArgs(randomKeeper.address, erc20.address, bondingAmount);
     });
   });
 
@@ -134,12 +118,10 @@ describe('Keep3rKeeperFundable', () => {
     });
 
     it('should emit event', async () => {
-      const tx = await keeperFundable.connect(randomKeeper).unbond(erc20.address, toUnit(0.1));
-      const unbondBlockNumber = (await ethers.provider.getBlock('latest')).number;
+      const unbondingAmount = toUnit(0.1);
+      const tx = await keeperFundable.connect(randomKeeper).unbond(erc20.address, unbondingAmount);
 
-      const canWithdrawAfter = await keeperFundable.callStatic.canWithdrawAfter(randomKeeper.address, erc20.address);
-
-      expect(tx).to.emit(keeperFundable, 'Unbonding').withArgs(randomKeeper.address, unbondBlockNumber, canWithdrawAfter, toUnit(0.1));
+      await expect(tx).to.emit(keeperFundable, 'Unbonding').withArgs(randomKeeper.address, erc20.address, unbondingAmount);
     });
   });
 
@@ -166,25 +148,28 @@ describe('Keep3rKeeperFundable', () => {
         await keeperFundable.setVariable('canActivateAfter', { [randomKeeper.address]: { [erc20.address]: lastBlock.timestamp } });
         await keeperFundable.setVariable('pendingBonds', { [randomKeeper.address]: { [erc20.address]: toUnit(1) } });
       });
+
       it('should add the keeper', async () => {
         await keeperFundable.connect(randomKeeper).activate(erc20.address);
         expect(await keeperFundable.isKeeper(randomKeeper.address)).to.be.true;
       });
+
       it('should reset pending bonds for that token', async () => {
         expect(await keeperFundable.pendingBonds(randomKeeper.address, erc20.address)).to.be.eq(toUnit(1));
         await keeperFundable.connect(randomKeeper).activate(erc20.address);
         expect(await keeperFundable.pendingBonds(randomKeeper.address, erc20.address)).to.be.eq(0);
       });
+
       it('should add pending bonds to keeper accountance', async () => {
         expect(await keeperFundable.bonds(randomKeeper.address, erc20.address)).to.be.eq(0);
         await keeperFundable.connect(randomKeeper).activate(erc20.address);
         expect(await keeperFundable.bonds(randomKeeper.address, erc20.address)).to.be.eq(toUnit(1));
       });
+
       it('should emit event', async () => {
         const tx = await keeperFundable.connect(randomKeeper).activate(erc20.address);
-        const block = await ethers.provider.getBlock('latest');
 
-        await expect(tx).to.emit(keeperFundable, 'Activation').withArgs(randomKeeper.address, block.number, block.timestamp, toUnit(1));
+        await expect(tx).to.emit(keeperFundable, 'Activation').withArgs(randomKeeper.address, erc20.address, toUnit(1));
       });
     });
 
@@ -209,7 +194,7 @@ describe('Keep3rKeeperFundable', () => {
 
     it('should revert if bondings are blocked', async () => {
       const lastBlock = await ethers.provider.getBlock('latest');
-      await keeperFundable.setVariable('canWithdrawAfter', { [randomKeeper.address]: { [erc20.address]: lastBlock.timestamp + 1 } });
+      await keeperFundable.setVariable('canWithdrawAfter', { [randomKeeper.address]: { [erc20.address]: lastBlock.timestamp + 1000 } });
 
       await expect(keeperFundable.connect(randomKeeper).withdraw(erc20.address)).to.be.revertedWith('UnbondsLocked');
     });

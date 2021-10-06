@@ -1,4 +1,4 @@
-import IKeep3rV1 from '@contracts/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
+import IKeep3rV1 from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 

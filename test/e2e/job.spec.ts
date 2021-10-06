@@ -63,13 +63,20 @@ describe('@skip-on-coverage Job', () => {
   context('when adding an approved liquidity on an existent job', () => {
     const liquidityAdded = toUnit(100);
     let initialLiquidity: BigNumber;
+    let spentKp3rs: BigNumber;
 
     beforeEach(async () => {
+      // make twap stable for calculations
+      await evm.advanceTimeAndBlock(moment.duration(30, 'days').as('seconds'));
+
       // create job and add liquidity to it
       await keep3r.connect(jobOwner).addJob(job.address);
       await keep3r.connect(governance).approveLiquidity(pair.address);
 
-      initialLiquidity = await common.addLiquidityToPair(richGuy, pair, liquidityAdded, jobOwner);
+      const response = await common.addLiquidityToPair(richGuy, pair, liquidityAdded, jobOwner);
+      initialLiquidity = response.liquidity;
+      spentKp3rs = response.spentKp3rs;
+
       await pair.connect(jobOwner).approve(keep3r.address, initialLiquidity);
       await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, initialLiquidity);
     });
@@ -89,6 +96,13 @@ describe('@skip-on-coverage Job', () => {
 
       // using closeTo because of 1 second difference between views and expectation
       expect(totalJobCredits).to.be.closeTo(jobMintedCredits, toUnit(0.005).toNumber());
+    });
+
+    it('should generate the underlying tokens in an inflation period', async () => {
+      const inflationPeriod = await keep3r.inflationPeriod();
+      const expectedPeriodCredits = spentKp3rs.mul(rewardPeriodTime).div(inflationPeriod);
+
+      expect(await keep3r.jobPeriodCredits(job.address)).to.be.closeTo(expectedPeriodCredits, toUnit(0.001).toNumber());
     });
 
     it('should max the total credits as long as the twap for all the liquidities stay the same', async () => {
@@ -126,9 +140,9 @@ describe('@skip-on-coverage Job', () => {
       // wait some days in order for that liquidity to generate credits
       await evm.advanceTimeAndBlock(moment.duration(2, 'days').as('seconds'));
 
-      const addedLiquidity = await common.addLiquidityToPair(richGuy, pair, toUnit(1), jobOwner);
-      await pair.connect(jobOwner).approve(keep3r.address, addedLiquidity);
-      await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, addedLiquidity);
+      const { liquidity } = await common.addLiquidityToPair(richGuy, pair, toUnit(1), jobOwner);
+      await pair.connect(jobOwner).approve(keep3r.address, liquidity);
+      await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, liquidity);
 
       const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 

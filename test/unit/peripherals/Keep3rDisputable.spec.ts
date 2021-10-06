@@ -2,7 +2,7 @@ import { MockContract, MockContractFactory, smock } from '@defi-wonderland/smock
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Keep3rDisputableForTest, Keep3rDisputableForTest__factory } from '@types';
 import { wallet } from '@utils';
-import { onlyDisputerOrGovernance } from '@utils/behaviours';
+import { onlyDisputer } from '@utils/behaviours';
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
 
@@ -10,13 +10,12 @@ chai.use(smock.matchers);
 
 describe('Keep3rDisputable', () => {
   const job = wallet.generateRandomAddress();
-  let governance: SignerWithAddress;
   let disputer: SignerWithAddress;
   let disputable: MockContract<Keep3rDisputableForTest>;
   let disputableFactory: MockContractFactory<Keep3rDisputableForTest__factory>;
 
   before(async () => {
-    [governance, disputer] = await ethers.getSigners();
+    [, disputer] = await ethers.getSigners();
     disputableFactory = await smock.mock('Keep3rDisputableForTest');
   });
 
@@ -26,38 +25,38 @@ describe('Keep3rDisputable', () => {
   });
 
   describe('dispute', () => {
-    onlyDisputerOrGovernance(
+    onlyDisputer(
       () => disputable,
       'dispute',
-      () => [disputer, governance],
+      () => [disputer],
       [job]
     );
 
     it('should revert if job was already disputed', async () => {
-      await disputable.dispute(job);
-      await expect(disputable.dispute(job)).to.be.revertedWith('AlreadyDisputed()');
+      await disputable.connect(disputer).dispute(job);
+      await expect(disputable.connect(disputer).dispute(job)).to.be.revertedWith('AlreadyDisputed()');
     });
 
     it('should create a job dispute', async () => {
-      await disputable.dispute(job);
-      expect(await disputable.disputes(job)).to.be.true;
+      await disputable.connect(disputer).dispute(job);
+      expect(await disputable.connect(disputer).disputes(job)).to.be.true;
     });
 
     it('should emit event', async () => {
-      await expect(disputable.dispute(job)).to.emit(disputable, 'Dispute').withArgs(job);
+      await expect(disputable.connect(disputer).dispute(job)).to.emit(disputable, 'Dispute').withArgs(job, disputer.address);
     });
   });
 
   describe('resolve', () => {
-    onlyDisputerOrGovernance(
+    onlyDisputer(
       () => disputable,
       'resolve',
-      () => [disputer, governance],
+      () => [disputer],
       [job]
     );
 
     it('should revert if job was not disputed', async () => {
-      await expect(disputable.resolve(job)).to.be.revertedWith('NotDisputed()');
+      await expect(disputable.connect(disputer).resolve(job)).to.be.revertedWith('NotDisputed()');
     });
 
     context('when job is disputed', () => {
@@ -66,12 +65,12 @@ describe('Keep3rDisputable', () => {
       });
 
       it('should resolve job dispute', async () => {
-        await disputable.resolve(job);
-        expect(await disputable.disputes(job)).to.be.false;
+        await disputable.connect(disputer).resolve(job);
+        expect(await disputable.connect(disputer).disputes(job)).to.be.false;
       });
 
       it('should emit event', async () => {
-        await expect(disputable.resolve(job)).to.emit(disputable, 'Resolve').withArgs(job);
+        await expect(disputable.connect(disputer).resolve(job)).to.emit(disputable, 'Resolve').withArgs(job, disputer.address);
       });
     });
   });

@@ -54,10 +54,10 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
 
   it('should pay the keeper with bonds from job credits', async () => {
     // add liquidity to pair
-    const liquidityAmount = await common.addLiquidityToPair(jobOwner, pair, toUnit(10), jobOwner);
+    const { liquidity } = await common.addLiquidityToPair(jobOwner, pair, toUnit(10), jobOwner);
     // add credit to job
-    await pair.connect(jobOwner).approve(keep3r.address, liquidityAmount);
-    await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, liquidityAmount);
+    await pair.connect(jobOwner).approve(keep3r.address, liquidity);
+    await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, liquidity);
     // wait some time to mint credits
     await evm.advanceTimeAndBlock(moment.duration(5, 'days').as('seconds'));
 

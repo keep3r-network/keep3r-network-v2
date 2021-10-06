@@ -1,9 +1,9 @@
-import IUniswapV3PoolForTestArtifact from '@contracts/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@contracts/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@contracts/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@contracts/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import IUniswapV3PoolForTestArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
+import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
+import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
+import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   IKeep3rV1,
   IKeep3rV1Proxy,
@@ -11,12 +11,12 @@ import {
   Keep3rHelper,
   Keep3rJobFundableLiquidityForTest,
   Keep3rJobFundableLiquidityForTest__factory,
-  Keep3rLibrary,
   UniV3PairManager,
 } from '@types';
 import { behaviours, evm, wallet } from '@utils';
 import { onlyJobOwner } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
+import { ZERO_ADDRESS } from '@utils/constants';
 import { MathUtils, mathUtilsFactory } from '@utils/math';
 import chai, { expect } from 'chai';
 import { BigNumber } from 'ethers';
@@ -38,22 +38,18 @@ describe('Keep3rJobFundableLiquidity', () => {
   let approvedLiquidity: FakeContract<UniV3PairManager>;
   let jobFundableFactory: MockContractFactory<Keep3rJobFundableLiquidityForTest__factory>;
   let oraclePool: FakeContract<IUniswapV3Pool>;
-  let library: Keep3rLibrary;
 
   // Parameter and function equivalent to contract's
   let rewardPeriodTime: number;
   let inflationPeriodTime: number;
 
   let mathUtils: MathUtils;
+  let oneTick: number;
 
   before(async () => {
     [governance, jobOwner, provider] = await ethers.getSigners();
-    library = (await (await ethers.getContractFactory('Keep3rLibrary')).deploy()) as any as Keep3rLibrary;
-    jobFundableFactory = await smock.mock<Keep3rJobFundableLiquidityForTest__factory>('Keep3rJobFundableLiquidityForTest', {
-      libraries: {
-        Keep3rLibrary: library.address,
-      },
-    });
+
+    jobFundableFactory = await smock.mock<Keep3rJobFundableLiquidityForTest__factory>('Keep3rJobFundableLiquidityForTest');
   });
 
   beforeEach(async () => {
@@ -63,7 +59,7 @@ describe('Keep3rJobFundableLiquidity', () => {
     randomLiquidity = await smock.fake('UniV3PairManager');
     approvedLiquidity = await smock.fake('UniV3PairManager');
     oraclePool = await smock.fake(IUniswapV3PoolForTestArtifact);
-    oraclePool.token0.returns(keep3rV1.address);
+    helper.isKP3RToken0.returns(true);
     approvedLiquidity.transfer.returns(true);
     approvedLiquidity.transferFrom.returns(true);
 
@@ -76,23 +72,32 @@ describe('Keep3rJobFundableLiquidity', () => {
     rewardPeriodTime = (await jobFundable.rewardPeriodTime()).toNumber();
     inflationPeriodTime = (await jobFundable.inflationPeriod()).toNumber();
     mathUtils = mathUtilsFactory(rewardPeriodTime, inflationPeriodTime);
+    const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+    const testPeriodTime = mathUtils.calcPeriod(blockTimestamp + rewardPeriodTime) + rewardPeriodTime / 2;
+    // set the test to start mid-period
+    evm.advanceToTime(testPeriodTime);
+    evm.advanceBlock();
 
-    oraclePool.observe.returns([[0, 0], []]);
-    approvedLiquidity.pool.returns(oraclePool.address);
-    approvedLiquidity.token0.returns(keep3rV1.address);
-    randomLiquidity.pool.returns(oraclePool.address);
-    randomLiquidity.token0.returns(keep3rV1.address);
+    oneTick = rewardPeriodTime;
+
+    helper.observe.returns([0, 0, true]);
+    helper.getKP3RsAtTick.returns(([amount]: [BigNumber]) => amount);
 
     // set oraclePool to be updated
-    const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
-    await jobFundable.setVariable('_tick', { [oraclePool.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
-    await jobFundable.connect(governance).approveLiquidity(approvedLiquidity.address);
+    await jobFundable.setVariable('_tick', { [oraclePool.address]: { period: mathUtils.calcPeriod(testPeriodTime) } });
+
+    // set and initialize approvedLiquidity
+    await jobFundable.setApprovedLiquidity(approvedLiquidity.address);
+    await jobFundable.setVariable('_liquidityPool', { [approvedLiquidity.address]: oraclePool.address });
+    await jobFundable.setVariable('_isKP3RToken0', { [approvedLiquidity.address]: true });
   });
 
   describe('jobPeriodCredits', () => {
+    const liquidityAmount = toUnit(1);
+
     beforeEach(async () => {
       await jobFundable.setJobLiquidity(randomJob, approvedLiquidity.address);
-      await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: toUnit(1) } });
+      await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: liquidityAmount } });
     });
 
     context('when liquidity is updated', () => {
@@ -104,7 +109,7 @@ describe('Keep3rJobFundableLiquidity', () => {
 
       it('should not call the oracle', async () => {
         await jobFundable.jobPeriodCredits(randomJob);
-        expect(oraclePool.observe).not.to.have.been.called;
+        expect(helper.observe).not.to.have.been.called;
       });
 
       it('should return a full period of credits', async () => {
@@ -116,8 +121,8 @@ describe('Keep3rJobFundableLiquidity', () => {
 
     context('when liquidity is outdated', () => {
       beforeEach(async () => {
-        oraclePool.observe.reset();
-        oraclePool.observe.returns([[0, 0], []]);
+        helper.observe.reset();
+        helper.observe.returns([0, 0, true]);
 
         const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 
@@ -129,7 +134,7 @@ describe('Keep3rJobFundableLiquidity', () => {
       it('should call the oracle', async () => {
         await jobFundable.jobPeriodCredits(randomJob);
         const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
-        expect(oraclePool.observe).to.have.been.calledOnceWith([blockTimestamp - mathUtils.calcPeriod(blockTimestamp)]);
+        expect(helper.observe).to.have.been.calledOnceWith(oraclePool.address, [blockTimestamp - mathUtils.calcPeriod(blockTimestamp)]);
       });
 
       it('should return a full period of credits', async () => {
@@ -141,8 +146,8 @@ describe('Keep3rJobFundableLiquidity', () => {
 
     context('when liquidity is expired', () => {
       beforeEach(async () => {
-        oraclePool.observe.reset();
-        oraclePool.observe.returns([[0, 0], []]);
+        helper.observe.reset();
+        helper.observe.returns([0, 0, true]);
 
         const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 
@@ -154,7 +159,7 @@ describe('Keep3rJobFundableLiquidity', () => {
         await jobFundable.jobPeriodCredits(randomJob);
         const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 
-        expect(oraclePool.observe).to.have.been.calledOnceWith([
+        expect(helper.observe).to.have.been.calledOnceWith(oraclePool.address, [
           blockTimestamp - mathUtils.calcPeriod(blockTimestamp),
           blockTimestamp - mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime),
         ]);
@@ -189,16 +194,22 @@ describe('Keep3rJobFundableLiquidity', () => {
 
       // If KP3R price went up, previous credits are worth less KP3Rs
       it('should return an decreased amount if increased', async () => {
-        oraclePool.observe.returns([[rewardPeriodTime, 0], []]);
+        helper.observe.returns([rewardPeriodTime, 0, true]);
         await jobFundable.setVariable('_isKP3RToken0', { [approvedLiquidity.address]: true });
 
-        expect(await jobFundable.jobPeriodCredits(randomJob)).to.be.closeTo(mathUtils.decrease1Tick(oldCreditsForComparison), 1);
+        expect(await jobFundable.jobPeriodCredits(randomJob)).to.be.closeTo(
+          mathUtils.decrease1Tick(oldCreditsForComparison),
+          mathUtils.blockShiftPrecision
+        );
       });
 
       it('should return an increased amount if decreased', async () => {
-        oraclePool.observe.returns([[-rewardPeriodTime, 0], []]);
+        helper.observe.returns([-rewardPeriodTime, 0, true]);
 
-        expect(await jobFundable.jobPeriodCredits(randomJob)).to.be.closeTo(mathUtils.increase1Tick(oldCreditsForComparison), 1);
+        expect(await jobFundable.jobPeriodCredits(randomJob)).to.be.closeTo(
+          mathUtils.increase1Tick(oldCreditsForComparison),
+          mathUtils.blockShiftPrecision
+        );
       });
     });
 
@@ -243,7 +254,7 @@ describe('Keep3rJobFundableLiquidity', () => {
       };
 
       await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: tickSetting });
-      oraclePool.observe.returns([[rewardPeriodTime, 0], []]);
+      helper.observe.returns([rewardPeriodTime, 0, true]);
     });
 
     context('when job accountance is updated', () => {
@@ -271,7 +282,7 @@ describe('Keep3rJobFundableLiquidity', () => {
         };
         await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: tickSetting });
 
-        oraclePool.observe.returns([[2 * rewardPeriodTime, rewardPeriodTime], []]);
+        helper.observe.returns([2 * rewardPeriodTime, rewardPeriodTime, true]);
       });
 
       it('should return old job credits updated to current price', async () => {
@@ -298,159 +309,187 @@ describe('Keep3rJobFundableLiquidity', () => {
 
   describe('totalJobCredits', () => {
     let blockTimestamp: number;
-    beforeEach(async () => {
-      await jobFundable.setJobLiquidity(randomJob, approvedLiquidity.address);
+    const liquidityAdded: BigNumber = toUnit(1);
+    let jobPeriodCredits: BigNumber;
 
-      // A job can have liquidity credits & no liquidity amount (forced by gov)
-      await jobFundable.setVariable('_jobLiquidityCredits', { [randomJob]: toUnit(1) });
-      await jobFundable.setVariable('_jobPeriodCredits', { [randomJob]: toUnit(1) });
-      await jobFundable.setVariable('_isKP3RToken0', { [approvedLiquidity.address]: true });
-
-      blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+    it('should return 0 with an empty job', async () => {
+      expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(0);
     });
 
-    context('when job was rewarded this period', () => {
+    context('when job has only forced credits', () => {
       beforeEach(async () => {
-        await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: toUnit(1) } });
-        await jobFundable.setVariable('rewardedAt', { [randomJob]: mathUtils.calcPeriod(blockTimestamp) });
-        // if job accountance is updated, then it's liquidity must updated be as well
-        await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
+        await jobFundable.setVariable('_jobLiquidityCredits', { [randomJob]: toUnit(1) });
+        blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
       });
 
-      it('should not call the oracle', async () => {
-        await jobFundable.totalJobCredits(randomJob);
-        expect(oraclePool.observe).not.to.have.been.called;
+      it('should return forced credits if are updated', async () => {
+        await jobFundable.setVariable('rewardedAt', { [randomJob]: blockTimestamp });
+        expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(toUnit(1));
       });
 
-      it('should return current credits + minted since period start', async () => {
-        expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(
-          (await jobFundable.jobLiquidityCredits(randomJob)).add(
-            (await jobFundable.jobPeriodCredits(randomJob)).mul(blockTimestamp - mathUtils.calcPeriod(blockTimestamp)).div(rewardPeriodTime)
-          )
-        );
+      it('should return 0 if forced credits are outdated', async () => {
+        await jobFundable.setVariable('rewardedAt', { [randomJob]: blockTimestamp - rewardPeriodTime });
+        expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(0);
+      });
+    });
+
+    context('when job has added liquidity', () => {
+      beforeEach(async () => {
+        jobPeriodCredits = mathUtils.calcPeriodCredits(liquidityAdded);
+        await jobFundable.setJobLiquidity(randomJob, approvedLiquidity.address);
+        await jobFundable.setVariable('_jobPeriodCredits', { [randomJob]: jobPeriodCredits });
+
+        blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
       });
 
-      context('when job was rewarded after period started', () => {
-        let rewardTimestamp: number;
+      context('when job was rewarded this period', () => {
         beforeEach(async () => {
-          rewardTimestamp = mathUtils.calcPeriod(blockTimestamp) + rewardPeriodTime / 10;
-          await jobFundable.setVariable('rewardedAt', { [randomJob]: rewardTimestamp });
+          await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: liquidityAdded } });
+          await jobFundable.setVariable('rewardedAt', { [randomJob]: mathUtils.calcPeriod(blockTimestamp) });
+          // if job accountance is updated, then it's liquidity must updated be as well
+          await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
         });
 
-        it('should return current credits + minted since reward reference', async () => {
+        it('should not call the oracle', async () => {
+          await jobFundable.totalJobCredits(randomJob);
+          expect(helper.observe).not.to.have.been.called;
+        });
+
+        it('should return current credits + minted since period start', async () => {
+          const jobLiquidityCredits = await jobFundable.jobLiquidityCredits(randomJob);
+
           expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(
-            (await jobFundable.jobLiquidityCredits(randomJob)).add(
-              (await jobFundable.jobPeriodCredits(randomJob)).mul(blockTimestamp - rewardTimestamp).div(rewardPeriodTime)
-            )
+            jobLiquidityCredits.add(mathUtils.calcMintedCredits(jobPeriodCredits, blockTimestamp - mathUtils.calcPeriod(blockTimestamp)))
           );
         });
-      });
-    });
 
-    context('when job was rewarded last period', () => {
-      let oldLiquidityCredits: BigNumber;
+        context('when job was rewarded after period started', () => {
+          let rewardTimestamp: number;
+          beforeEach(async () => {
+            rewardTimestamp = Math.floor((mathUtils.calcPeriod(blockTimestamp) + blockTimestamp) / 2);
+            await jobFundable.setVariable('rewardedAt', { [randomJob]: rewardTimestamp });
+          });
 
-      beforeEach(async () => {
-        oldLiquidityCredits = mathUtils.calcPeriodCredits(toUnit(1));
-        await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: toUnit(1) } });
-        await jobFundable.setVariable('rewardedAt', { [randomJob]: mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime) });
-      });
+          it('should return current credits + minted since reward reference', async () => {
+            const jobLiquidityCredits = await jobFundable.jobLiquidityCredits(randomJob);
 
-      it('should call the oracle', async () => {
-        await jobFundable.totalJobCredits(randomJob);
-        blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
-        expect(oraclePool.observe).to.have.been.calledWith([
-          blockTimestamp - mathUtils.calcPeriod(blockTimestamp),
-          blockTimestamp - mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime),
-        ]);
+            expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(
+              jobLiquidityCredits.add(mathUtils.calcMintedCredits(jobPeriodCredits, blockTimestamp - rewardTimestamp))
+            );
+          });
+        });
       });
 
-      it('should return updated credits + minted since period start', async () => {
-        const totalJobCredits = await jobFundable.totalJobCredits(randomJob);
-        blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      context('when job was rewarded last period', () => {
+        let oldLiquidityCredits: BigNumber;
 
-        expect(totalJobCredits).to.be.closeTo(
-          mathUtils
-            .decrease1Tick(oldLiquidityCredits)
-            .add(
-              (await jobFundable.jobPeriodCredits(randomJob)).mul(blockTimestamp - mathUtils.calcPeriod(blockTimestamp)).div(rewardPeriodTime)
-            ),
-          mathUtils.blockShiftPrecision
-        );
-      });
-
-      context('when job was rewarded after period started', () => {
-        let rewardTimestamp: number;
         beforeEach(async () => {
-          rewardTimestamp = mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime) + rewardPeriodTime / 10;
-
-          await jobFundable.setVariable('rewardedAt', { [randomJob]: rewardTimestamp });
-          await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: mathUtils.calcPeriod(rewardTimestamp) } });
+          oldLiquidityCredits = mathUtils.calcPeriodCredits(toUnit(1));
+          await jobFundable.setVariable('_jobLiquidityCredits', { [randomJob]: oldLiquidityCredits });
+          await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: liquidityAdded } });
+          await jobFundable.setVariable('rewardedAt', { [randomJob]: mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime) });
         });
 
-        it('should return updated credits + minted since reward reference', async () => {
+        it('should call the oracle', async () => {
+          await jobFundable.totalJobCredits(randomJob);
+          blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+          expect(helper.observe).to.have.been.calledWith(oraclePool.address, [
+            blockTimestamp - mathUtils.calcPeriod(blockTimestamp),
+            blockTimestamp - mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime),
+          ]);
+        });
+
+        it('should return updated credits + minted since period start', async () => {
           const totalJobCredits = await jobFundable.totalJobCredits(randomJob);
           blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 
           expect(totalJobCredits).to.be.closeTo(
             mathUtils
               .decrease1Tick(oldLiquidityCredits)
-              .add(
-                (await jobFundable.jobPeriodCredits(randomJob)).mul(blockTimestamp - (rewardTimestamp + rewardPeriodTime)).div(rewardPeriodTime)
-              ),
+              .add(mathUtils.calcMintedCredits(jobPeriodCredits, blockTimestamp - mathUtils.calcPeriod(blockTimestamp))),
+            mathUtils.blockShiftPrecision
+          );
+        });
+
+        context('when job was rewarded after period started', () => {
+          let rewardTimestamp: number;
+          beforeEach(async () => {
+            blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+            rewardTimestamp = Math.floor(mathUtils.calcPeriod(blockTimestamp) - rewardPeriodTime / 10);
+
+            await jobFundable.setVariable('rewardedAt', { [randomJob]: rewardTimestamp });
+            let tickSetting = {
+              current: oneTick,
+              difference: oneTick,
+              period: mathUtils.calcPeriod(blockTimestamp),
+            };
+
+            await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: tickSetting });
+          });
+
+          it('should return updated credits + minted since reward reference', async () => {
+            const totalJobCredits = await jobFundable.totalJobCredits(randomJob);
+
+            expect(totalJobCredits).to.be.closeTo(
+              mathUtils
+                .decrease1Tick(oldLiquidityCredits)
+                .add(mathUtils.calcMintedCredits(mathUtils.decrease1Tick(oldLiquidityCredits), blockTimestamp - rewardTimestamp)),
+              mathUtils.blockShiftPrecision
+            );
+          });
+        });
+      });
+
+      context('when job was rewarded exactly 1 period ago', () => {
+        beforeEach(async () => {
+          await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: liquidityAdded } });
+          await jobFundable.setVariable('rewardedAt', { [randomJob]: blockTimestamp - rewardPeriodTime });
+          await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
+        });
+
+        it('should return a full period of credits', async () => {
+          const expectedCredits = mathUtils.calcPeriodCredits(liquidityAdded);
+
+          expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(expectedCredits);
+        });
+      });
+
+      context('when job was rewarded more than 1 period ago', () => {
+        let rewardTimestamp: number;
+
+        beforeEach(async () => {
+          blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+          rewardTimestamp = blockTimestamp - 1.1 * rewardPeriodTime;
+
+          await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: liquidityAdded } });
+          await jobFundable.setVariable('rewardedAt', { [randomJob]: rewardTimestamp });
+          await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
+        });
+
+        it('should return a full period of credits + minted sice reward reference', async () => {
+          blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+
+          expect(await jobFundable.totalJobCredits(randomJob)).to.be.closeTo(
+            jobPeriodCredits.add(mathUtils.calcMintedCredits(jobPeriodCredits, blockTimestamp - (rewardTimestamp + rewardPeriodTime))),
             mathUtils.blockShiftPrecision
           );
         });
       });
-    });
 
-    context('when job was rewarded exactly 1 period ago', () => {
-      beforeEach(async () => {
-        await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: toUnit(1) } });
-        await jobFundable.setVariable('rewardedAt', { [randomJob]: blockTimestamp - rewardPeriodTime });
-        await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
-      });
+      context('when job was rewarded more than 2 periods ago', () => {
+        beforeEach(async () => {
+          await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: toUnit(1) } });
+          await jobFundable.setVariable('workedAt', { [randomJob]: mathUtils.calcPeriod(blockTimestamp - 2 * rewardPeriodTime) });
+          await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: blockTimestamp - 2 * rewardPeriodTime } });
+        });
 
-      it('should return a full period of credits', async () => {
-        const expectedCredits = mathUtils.calcPeriodCredits(toUnit(1));
-
-        expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(expectedCredits);
-      });
-    });
-
-    context('when job was rewarded more than 1 period ago', () => {
-      let rewardTimestamp: number;
-
-      beforeEach(async () => {
-        rewardTimestamp = blockTimestamp - 1.1 * rewardPeriodTime;
-
-        await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: toUnit(1) } });
-        await jobFundable.setVariable('rewardedAt', { [randomJob]: rewardTimestamp });
-        await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
-      });
-
-      it('should return a full period of credits + minted sice reward reference', async () => {
-        expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(
-          (await jobFundable.jobPeriodCredits(randomJob)).add(
-            (await jobFundable.jobPeriodCredits(randomJob)).mul(blockTimestamp - (rewardTimestamp + rewardPeriodTime)).div(rewardPeriodTime)
-          )
-        );
-      });
-    });
-
-    context('when job was rewarded more than 2 periods ago', () => {
-      beforeEach(async () => {
-        await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: toUnit(1) } });
-        await jobFundable.setVariable('workedAt', { [randomJob]: mathUtils.calcPeriod(blockTimestamp - 2 * rewardPeriodTime) });
-        await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: blockTimestamp - 2 * rewardPeriodTime } });
-      });
-
-      it('should return a full period of credits + minted since period start', async () => {
-        expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(
-          (await jobFundable.jobPeriodCredits(randomJob)).add(
-            (await jobFundable.jobPeriodCredits(randomJob)).mul(blockTimestamp - mathUtils.calcPeriod(blockTimestamp)).div(rewardPeriodTime)
-          )
-        );
+        it('should return a full period of credits + minted since period start', async () => {
+          expect(await jobFundable.totalJobCredits(randomJob)).to.be.eq(
+            (await jobFundable.jobPeriodCredits(randomJob)).add(
+              (await jobFundable.jobPeriodCredits(randomJob)).mul(blockTimestamp - mathUtils.calcPeriod(blockTimestamp)).div(rewardPeriodTime)
+            )
+          );
+        });
       });
     });
   });
@@ -465,7 +504,7 @@ describe('Keep3rJobFundableLiquidity', () => {
       await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
 
       await jobFundable.quoteLiquidity(approvedLiquidity.address, toUnit(1));
-      expect(oraclePool.observe).not.to.have.been.called;
+      expect(helper.observe).not.to.have.been.called;
     });
 
     it('should call the oracle when liquidity is outdated', async () => {
@@ -475,13 +514,13 @@ describe('Keep3rJobFundableLiquidity', () => {
       });
 
       await jobFundable.quoteLiquidity(approvedLiquidity.address, toUnit(1));
-      expect(oraclePool.observe).have.been.calledWith([blockTimestamp - mathUtils.calcPeriod(blockTimestamp)]);
+      expect(helper.observe).have.been.calledWith(oraclePool.address, [blockTimestamp - mathUtils.calcPeriod(blockTimestamp)]);
     });
 
     it('should call the oracle when liquidity is expired', async () => {
       const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
       await jobFundable.quoteLiquidity(approvedLiquidity.address, toUnit(1));
-      expect(oraclePool.observe).have.been.calledWith([
+      expect(helper.observe).have.been.calledWith(oraclePool.address, [
         blockTimestamp - mathUtils.calcPeriod(blockTimestamp),
         blockTimestamp - mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime),
       ]);
@@ -505,8 +544,9 @@ describe('Keep3rJobFundableLiquidity', () => {
       };
       const amountIn = toUnit(1);
       await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: liquidityParams });
-      expect(await jobFundable.quoteLiquidity(approvedLiquidity.address, amountIn)).to.be.eq(
-        mathUtils.calcPeriodCredits(mathUtils.decrease1Tick(amountIn))
+      expect(await jobFundable.quoteLiquidity(approvedLiquidity.address, amountIn)).to.be.closeTo(
+        mathUtils.calcPeriodCredits(mathUtils.decrease1Tick(amountIn)),
+        mathUtils.blockShiftPrecision
       );
     });
   });
@@ -514,7 +554,7 @@ describe('Keep3rJobFundableLiquidity', () => {
   describe('observeLiquidity', () => {
     let blockTimestamp: number;
     beforeEach(async () => {
-      oraclePool.observe.reset();
+      helper.observe.reset();
       const liquidityParams = {
         current: 0,
         difference: 0,
@@ -529,6 +569,7 @@ describe('Keep3rJobFundableLiquidity', () => {
         period = mathUtils.calcPeriod(blockTimestamp);
         await jobFundable.setVariable('_tick', { [randomLiquidity.address]: { period: period } });
       });
+
       it('should return current tick', async () => {
         expect(await jobFundable.observeLiquidity(randomLiquidity.address)).to.deep.equal([
           BigNumber.from(0),
@@ -536,19 +577,22 @@ describe('Keep3rJobFundableLiquidity', () => {
           BigNumber.from(period),
         ]);
       });
+
       it('should not call the oracle', async () => {
         await jobFundable.observeLiquidity(randomLiquidity.address);
-        expect(oraclePool.observe).not.to.be.called;
+        expect(helper.observe).not.to.be.called;
       });
     });
+
     context('when liquidity is outdated', () => {
       let period: number;
       beforeEach(async () => {
         period = mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime);
         await jobFundable.setVariable('_tick', { [randomLiquidity.address]: { period: period } });
         await jobFundable.setVariable('_liquidityPool', { [randomLiquidity.address]: oraclePool.address });
-        oraclePool.observe.returns([[1], []]);
+        helper.observe.returns([1, 0, true]);
       });
+
       it('should return oracle tick and calculate difference', async () => {
         expect(await jobFundable.observeLiquidity(randomLiquidity.address)).to.deep.equal([
           BigNumber.from(1),
@@ -556,15 +600,17 @@ describe('Keep3rJobFundableLiquidity', () => {
           BigNumber.from(mathUtils.calcPeriod(blockTimestamp)),
         ]);
       });
+
       it('should call the oracle', async () => {
         await jobFundable.observeLiquidity(randomLiquidity.address);
         blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
-        expect(oraclePool.observe).to.have.be.calledWith([blockTimestamp - mathUtils.calcPeriod(blockTimestamp)]);
+        expect(helper.observe).to.have.be.calledWith(oraclePool.address, [blockTimestamp - mathUtils.calcPeriod(blockTimestamp)]);
       });
     });
+
     context('when liquidity is expired', () => {
       beforeEach(async () => {
-        oraclePool.observe.returns([[2, 1], []]);
+        helper.observe.returns([2, 1, true]);
       });
       it('should return oracle tick and difference', async () => {
         expect(await jobFundable.observeLiquidity(approvedLiquidity.address)).to.deep.equal([
@@ -577,7 +623,7 @@ describe('Keep3rJobFundableLiquidity', () => {
         await jobFundable.observeLiquidity(approvedLiquidity.address);
         blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 
-        expect(oraclePool.observe).to.have.be.calledWith([
+        expect(helper.observe).to.have.be.calledWith(oraclePool.address, [
           blockTimestamp - mathUtils.calcPeriod(blockTimestamp),
           blockTimestamp - mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime),
         ]);
@@ -622,11 +668,37 @@ describe('Keep3rJobFundableLiquidity', () => {
         expect(await jobFundable.jobLiquidityCredits(randomJob)).to.equal(toUnit(1));
       });
 
-      it('should emit event', async () => {
-        const tx = await jobFundable.connect(governance).forceLiquidityCreditsToJob(randomJob, toUnit(1));
-        const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      it('should add liquidity credits that dont change value', async () => {
+        await jobFundable.forceLiquidityCreditsToJob(randomJob, toUnit(1));
+        helper.observe.returns([rewardPeriodTime, 0, true]);
 
-        await expect(tx).to.emit(jobFundable, 'JobCreditsUpdated').withArgs(randomJob, blockTimestamp, toUnit(1));
+        const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+        await jobFundable.setVariable('_tick', {
+          [approvedLiquidity.address]: {
+            current: 0,
+            difference: 0,
+            period: mathUtils.calcPeriod(blockTimestamp),
+          },
+        });
+
+        await evm.advanceTimeAndBlock(rewardPeriodTime - 10);
+
+        expect(await jobFundable.jobLiquidityCredits(randomJob)).to.equal(toUnit(1));
+      });
+
+      it('should add liquidity credits that expire', async () => {
+        await jobFundable.forceLiquidityCreditsToJob(randomJob, toUnit(1));
+        await evm.advanceTimeAndBlock(rewardPeriodTime);
+
+        expect(await jobFundable.jobLiquidityCredits(randomJob)).to.equal(0);
+      });
+
+      it('should emit event', async () => {
+        const forcedLiquidityAmount = toUnit(1);
+        const tx = await jobFundable.connect(governance).forceLiquidityCreditsToJob(randomJob, forcedLiquidityAmount);
+        const rewardedAt = (await ethers.provider.getBlock('latest')).timestamp;
+
+        await expect(tx).to.emit(jobFundable, 'LiquidityCreditsForced').withArgs(randomJob, rewardedAt, forcedLiquidityAmount);
       });
     });
   });
@@ -651,6 +723,11 @@ describe('Keep3rJobFundableLiquidity', () => {
     it('should sort the tokens in the liquidity pair', async () => {
       await jobFundable.connect(governance).approveLiquidity(randomLiquidity.address);
       expect(await jobFundable.viewTickOrder(randomLiquidity.address)).to.be.true;
+    });
+
+    it('should initialize twap for liquidity', async () => {
+      await jobFundable.connect(governance).approveLiquidity(randomLiquidity.address);
+      expect(helper.observe).to.have.been.called;
     });
 
     it('should emit event', async () => {
@@ -783,11 +860,10 @@ describe('Keep3rJobFundableLiquidity', () => {
         const liquidityToAdd = mathUtils.calcLiquidityToAdd(toUnit(1));
 
         const tx = await jobFundable.connect(provider).addLiquidityToJob(randomJob, approvedLiquidity.address, liquidityToAdd);
-        const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 
         await expect(tx)
           .to.emit(jobFundable, 'LiquidityAddition')
-          .withArgs(randomJob, approvedLiquidity.address, provider.address, blockTimestamp, liquidityToAdd);
+          .withArgs(randomJob, approvedLiquidity.address, provider.address, liquidityToAdd);
       });
 
       context('when there was previous liquidity', () => {
@@ -802,17 +878,19 @@ describe('Keep3rJobFundableLiquidity', () => {
 
         it('should settle current credits debt of previous liquidity', async () => {
           await evm.advanceTimeAndBlock(moment.duration(1, 'days').as('seconds'));
-          let previousTotalCredits = await jobFundable.totalJobCredits(randomJob);
 
           await jobFundable.connect(provider).addLiquidityToJob(randomJob, approvedLiquidity.address, toUnit(1));
-          expect(await jobFundable.jobLiquidityCredits(randomJob)).to.be.eq(previousTotalCredits);
+          let totalCredits = await jobFundable.totalJobCredits(randomJob);
+          expect(await jobFundable.jobLiquidityCredits(randomJob)).to.be.eq(totalCredits);
         });
       });
 
       context('when liquidity twaps are outdated', () => {
+        let previousJobLiquidityAmount: BigNumber;
+
         beforeEach(async () => {
           const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
-          const previousJobLiquidityAmount = toUnit(10);
+          previousJobLiquidityAmount = toUnit(10);
 
           await jobFundable.setJobLiquidity(randomJob, randomLiquidity.address);
           await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: previousJobLiquidityAmount } });
@@ -822,8 +900,6 @@ describe('Keep3rJobFundableLiquidity', () => {
           });
 
           let tickSetting = {
-            // current: rewardPeriodTime,
-            // previous: 0,
             period: mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime),
           };
 
@@ -832,19 +908,21 @@ describe('Keep3rJobFundableLiquidity', () => {
 
         it('should update twaps for liquidity', async () => {
           await jobFundable.connect(provider).addLiquidityToJob(randomJob, approvedLiquidity.address, toUnit(1));
-          expect(oraclePool.observe).to.have.been.called;
+          expect(helper.observe).to.have.been.called;
         });
-        it('should recalculate previous current credits to current prices', async () => {
-          let previousJobCredits = await jobFundable.jobLiquidityCredits(randomJob);
 
-          let previousTwapDifference: BigNumber = BigNumber.from(1);
+        it('should recalculate previous credits to current prices', async () => {
+          helper.getKP3RsAtTick.returns(([amount]: [BigNumber]) => {
+            return mathUtils.decrease1Tick(amount);
+          });
+
+          let previousJobCredits = mathUtils.calcPeriodCredits(previousJobLiquidityAmount);
 
           await jobFundable.connect(provider).addLiquidityToJob(randomJob, approvedLiquidity.address, toUnit(1));
-          let currentTwapCache = await jobFundable.viewTickCache(approvedLiquidity.address);
-          let currentTwapDifference: BigNumber = currentTwapCache[0].sub(currentTwapCache[1]);
 
-          expect(await jobFundable.jobLiquidityCredits(randomJob)).to.be.eq(
-            previousJobCredits.mul(currentTwapDifference).div(previousTwapDifference)
+          expect(await jobFundable.jobLiquidityCredits(randomJob)).to.be.closeTo(
+            mathUtils.decrease1Tick(previousJobCredits),
+            mathUtils.blockShiftPrecision
           );
         });
       });
@@ -853,8 +931,8 @@ describe('Keep3rJobFundableLiquidity', () => {
 
   describe('unbondLiquidityFromJob', () => {
     beforeEach(async () => {
-      oraclePool.observe.reset();
-      oraclePool.observe.returns([[rewardPeriodTime, 0], []]);
+      helper.observe.reset();
+      helper.observe.returns([rewardPeriodTime, 0, true]);
     });
 
     onlyJobOwner(
@@ -920,10 +998,8 @@ describe('Keep3rJobFundableLiquidity', () => {
 
       it('should emit event', async () => {
         const tx = await jobFundable.connect(jobOwner).unbondLiquidityFromJob(randomJob, approvedLiquidity.address, jobLiquidityAmount);
-        const canWithdrawAfter = await jobFundable.callStatic.canWithdrawAfter(randomJob, approvedLiquidity.address);
-        const blockNumber = (await ethers.provider.getBlock('latest')).number;
 
-        await expect(tx).to.emit(jobFundable, 'Unbonding').withArgs(randomJob, blockNumber, canWithdrawAfter, jobLiquidityAmount);
+        await expect(tx).to.emit(jobFundable, 'Unbonding').withArgs(randomJob, approvedLiquidity.address, jobLiquidityAmount);
       });
 
       context('when liquidity is revoked', () => {
@@ -950,21 +1026,21 @@ describe('Keep3rJobFundableLiquidity', () => {
       await jobFundable.setVariable('_jobLiquidityCredits', { [randomJob]: toUnit(1) });
       await jobFundable.setVariable('rewardedAt', { [randomJob]: 0 });
 
-      oraclePool.observe.reset();
-      oraclePool.observe.returns([[rewardPeriodTime, 0], []]);
+      helper.observe.reset();
+      helper.observe.returns([rewardPeriodTime, 0, true]);
     });
 
     onlyJobOwner(
       () => jobFundable,
       'withdrawLiquidityFromJob',
       jobOwner,
-      () => [randomJob, approvedLiquidity.address]
+      () => [randomJob, approvedLiquidity.address, jobOwner.address]
     );
 
     it('should revert if never unbonded', async () => {
-      await expect(jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address)).to.be.revertedWith(
-        'UnbondsUnexistent()'
-      );
+      await expect(
+        jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address, jobOwner.address)
+      ).to.be.revertedWith('UnbondsUnexistent()');
     });
 
     it('should revert if unbonded tokens are still locked', async () => {
@@ -972,9 +1048,15 @@ describe('Keep3rJobFundableLiquidity', () => {
       await jobFundable.setVariable('canWithdrawAfter', {
         [randomJob]: { [approvedLiquidity.address]: blockTimestamp + moment.duration('1', 'hour').asSeconds() },
       });
-      await expect(jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address)).to.be.revertedWith(
-        'UnbondsLocked()'
-      );
+      await expect(
+        jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address, jobOwner.address)
+      ).to.be.revertedWith('UnbondsLocked()');
+    });
+
+    it('should revert when receiver is zero address', async () => {
+      await expect(
+        jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address, ZERO_ADDRESS)
+      ).to.be.revertedWith('ZeroAddress()');
     });
 
     context('when unbonded tokens and waited', () => {
@@ -994,27 +1076,26 @@ describe('Keep3rJobFundableLiquidity', () => {
         await jobFundable.setVariable('disputes', {
           [randomJob]: true,
         });
-        await expect(jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address)).to.be.revertedWith(
-          'Disputed()'
-        );
+        await expect(
+          jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address, jobOwner.address)
+        ).to.be.revertedWith('Disputed()');
       });
 
-      it('should transfer unbonded liquidity to the job owner', async () => {
-        await jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address);
-        expect(approvedLiquidity.transfer).to.have.been.calledOnceWith(jobOwner.address, unbondedAmount);
+      it('should transfer unbonded liquidity to the receiver', async () => {
+        await jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address, governance.address);
+        expect(approvedLiquidity.transfer).to.have.been.calledOnceWith(governance.address, unbondedAmount);
       });
 
       it('should emit event', async () => {
-        const tx = await jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address);
-        const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+        const tx = await jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address, jobOwner.address);
 
-        expect(tx)
+        await expect(tx)
           .to.emit(jobFundable, 'LiquidityWithdrawal')
-          .withArgs(randomJob, approvedLiquidity.address, jobOwner.address, blockTimestamp, unbondedAmount);
+          .withArgs(randomJob, approvedLiquidity.address, jobOwner.address, unbondedAmount);
       });
 
       it('should reset the pending unbond amount', async () => {
-        await jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address);
+        await jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address, jobOwner.address);
         expect(await jobFundable.pendingUnbonds(randomJob, approvedLiquidity.address)).to.equal(0);
       });
     });
@@ -1037,20 +1118,16 @@ describe('Keep3rJobFundableLiquidity', () => {
     });
 
     it('should update job credits to current quote', async () => {
-      const oneTick = rewardPeriodTime;
-      oraclePool.observe.returns([[oneTick, 0], []]);
-
-      let tickSetting = {
-        current: oneTick,
-        difference: oneTick,
-        period: mathUtils.calcPeriod(blockTimestamp),
-      };
-
-      await jobFundable.setVariable('_tick', { [approvedLiquidity.address]: tickSetting });
+      helper.getKP3RsAtTick.returns(([amount]: [BigNumber]) => {
+        return mathUtils.decrease1Tick(amount);
+      });
 
       await jobFundable.connect(provider).internalJobLiquidities(randomJob);
 
-      expect(await jobFundable.jobPeriodCredits(randomJob)).to.be.eq(mathUtils.decrease1Tick(calculatedJobPeriodCredits));
+      expect(await jobFundable.jobPeriodCredits(randomJob)).to.be.closeTo(
+        mathUtils.decrease1Tick(calculatedJobPeriodCredits),
+        mathUtils.blockShiftPrecision
+      );
     });
 
     it('should reward all job pending credits', async () => {

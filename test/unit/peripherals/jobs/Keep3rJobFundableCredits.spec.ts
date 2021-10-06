@@ -1,10 +1,10 @@
-import IUniswapV3PoolArtifact from '@contracts/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@contracts/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@contracts/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@contracts/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
+import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
+import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
+import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
+import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20,
   ERC20ForTest,
@@ -15,7 +15,6 @@ import {
   Keep3rHelper,
   Keep3rJobFundableCreditsForTest,
   Keep3rJobFundableCreditsForTest__factory,
-  Keep3rLibrary,
 } from '@types';
 import { evm, wallet } from '@utils';
 import { onlyJobOwner } from '@utils/behaviours';
@@ -37,17 +36,11 @@ describe('Keep3rJobFundableCredits', () => {
   let helper: FakeContract<Keep3rHelper>;
   let oraclePool: FakeContract<IUniswapV3Pool>;
   let jobFundableFactory: MockContractFactory<Keep3rJobFundableCreditsForTest__factory>;
-  let library: Keep3rLibrary;
 
   before(async () => {
     [governance, provider, jobOwner] = await ethers.getSigners();
 
-    library = (await (await ethers.getContractFactory('Keep3rLibrary')).deploy()) as any as Keep3rLibrary;
-    jobFundableFactory = await smock.mock<Keep3rJobFundableCreditsForTest__factory>('Keep3rJobFundableCreditsForTest', {
-      libraries: {
-        Keep3rLibrary: library.address,
-      },
-    });
+    jobFundableFactory = await smock.mock<Keep3rJobFundableCreditsForTest__factory>('Keep3rJobFundableCreditsForTest');
   });
 
   beforeEach(async () => {
@@ -76,54 +69,53 @@ describe('Keep3rJobFundableCredits', () => {
     });
 
     it('should revert when called with unallowed job', async () => {
-      await expect(jobFundable.connect(provider).addTokenCreditsToJob(token.address, randomJob, toUnit(1))).to.be.revertedWith(
+      await expect(jobFundable.connect(provider).addTokenCreditsToJob(randomJob, token.address, toUnit(1))).to.be.revertedWith(
         'JobUnavailable()'
       );
     });
 
+    it('should revert when when token is KP3R', async () => {
+      await expect(jobFundable.connect(provider).addTokenCreditsToJob(approvedJob, keep3rV1.address, toUnit(1))).to.be.revertedWith(
+        'TokenUnallowed()'
+      );
+    });
+
     it('should revert if transfer fails', async () => {
-      await expect(jobFundable.connect(provider).addTokenCreditsToJob(token.address, approvedJob, toUnit(11))).to.be.revertedWith(
+      await expect(jobFundable.connect(provider).addTokenCreditsToJob(approvedJob, token.address, toUnit(11))).to.be.revertedWith(
         'ERC20: transfer amount exceeds balance'
       );
     });
 
     it('should increase job token credits, after fees', async () => {
-      await jobFundable.connect(provider).addTokenCreditsToJob(token.address, approvedJob, toUnit(1));
+      await jobFundable.connect(provider).addTokenCreditsToJob(approvedJob, token.address, toUnit(1));
       expect(await jobFundable.jobTokenCredits(approvedJob, token.address)).to.equal(toUnit(0.997));
     });
 
     it('should transfer tokens to contract', async () => {
-      await jobFundable.connect(provider).addTokenCreditsToJob(token.address, approvedJob, toUnit(1));
+      await jobFundable.connect(provider).addTokenCreditsToJob(approvedJob, token.address, toUnit(1));
       expect(await token.balanceOf(jobFundable.address)).to.equal(toUnit(0.997));
     });
 
     it('should save the block timestamp of when the credits were added', async () => {
-      await jobFundable.connect(provider).addTokenCreditsToJob(token.address, approvedJob, toUnit(1));
+      await jobFundable.connect(provider).addTokenCreditsToJob(approvedJob, token.address, toUnit(1));
       const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
       expect(await jobFundable.jobTokenCreditsAddedAt(approvedJob, token.address)).to.equal(blockTimestamp);
     });
 
     it('should transfer fee in tokens to governance', async () => {
-      await jobFundable.connect(provider).addTokenCreditsToJob(token.address, approvedJob, toUnit(1));
+      await jobFundable.connect(provider).addTokenCreditsToJob(approvedJob, token.address, toUnit(1));
       expect(await token.balanceOf(governance.address)).to.equal(toUnit(0.003));
     });
 
-    it('should emit event when called with allowed job', async () => {
-      const blockNumber = await ethers.provider.getBlockNumber();
-      await expect(jobFundable.connect(provider).addTokenCreditsToJob(token.address, approvedJob, toUnit(1)))
-        .to.emit(jobFundable, 'AddCredit')
-        .withArgs(approvedJob, token.address, provider.address, blockNumber + 1, toUnit(1));
+    it('should emit event', async () => {
+      await expect(jobFundable.connect(provider).addTokenCreditsToJob(approvedJob, token.address, toUnit(1)))
+        .to.emit(jobFundable, 'TokenCreditAddition')
+        .withArgs(approvedJob, token.address, provider.address, toUnit(1));
     });
 
     it('should add token address to the job token list', async () => {
-      await jobFundable.connect(provider).addTokenCreditsToJob(token.address, approvedJob, toUnit(1));
+      await jobFundable.connect(provider).addTokenCreditsToJob(approvedJob, token.address, toUnit(1));
       expect(await jobFundable.isJobToken(approvedJob, token.address)).to.be.true;
-    });
-
-    it('should revert when when token is KP3R', async () => {
-      await expect(jobFundable.connect(provider).addTokenCreditsToJob(keep3rV1.address, approvedJob, toUnit(1))).to.be.revertedWith(
-        'TokenUnavailable()'
-      );
     });
   });
 
@@ -144,7 +136,7 @@ describe('Keep3rJobFundableCredits', () => {
       () => jobFundable,
       'withdrawTokenCreditsFromJob',
       jobOwner,
-      () => [token.address, approvedJob, toUnit(1), provider.address]
+      () => [approvedJob, token.address, toUnit(1), provider.address]
     );
 
     it('should revert if credits were deposited in the less than 60 seconds ago', async () => {
@@ -156,8 +148,18 @@ describe('Keep3rJobFundableCredits', () => {
       });
       await evm.advanceToTime(blockTimestamp + 60);
       await expect(
-        jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(token.address, approvedJob, toUnit(1), provider.address)
+        jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(1), provider.address)
       ).to.be.revertedWith('JobTokenCreditsLocked()');
+    });
+
+    it('should revert if the job is disputed', async () => {
+      await jobFundable.setVariable('disputes', {
+        [approvedJob]: true,
+      });
+
+      await expect(
+        jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(1), provider.address)
+      ).to.be.revertedWith('JobDisputed()');
     });
 
     it('should not revert if credits were deposited 60 seconds ago', async () => {
@@ -169,20 +171,20 @@ describe('Keep3rJobFundableCredits', () => {
       });
       await evm.advanceToTime(blockTimestamp + 61);
       await expect(
-        jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(token.address, approvedJob, toUnit(1), provider.address)
+        jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(1), provider.address)
       ).not.to.be.revertedWith('JobTokenCreditsLocked()');
     });
 
     it('should revert if transfer fails', async () => {
       token.transfer.returns(false);
       await expect(
-        jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(token.address, approvedJob, toUnit(1), provider.address)
+        jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(1), provider.address)
       ).to.be.revertedWith('SafeERC20: ERC20 operation did not succeed');
     });
 
     it('should revert if job does not have enough credits', async () => {
       await expect(
-        jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(token.address, approvedJob, toUnit(2), provider.address)
+        jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(2), provider.address)
       ).to.be.revertedWith('InsufficientJobTokenCredits()');
     });
 
@@ -192,7 +194,7 @@ describe('Keep3rJobFundableCredits', () => {
           [token.address]: 0,
         },
       });
-      await jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(token.address, approvedJob, toUnit(0.4), provider.address);
+      await jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(0.4), provider.address);
       expect(await jobFundable.jobTokenCredits(approvedJob, token.address)).to.equal(toUnit(0.6));
     });
 
@@ -202,7 +204,7 @@ describe('Keep3rJobFundableCredits', () => {
           [token.address]: 0,
         },
       });
-      await jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(token.address, approvedJob, toUnit(1), provider.address);
+      await jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(1), provider.address);
       expect(token.transfer).to.be.calledOnceWith(provider.address, toUnit(1));
     });
 
@@ -212,9 +214,9 @@ describe('Keep3rJobFundableCredits', () => {
           [token.address]: 0,
         },
       });
-      await expect(jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(token.address, approvedJob, toUnit(0.4), provider.address))
-        .to.emit(jobFundable, 'JobTokenCreditWithdrawal')
-        .withArgs(approvedJob, token.address, toUnit(0.4), jobOwner.address, provider.address, toUnit(0.6));
+      await expect(jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(0.4), provider.address))
+        .to.emit(jobFundable, 'TokenCreditWithdrawal')
+        .withArgs(approvedJob, token.address, provider.address, toUnit(0.4));
     });
 
     it('should not remove token from the job token list when partially withdrawn', async () => {
@@ -225,7 +227,7 @@ describe('Keep3rJobFundableCredits', () => {
       });
       await jobFundable.setJobToken(approvedJob, token.address);
 
-      await jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(token.address, approvedJob, toUnit(0.4), provider.address);
+      await jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(0.4), provider.address);
       expect(await jobFundable.isJobToken(approvedJob, token.address)).to.be.true;
     });
 
@@ -237,7 +239,7 @@ describe('Keep3rJobFundableCredits', () => {
       });
       await jobFundable.setJobToken(approvedJob, token.address);
 
-      await jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(token.address, approvedJob, toUnit(1), provider.address);
+      await jobFundable.connect(jobOwner).withdrawTokenCreditsFromJob(approvedJob, token.address, toUnit(1), provider.address);
       expect(await jobFundable.isJobToken(approvedJob, token.address)).to.be.false;
     });
   });

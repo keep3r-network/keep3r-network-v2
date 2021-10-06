@@ -1,12 +1,12 @@
-import IUniswapV3PoolForTestArtifact from '@contracts/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { BigNumber } from '@ethersproject/bignumber';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
+import IUniswapV3PoolForTestArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
 import {
   ERC20ForTest,
   ERC20ForTest__factory,
-  IERC20,
+  IERC20Metadata,
   IUniswapV3PoolForTest,
   UniV3PairManagerForTest,
   UniV3PairManagerForTest__factory,
@@ -32,8 +32,8 @@ describe('UniV3PairManager', () => {
   //fake and mocks
   let uniV3PairManager: MockContract<UniV3PairManagerForTest>;
   let uniswapPool: FakeContract<IUniswapV3PoolForTest>;
-  let token0: FakeContract<IERC20>;
-  let token1: FakeContract<IERC20>;
+  let token0: FakeContract<IERC20Metadata>;
+  let token1: FakeContract<IERC20Metadata>;
 
   //signers
   let deployer: SignerWithAddress;
@@ -78,7 +78,7 @@ describe('UniV3PairManager', () => {
     await fakeERC20.mint(uniV3PairManager.address, toUnit(100));
   });
 
-  describe('constructor', async () => {
+  describe('constructor', () => {
     it('should assign pool to the DAI-WETH pool', async () => {
       expect(await uniV3PairManager.pool()).to.deep.equal(uniswapPool.address);
     });
@@ -95,8 +95,8 @@ describe('UniV3PairManager', () => {
       expect(await uniV3PairManager.token1()).to.deep.equal(await uniswapPool.token1());
     });
 
-    it('should assign name to Keep3rV1 - DAI/WETH', async () => {
-      expect(await uniV3PairManager.name()).to.deep.equal('Keep3rV1 - DAI/WETH');
+    it('should assign name to Keep3rLP - DAI/WETH', async () => {
+      expect(await uniV3PairManager.name()).to.deep.equal('Keep3rLP - DAI/WETH');
     });
 
     it('should assign symbol to kLP-DAI/WETH', async () => {
@@ -108,7 +108,7 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('uniswapV3MintCallback', async () => {
+  describe('uniswapV3MintCallback', () => {
     it('should revert if the caller is not the pool', async () => {
       const encodedStruct = ethers.utils.defaultAbiCoder.encode(
         ['address', 'address', 'uint24', 'address'],
@@ -118,7 +118,7 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('position', async () => {
+  describe('position', () => {
     it('should call uniswap pool positions function with the correct arguments', async () => {
       await uniV3PairManager.position();
       expect(uniswapPool.positions).to.be.calledOnceWith(
@@ -134,7 +134,7 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('collect', async () => {
+  describe('collect', () => {
     it('should revert if the caller is not governance', async () => {
       await expect(uniV3PairManager.connect(randomJobProvider).collect()).to.be.revertedWith('OnlyGovernance()');
     });
@@ -156,7 +156,7 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('burn', async () => {
+  describe('burn', () => {
     it('should revert if caller does not have credits', async () => {
       amount0Min = 5;
       amount1Min = 5;
@@ -166,7 +166,7 @@ describe('UniV3PairManager', () => {
       await expect(uniV3PairManager.connect(randomJobProvider).burn(liquidity, amount0Min, amount1Min, newGovernance.address)).to.be.reverted;
     });
 
-    context('when the caller has credits', async () => {
+    context('when the caller has credits', () => {
       beforeEach(async () => {
         liquidity = 10000;
         amount0Min = 5;
@@ -202,27 +202,27 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('approve', async () => {
+  describe('approve', () => {
     it('should increase the balance of the spender', async () => {
       await uniV3PairManager.connect(deployer).approve(newGovernance.address, tenTokens);
       expect(await uniV3PairManager.allowance(deployer.address, newGovernance.address)).to.equal(tenTokens);
     });
 
     it('should emit an event if approve is successful', async () => {
-      expect(await uniV3PairManager.connect(deployer).approve(newGovernance.address, tenTokens))
+      await expect(await uniV3PairManager.connect(deployer).approve(newGovernance.address, tenTokens))
         .to.emit(uniV3PairManager, 'Approval')
         .withArgs(deployer.address, newGovernance.address, tenTokens);
     });
   });
 
-  describe('transfer', async () => {
-    context('when user does not have credits and tries to transfer', async () => {
+  describe('transfer', () => {
+    context('when user does not have credits and tries to transfer', () => {
       it('should revert', async () => {
         await expect(uniV3PairManager.connect(deployer).transfer(newGovernance.address, tenTokens)).to.be.reverted;
       });
     });
 
-    context('when user has credits', async () => {
+    context('when user has credits', () => {
       beforeEach(async () => {
         await uniV3PairManager.setVariable('balanceOf', {
           [deployer.address]: tenTokens,
@@ -242,13 +242,13 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('transferFrom', async () => {
+  describe('transferFrom', () => {
     it('it should revert when the user does not have funds and has approved an spender', async () => {
       expect(await uniV3PairManager.connect(deployer).approve(newGovernance.address, tenTokens));
       await expect(uniV3PairManager.connect(newGovernance).transferFrom(deployer.address, newGovernance.address, tenTokens)).to.be.reverted;
     });
 
-    context('when user has funds and has approved an spender', async () => {
+    context('when user has funds and has approved an spender', () => {
       beforeEach(async () => {
         await uniV3PairManager.setVariable('balanceOf', {
           [deployer.address]: tenTokens,
@@ -280,7 +280,7 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('_addLiquidity', async () => {
+  describe('_addLiquidity', () => {
     ///@notice for the purpose of testing internal functions, they've been made external in the for-test contract
     ///        and given the name: internal + [original internal function name] for clarity.
     //         Example: internalAddLiquidity
@@ -295,7 +295,7 @@ describe('UniV3PairManager', () => {
       ).to.be.revertedWith('ExcessiveSlippage()');
     });
 
-    context('when the pools mint function return values are set', async () => {
+    context('when the pools mint function return values are set', () => {
       beforeEach(async () => {
         returnValues = [100, 200].map(BigNumber.from);
         uniswapPool.mint.returns(returnValues);
@@ -325,7 +325,7 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('_mint', async () => {
+  describe('_mint', () => {
     it('should mint credits to the recipient', async () => {
       await uniV3PairManager.internalMint(newGovernance.address, tenTokens);
       expect(await uniV3PairManager.balanceOf(newGovernance.address)).to.equal(tenTokens);
@@ -343,12 +343,12 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('_burn', async () => {
+  describe('_burn', () => {
     it('should revert if the user does not have credits in his balance and tries to burn', async () => {
       const smallTokenAmount = 1;
       await expect(uniV3PairManager.internalBurn(deployer.address, smallTokenAmount)).to.be.reverted;
     });
-    context('when user has credits in his balance', async () => {
+    context('when user has credits in his balance', () => {
       beforeEach(async () => {
         await uniV3PairManager.setVariable('totalSupply', tenTokens);
         await uniV3PairManager.setVariable('balanceOf', {
@@ -374,7 +374,7 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('_pay', async () => {
+  describe('_pay', () => {
     it('should transfer tokens to the recipient', async () => {
       fakeERC20.connect(deployer).approve(uniV3PairManager.address, tenTokens);
       await uniV3PairManager.internalPay(fakeERC20.address, deployer.address, newGovernance.address, tenTokens);

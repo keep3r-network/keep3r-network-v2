@@ -27,7 +27,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   // pool to use as a KP3R/WETH oracle
   const uniV3PoolAddress = '0x11b7a6bc0259ed6cf9db8f499988f9ecc7167bf5';
 
-  const keep3rV2Args = [governance, keep3rHelper.address, keep3rV1.address, keep3rV1Proxy.address, UNISWAP_V3_POOL];
+  const keep3rV2Args = [governance, keep3rHelper.address, keep3rV1.address, keep3rV1Proxy.address, uniV3PoolAddress];
 
   const keep3rV2 = await hre.deployments.deploy('Keep3r', {
     contract: 'contracts/Keep3r.sol:Keep3r',

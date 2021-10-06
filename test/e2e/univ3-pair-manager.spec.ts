@@ -5,8 +5,8 @@ import {
   IERC20,
   ISwapRouter,
   IUniswapV3Pool,
-  LiquidityAmountsTest,
-  LiquidityAmountsTest__factory,
+  LiquidityAmountsForTest,
+  LiquidityAmountsForTest__factory,
   UniV3PairManager,
   UniV3PairManager__factory,
 } from '@types';
@@ -30,8 +30,8 @@ describe('UniV3PairManager', () => {
   //contracts
   let uniV3PairManager: UniV3PairManager;
   let uniswapPool: IUniswapV3Pool;
-  let liquidityAmounts: LiquidityAmountsTest;
-  let liquidityAmountsFactory: LiquidityAmountsTest__factory;
+  let liquidityAmounts: LiquidityAmountsForTest;
+  let liquidityAmountsFactory: LiquidityAmountsForTest__factory;
   let uniRouter: ISwapRouter;
 
   //tokens
@@ -59,7 +59,7 @@ describe('UniV3PairManager', () => {
     uniRouter = (await ethers.getContractAt('ISwapRouter', UNIV3_ROUTER_ADDRESS)) as ISwapRouter;
 
     uniV3PairManagerFactory = (await ethers.getContractFactory('UniV3PairManager')) as UniV3PairManager__factory;
-    liquidityAmountsFactory = (await ethers.getContractFactory('LiquidityAmountsTest')) as LiquidityAmountsTest__factory;
+    liquidityAmountsFactory = (await ethers.getContractFactory('LiquidityAmountsForTest')) as LiquidityAmountsForTest__factory;
   });
 
   beforeEach(async () => {
@@ -94,7 +94,7 @@ describe('UniV3PairManager', () => {
     return liquidity;
   }
 
-  describe('mint', async () => {
+  describe('mint', () => {
     it('should increase the DAI/WETH position of the contract if the user provides liquidity', async () => {
       liquidity = await calculateLiquidity(tenTokens, tenTokens);
 
@@ -129,8 +129,8 @@ describe('UniV3PairManager', () => {
     await uniV3PairManager.connect(whale).mint(tenTokens, tenTokens, amount0MinIsZero, amount1MinIsZero, whale._address);
   }
 
-  describe('collect', async () => {
-    context('when the contract has liquidity and accrued fees', async () => {
+  describe('collect', () => {
+    context('when the contract has liquidity and accrued fees', () => {
       beforeEach(async () => {
         await provideLiquidityAndSwap();
       });
@@ -145,8 +145,8 @@ describe('UniV3PairManager', () => {
     });
   });
 
-  describe('burn', async () => {
-    context('when the contract has liquidity and accrued fees', async () => {
+  describe('burn', () => {
+    context('when the contract has liquidity and accrued fees', () => {
       beforeEach(async () => {
         await provideLiquidityAndSwap();
 

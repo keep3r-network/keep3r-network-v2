@@ -184,8 +184,8 @@ export const txShouldSetVariableAndEmitEvent = async ({
 export const onlyGovernance = createOnlyCallableCheck(['governance'], 'OnlyGovernance()');
 export const onlyPendingGovernance = createOnlyCallableCheck(['pending governance'], 'OnlyPendingGovernance()');
 export const onlyJobOwner = createOnlyCallableCheck(['job owner'], 'OnlyJobOwner()');
-export const onlyDisputerOrGovernance = createOnlyCallableCheck(['disputer', 'governance'], 'OnlyDisputerOrGovernance()');
-export const onlySlasherOrGovernance = createOnlyCallableCheck(['slasher', 'governance'], 'OnlySlasherOrGovernance()');
+export const onlyDisputer = createOnlyCallableCheck(['disputer'], 'OnlyDisputer()');
+export const onlySlasher = createOnlyCallableCheck(['slasher'], 'OnlySlasher()');
 export const onlyKeep3r = createOnlyCallableCheck(['keep3r'], 'OnlyKeep3r()');
 
 export function createOnlyCallableCheck(allowedLabels: string[], error: string) {

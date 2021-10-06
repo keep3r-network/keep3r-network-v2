@@ -36,16 +36,16 @@ describe('Keep3rAccountance', () => {
 
   describe('keepers', () => {
     it('should return full list', async () => {
-      accountance.addKeeper(randomAddr1);
-      accountance.addKeeper(randomAddr2);
+      accountance.setKeeper(randomAddr1);
+      accountance.setKeeper(randomAddr2);
 
       expect(await accountance.keepers()).to.deep.equal([randomAddr1, randomAddr2]);
     });
 
     it('should not store duplicates', async () => {
-      accountance.addKeeper(randomAddr1);
-      accountance.addKeeper(randomAddr2);
-      accountance.addKeeper(randomAddr2);
+      accountance.setKeeper(randomAddr1);
+      accountance.setKeeper(randomAddr2);
+      accountance.setKeeper(randomAddr2);
 
       expect(await accountance.keepers()).to.deep.equal([randomAddr1, randomAddr2]);
     });

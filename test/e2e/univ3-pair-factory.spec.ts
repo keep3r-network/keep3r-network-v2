@@ -39,7 +39,7 @@ describe('UniV3PairManagerFactory', () => {
     await snapshot.revert(snapshotId);
   });
 
-  describe('createPairManager', async () => {
+  describe('createPairManager', () => {
     let createdManagerAddress: string;
 
     beforeEach(async () => {

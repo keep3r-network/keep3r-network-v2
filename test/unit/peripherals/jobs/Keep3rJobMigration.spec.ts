@@ -1,11 +1,11 @@
-import IUniswapV3PoolArtifact from '@contracts/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@contracts/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@contracts/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@contracts/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import { MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Keep3rJobMigrationForTest, Keep3rJobMigrationForTest__factory, Keep3rLibrary } from '@types';
+import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
+import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
+import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
+import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
+import { Keep3rJobMigrationForTest, Keep3rJobMigrationForTest__factory } from '@types';
 import { evm, wallet } from '@utils';
 import { onlyJobOwner } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
@@ -24,12 +24,8 @@ describe('Keep3rJobMigration', () => {
 
   before(async () => {
     [, fromJobOwner, toJobOwner] = await ethers.getSigners();
-    const library = (await (await ethers.getContractFactory('Keep3rLibrary')).deploy()) as Keep3rLibrary;
-    jobMigrationFactory = await smock.mock<Keep3rJobMigrationForTest__factory>('Keep3rJobMigrationForTest', {
-      libraries: {
-        Keep3rLibrary: library.address,
-      },
-    });
+
+    jobMigrationFactory = await smock.mock<Keep3rJobMigrationForTest__factory>('Keep3rJobMigrationForTest');
   });
 
   beforeEach(async () => {
@@ -37,8 +33,7 @@ describe('Keep3rJobMigration', () => {
     const keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     const keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
     const oraclePool = await smock.fake(IUniswapV3PoolArtifact);
-    oraclePool.token0.returns(keep3rV1.address);
-    oraclePool.observe.returns([[0, 0], []]);
+    helper.observe.returns([0, 0, true]);
 
     jobMigration = await jobMigrationFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
     await jobMigration.setVariable('jobOwner', {
@@ -200,14 +195,14 @@ describe('Keep3rJobMigration', () => {
         expect(await jobMigration.jobTokenCredits(fromJob, tokenA)).to.equal(0);
         expect(await jobMigration.jobTokenCredits(fromJob, tokenB)).to.equal(0);
         expect(await jobMigration.jobTokenCredits(fromJob, tokenC)).to.equal(0);
-        expect(await jobMigration.getJobTokenListLength(fromJob)).to.equal(0);
+        expect(await jobMigration.viewJobTokenListLength(fromJob)).to.equal(0);
       });
 
       it('should add all token credits to the target job', async () => {
         expect(await jobMigration.jobTokenCredits(toJob, tokenA)).to.equal(fromJobTokenAAmount);
         expect(await jobMigration.jobTokenCredits(toJob, tokenB)).to.equal(fromJobTokenBAmount.add(toJobTokenBAmount));
         expect(await jobMigration.jobTokenCredits(toJob, tokenC)).to.equal(toJobTokenCAmount);
-        expect(await jobMigration.getJobTokenListLength(toJob)).to.equal(3);
+        expect(await jobMigration.viewJobTokenListLength(toJob)).to.equal(3);
       });
 
       it('should remove the job migration request', async () => {
@@ -226,15 +221,15 @@ describe('Keep3rJobMigration', () => {
       });
 
       it('should empty liquidy list from fromJob', async () => {
-        expect(await jobMigration.getJobLiquidityList(fromJob)).to.deep.equal([]);
+        expect(await jobMigration.viewJobLiquidityList(fromJob)).to.deep.equal([]);
       });
 
       it('should fill liquidity list from toJob', async () => {
-        expect(await jobMigration.getJobLiquidityList(toJob)).to.deep.equal([liquidityB, liquidityC, liquidityA]);
+        expect(await jobMigration.viewJobLiquidityList(toJob)).to.deep.equal([liquidityB, liquidityC, liquidityA]);
       });
 
       it('should add fromJob period credits to toJob', async () => {
-        expect(await jobMigration.getJobPeriodCredits(toJob)).to.equal(fromJobPeriodCredits.add(toJobPeriodCredits));
+        expect(await jobMigration.viewJobPeriodCredits(toJob)).to.equal(fromJobPeriodCredits.add(toJobPeriodCredits));
       });
 
       it('should reset fromJob period credits', async () => {
@@ -242,11 +237,11 @@ describe('Keep3rJobMigration', () => {
       });
 
       it('should add fromJob liquidity credits to toJob', async () => {
-        expect(await jobMigration.getJobLiquidityCredits(toJob)).to.equal(fromJobLiquidityCredits.add(toJobLiquidityCredits));
+        expect(await jobMigration.viewJobLiquidityCredits(toJob)).to.equal(fromJobLiquidityCredits.add(toJobLiquidityCredits));
       });
 
       it('should reset fromJob liquidity credits', async () => {
-        expect(await jobMigration.getJobLiquidityCredits(fromJob)).to.equal(0);
+        expect(await jobMigration.viewJobLiquidityCredits(fromJob)).to.equal(0);
       });
 
       it('should reset fromJob rewardedAt', async () => {

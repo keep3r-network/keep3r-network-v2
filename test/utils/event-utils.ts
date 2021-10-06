@@ -1,19 +1,4 @@
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider';
-import { expect } from 'chai';
-import { ContractTransaction } from 'ethers';
-
-interface EventAssertion {
-  name: string;
-  args: any[];
-}
-
-export async function expectEventsFromTx(tx: ContractTransaction, events: EventAssertion[]) {
-  const actualEvents: EventAssertion[] = ((await tx.wait()).events as Event[]).map((actualEvent) => ({
-    name: actualEvent.event,
-    args: actualEvent.args,
-  }));
-  expect(actualEvents).to.deep.equal(events);
-}
 
 export async function readArgFromEvent<T>(response: TransactionResponse, eventName: string, paramName: string): Promise<T | undefined> {
   const receipt = await response.wait();
@@ -22,6 +7,13 @@ export async function readArgFromEvent<T>(response: TransactionResponse, eventNa
       return event.args[paramName];
     }
   }
+}
+
+export async function readArgsFromEvent(response: TransactionResponse, eventName: string): Promise<any[][]> {
+  const receipt = await response.wait();
+  return getEvents(receipt)
+    .filter(({ event }) => event === eventName)
+    .map((event) => event.args);
 }
 
 export async function readArgFromEventOrFail<T>(response: TransactionResponse, eventName: string, paramName: string): Promise<T> {

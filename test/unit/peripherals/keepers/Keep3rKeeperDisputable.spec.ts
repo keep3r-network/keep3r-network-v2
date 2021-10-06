@@ -1,9 +1,9 @@
-import IUniswapV3PoolArtifact from '@contracts/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@contracts/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@contracts/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@contracts/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
+import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
+import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
+import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20ForTest,
   ERC20ForTest__factory,
@@ -13,12 +13,11 @@ import {
   Keep3rHelper,
   Keep3rKeeperDisputableForTest,
   Keep3rKeeperDisputableForTest__factory,
-  Keep3rLibrary,
 } from '@types';
-import { behaviours, wallet } from '@utils';
+import { wallet } from '@utils';
+import { onlySlasher } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
 import chai, { expect } from 'chai';
-import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 
 chai.use(smock.matchers);
@@ -26,23 +25,19 @@ chai.use(smock.matchers);
 describe('Keep3rKeeperDisputable', () => {
   const randomKeeper = wallet.generateRandomAddress();
   let governance: SignerWithAddress;
+  let slasher: SignerWithAddress;
+  let disputer: SignerWithAddress;
   let keeperDisputable: MockContract<Keep3rKeeperDisputableForTest>;
   let helper: FakeContract<Keep3rHelper>;
   let keep3rV1: FakeContract<IKeep3rV1>;
   let keep3rV1Proxy: FakeContract<IKeep3rV1Proxy>;
   let oraclePool: FakeContract<IUniswapV3Pool>;
   let keeperDisputableFactory: MockContractFactory<Keep3rKeeperDisputableForTest__factory>;
-  let library: Keep3rLibrary;
 
   before(async () => {
-    [governance] = await ethers.getSigners();
-    library = (await (await ethers.getContractFactory('Keep3rLibrary')).deploy()) as any as Keep3rLibrary;
+    [governance, slasher, disputer] = await ethers.getSigners();
 
-    keeperDisputableFactory = await smock.mock<Keep3rKeeperDisputableForTest__factory>('Keep3rKeeperDisputableForTest', {
-      libraries: {
-        Keep3rLibrary: library.address,
-      },
-    });
+    keeperDisputableFactory = await smock.mock<Keep3rKeeperDisputableForTest__factory>('Keep3rKeeperDisputableForTest');
   });
 
   beforeEach(async () => {
@@ -53,14 +48,16 @@ describe('Keep3rKeeperDisputable', () => {
     oraclePool.token0.returns(keep3rV1.address);
 
     keeperDisputable = await keeperDisputableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    await keeperDisputable.setVariable('slashers', { [slasher.address]: true });
+    await keeperDisputable.setVariable('disputers', { [disputer.address]: true });
   });
 
   describe('slash', () => {
-    behaviours.onlyGovernance(
+    onlySlasher(
       () => keeperDisputable,
       'slash',
-      governance,
-      () => [keeperDisputable.address, randomKeeper, 1]
+      [slasher],
+      () => [randomKeeper, keeperDisputable.address, 1]
     );
 
     beforeEach(async () => {
@@ -70,54 +67,59 @@ describe('Keep3rKeeperDisputable', () => {
       await keeperDisputable.setVariable('bonds', {
         [randomKeeper]: { [keep3rV1.address]: toUnit(3) },
       });
+
+      await keeperDisputable.connect(disputer).dispute(randomKeeper);
+    });
+
+    it('should revert if keeper is not disputed', async () => {
+      const undisputedKeeper = wallet.generateRandomAddress();
+      await expect(keeperDisputable.connect(slasher).slash(undisputedKeeper, keep3rV1.address, toUnit(0.123))).to.be.revertedWith(
+        'NotDisputed()'
+      );
     });
 
     it('should emit event', async () => {
-      const blockNumber: BigNumber = BigNumber.from(await ethers.provider.getBlockNumber());
-
-      await expect(keeperDisputable.slash(keep3rV1.address, randomKeeper, toUnit(0.123)))
+      await expect(keeperDisputable.connect(slasher).slash(randomKeeper, keep3rV1.address, toUnit(0.123)))
         .to.emit(keeperDisputable, 'KeeperSlash')
-        .withArgs(randomKeeper, governance.address, blockNumber.add(1), toUnit(0.123));
+        .withArgs(randomKeeper, slasher.address, toUnit(0.123));
     });
 
     it('should slash specified bond amount', async () => {
-      await keeperDisputable.slash(keep3rV1.address, randomKeeper, toUnit(2));
+      await keeperDisputable.connect(slasher).slash(randomKeeper, keep3rV1.address, toUnit(2));
       expect(await keeperDisputable.bonds(randomKeeper, keep3rV1.address)).to.equal(toUnit(1));
     });
   });
 
   describe('revoke', () => {
-    behaviours.onlyGovernance(() => keeperDisputable, 'revoke', governance, [randomKeeper]);
+    onlySlasher(() => keeperDisputable, 'revoke', [slasher], [randomKeeper]);
 
     beforeEach(async () => {
-      await keeperDisputable.addKeeper(randomKeeper);
+      await keeperDisputable.setKeeper(randomKeeper);
     });
 
     it('should revert if keeper was not disputed', async () => {
-      await expect(keeperDisputable.revoke(randomKeeper)).to.be.revertedWith('NotDisputed()');
+      await expect(keeperDisputable.connect(slasher).revoke(randomKeeper)).to.be.revertedWith('NotDisputed()');
     });
 
     context('when keeper was disputed', () => {
       beforeEach(async () => {
-        await keeperDisputable.connect(governance).dispute(randomKeeper);
+        await keeperDisputable.connect(disputer).dispute(randomKeeper);
       });
 
       it('should remove keeper', async () => {
-        await keeperDisputable.revoke(randomKeeper);
+        await keeperDisputable.connect(slasher).revoke(randomKeeper);
         expect(await keeperDisputable.isKeeper(randomKeeper)).to.equal(false);
       });
 
       it('should keep keeper disputed', async () => {
-        await keeperDisputable.revoke(randomKeeper);
+        await keeperDisputable.connect(slasher).revoke(randomKeeper);
         expect(await keeperDisputable.disputes(randomKeeper)).to.equal(true);
       });
 
       it('should emit event', async () => {
-        const blockNumber: BigNumber = BigNumber.from(await ethers.provider.getBlockNumber());
-
-        await expect(keeperDisputable.revoke(randomKeeper))
+        await expect(keeperDisputable.connect(slasher).revoke(randomKeeper))
           .to.emit(keeperDisputable, 'KeeperRevoke')
-          .withArgs(randomKeeper, governance.address, blockNumber.add(1));
+          .withArgs(randomKeeper, slasher.address);
       });
 
       it('should slash all keeper KP3R bonds', async () => {
@@ -125,7 +127,7 @@ describe('Keep3rKeeperDisputable', () => {
           [randomKeeper]: { [keep3rV1.address]: toUnit(1) },
         });
 
-        await keeperDisputable.revoke(randomKeeper);
+        await keeperDisputable.connect(slasher).revoke(randomKeeper);
 
         expect(await keeperDisputable.bonds(randomKeeper, keep3rV1.address)).to.equal(toUnit(0));
       });
@@ -152,17 +154,17 @@ describe('Keep3rKeeperDisputable', () => {
 
       it('should not revert if transfer fails', async () => {
         erc20.transfer.reverts();
-        await expect(keeperDisputable.internalSlash(erc20.address, randomKeeper, toUnit(1))).not.to.be.reverted;
+        await expect(keeperDisputable.internalSlash(randomKeeper, erc20.address, toUnit(1))).not.to.be.reverted;
       });
 
       it('should transfer tokens to governance', async () => {
-        await keeperDisputable.internalSlash(erc20.address, randomKeeper, toUnit(1));
+        await keeperDisputable.internalSlash(randomKeeper, erc20.address, toUnit(1));
 
         expect(erc20.transfer).to.be.calledOnceWith(governance.address, toUnit(1));
       });
 
       it('should reduce keeper bonds', async () => {
-        await keeperDisputable.internalSlash(erc20.address, randomKeeper, toUnit(1));
+        await keeperDisputable.internalSlash(randomKeeper, erc20.address, toUnit(1));
         expect(await keeperDisputable.bonds(randomKeeper, erc20.address)).to.equal(toUnit(1));
       });
     });
@@ -175,14 +177,14 @@ describe('Keep3rKeeperDisputable', () => {
       });
 
       it('should reduce keeper bonds', async () => {
-        await keeperDisputable.internalSlash(keep3rV1.address, randomKeeper, toUnit(1));
+        await keeperDisputable.internalSlash(randomKeeper, keep3rV1.address, toUnit(1));
         expect(await keeperDisputable.bonds(randomKeeper, keep3rV1.address)).to.equal(toUnit(1));
       });
     });
 
     it('should not remove the dispute from the keeper', async () => {
-      await keeperDisputable.dispute(randomKeeper);
-      await keeperDisputable.internalSlash(keep3rV1.address, randomKeeper, 0);
+      await keeperDisputable.connect(disputer).dispute(randomKeeper);
+      await keeperDisputable.internalSlash(randomKeeper, keep3rV1.address, 0);
       expect(await keeperDisputable.disputes(randomKeeper)).to.equal(true);
     });
   });

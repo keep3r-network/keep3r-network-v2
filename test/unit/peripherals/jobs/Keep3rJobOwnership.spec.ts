@@ -11,15 +11,15 @@ describe('Keep3rJobOwnership', () => {
   const jobAddress = wallet.generateRandomAddress();
   let jobOwnership: MockContract<Keep3rJobOwnershipForTest>;
   let owner: SignerWithAddress;
-  let jobManagerFactory: MockContractFactory<Keep3rJobOwnershipForTest__factory>;
+  let jobOwnershipFactory: MockContractFactory<Keep3rJobOwnershipForTest__factory>;
 
   before(async () => {
     [owner] = await ethers.getSigners();
-    jobManagerFactory = await smock.mock<Keep3rJobOwnershipForTest__factory>('Keep3rJobOwnershipForTest');
+    jobOwnershipFactory = await smock.mock<Keep3rJobOwnershipForTest__factory>('Keep3rJobOwnershipForTest');
   });
 
   beforeEach(async () => {
-    jobOwnership = await jobManagerFactory.deploy();
+    jobOwnership = await jobOwnershipFactory.deploy();
     await jobOwnership.setVariable('jobOwner', {
       [jobAddress]: owner.address,
     });
@@ -83,7 +83,7 @@ describe('Keep3rJobOwnership', () => {
     it('should emit event', async () => {
       await expect(jobOwnership.connect(pendingOwner).acceptJobOwnership(jobAddress))
         .to.emit(jobOwnership, 'JobOwnershipAssent')
-        .withArgs(jobAddress, owner.address, pendingOwner.address);
+        .withArgs(pendingOwner.address, jobAddress, owner.address);
     });
   });
 });

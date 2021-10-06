@@ -1,10 +1,10 @@
-import IUniswapV3PoolArtifact from '@contracts/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@contracts/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@contracts/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@contracts/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
+import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
+import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
+import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
+import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20,
   IKeep3rV1,
@@ -16,9 +16,7 @@ import {
   UniV3PairManager,
 } from '@types';
 import { wallet } from '@utils';
-import { onlySlasherOrGovernance } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
-import { expectEventsFromTx } from '@utils/event-utils';
 import { MathUtils, mathUtilsFactory } from '@utils/math';
 import chai, { expect } from 'chai';
 import { BigNumber, ContractTransaction } from 'ethers';
@@ -36,8 +34,6 @@ describe('Keep3rJobDisputable', () => {
   let keep3rV1Proxy: FakeContract<IKeep3rV1Proxy>;
   let helper: FakeContract<Keep3rHelper>;
   let jobDisputableFactory: MockContractFactory<Keep3rJobDisputableForTest__factory>;
-  let tokenA: FakeContract<ERC20>;
-  let tokenB: FakeContract<ERC20>;
   let liquidityA: FakeContract<UniV3PairManager>;
   let liquidityB: FakeContract<UniV3PairManager>;
   let oraclePool: FakeContract<IUniswapV3PoolForTest>;
@@ -50,13 +46,8 @@ describe('Keep3rJobDisputable', () => {
 
   before(async () => {
     [governance, slasher, disputer] = await ethers.getSigners();
-    const library = await (await ethers.getContractFactory('Keep3rLibrary')).deploy();
 
-    jobDisputableFactory = await smock.mock('Keep3rJobDisputableForTest', {
-      libraries: {
-        Keep3rLibrary: library.address,
-      },
-    });
+    jobDisputableFactory = await smock.mock('Keep3rJobDisputableForTest');
   });
 
   beforeEach(async () => {
@@ -64,7 +55,7 @@ describe('Keep3rJobDisputable', () => {
     keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
     oraclePool = await smock.fake(IUniswapV3PoolArtifact);
-    oraclePool.token0.returns(keep3rV1.address);
+    helper.isKP3RToken0.returns(true);
 
     jobDisputable = await jobDisputableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
 
@@ -80,144 +71,9 @@ describe('Keep3rJobDisputable', () => {
       [job]: true,
     });
 
-    oraclePool.observe.returns([[0, 0], []]);
-  });
+    helper.observe.returns([0, 0, true]);
 
-  describe('slashJob', () => {
-    beforeEach(async () => {
-      // setup tokens
-      tokenA = await smock.fake<ERC20>(ERC20Artifact);
-      tokenB = await smock.fake<ERC20>(ERC20Artifact);
-      liquidityA = await smock.fake<UniV3PairManager>(IUniswapV3PoolArtifact);
-      liquidityB = await smock.fake<UniV3PairManager>(IUniswapV3PoolArtifact);
-      tokenA.transfer.returns(true);
-      tokenB.transfer.returns(true);
-      liquidityA.transfer.returns(true);
-      liquidityB.transfer.returns(true);
-
-      await jobDisputable.setVariable('_liquidityPool', { [liquidityA.address]: oraclePool.address });
-      await jobDisputable.setVariable('_liquidityPool', { [liquidityB.address]: oraclePool.address });
-
-      await jobDisputable.setJobToken(job, tokenA.address);
-      await jobDisputable.setJobToken(job, tokenB.address);
-      await jobDisputable.setVariable('jobTokenCredits', {
-        [job]: {
-          [tokenA.address]: toUnit(1),
-          [tokenB.address]: toUnit(2),
-        },
-      });
-
-      // setup liquidity
-      await jobDisputable.setJobLiquidity(job, liquidityA.address);
-      await jobDisputable.setJobLiquidity(job, liquidityB.address);
-      await jobDisputable.setVariable('liquidityAmount', {
-        [job]: {
-          [liquidityA.address]: toUnit(3),
-          [liquidityB.address]: toUnit(4),
-        },
-      });
-
-      // setup credits
-      await jobDisputable.setVariable('_jobLiquidityCredits', {
-        [job]: toUnit(5),
-      });
-      await jobDisputable.setVariable('_jobPeriodCredits', {
-        [job]: toUnit(6),
-      });
-    });
-
-    onlySlasherOrGovernance(
-      () => jobDisputable,
-      'slashJob',
-      () => [slasher, governance],
-      [job]
-    );
-
-    it('should revert if job is not disputed', async () => {
-      await jobDisputable.setVariable('disputes', {
-        [job]: false,
-      });
-      await expect(jobDisputable.slashJob(job)).to.be.revertedWith('NotDisputed()');
-    });
-
-    context('when job is slashed', () => {
-      let tx: ContractTransaction;
-
-      beforeEach(async () => {
-        tx = await jobDisputable.slashJob(job);
-      });
-
-      it('should emit event', async () => {
-        await expectEventsFromTx(tx, [
-          {
-            name: 'JobSlash',
-            args: [job],
-          },
-        ]);
-      });
-
-      it('should resolve the dispute', async () => {
-        expect(await jobDisputable.disputes(job)).to.equal(false);
-      });
-
-      context('tokens', () => {
-        it('should empty list', async () => {
-          expect(await jobDisputable.internalJobTokens(job)).to.deep.equal([]);
-        });
-
-        it('should slash all of the credits', async () => {
-          expect(await jobDisputable.jobTokenCredits(job, tokenA.address)).to.equal(0);
-          expect(await jobDisputable.jobTokenCredits(job, tokenB.address)).to.equal(0);
-        });
-
-        it('should transfer all of them to governance', async () => {
-          expect(tokenA.transfer).to.be.calledOnceWith(governance.address, toUnit(1));
-          expect(tokenB.transfer).to.be.calledOnceWith(governance.address, toUnit(2));
-        });
-      });
-
-      context('liquidities', () => {
-        it('should empty list', async () => {
-          expect(await jobDisputable.internalJobLiquidities(job)).to.deep.equal([]);
-        });
-
-        it('should slash all of them', async () => {
-          expect(await jobDisputable.liquidityAmount(job, liquidityA.address)).to.equal(0);
-          expect(await jobDisputable.liquidityAmount(job, liquidityB.address)).to.equal(0);
-        });
-
-        it('should transfer all of them to governance', async () => {
-          expect(liquidityA.transfer).to.be.calledOnceWith(governance.address, toUnit(3));
-          expect(liquidityB.transfer).to.be.calledOnceWith(governance.address, toUnit(4));
-        });
-      });
-
-      context('credits', () => {
-        it('should reset liquidity credits to 0', async () => {
-          expect(await jobDisputable.internalJobLiquidityCredits(job)).to.equal(0);
-        });
-
-        it('should reset period credits to 0', async () => {
-          expect(await jobDisputable.internalJobPeriodCredits(job)).to.equal(0);
-        });
-      });
-    });
-
-    context('when some transfer fails', () => {
-      beforeEach(async () => {
-        tokenA.transfer.reverts();
-      });
-
-      it('should not revert', async () => {
-        await expect(jobDisputable.slashJob(job)).not.to.be.reverted;
-      });
-
-      it('should slash other liquidities', async () => {
-        await jobDisputable.slashJob(job);
-        expect(liquidityA.transfer).to.be.calledOnce;
-        expect(liquidityB.transfer).to.be.calledOnce;
-      });
-    });
+    helper.getKP3RsAtTick.returns(([amount]: [BigNumber]) => amount);
   });
 
   describe('slashTokenFromJob', () => {
@@ -245,29 +101,33 @@ describe('Keep3rJobDisputable', () => {
     });
 
     it('should fail to slash unexistent token', async () => {
-      await expect(jobDisputable.slashTokenFromJob(job, wallet.generateRandomAddress(), 1)).to.be.revertedWith('JobTokenUnexistent()');
+      await expect(jobDisputable.connect(slasher).slashTokenFromJob(job, wallet.generateRandomAddress(), 1)).to.be.revertedWith(
+        'JobTokenUnexistent()'
+      );
     });
 
     it('should fail to slash more than balance', async () => {
-      await expect(jobDisputable.slashTokenFromJob(job, tokenA.address, initialTokenA.add(1))).to.be.revertedWith('JobTokenInsufficient()');
+      await expect(jobDisputable.connect(slasher).slashTokenFromJob(job, tokenA.address, initialTokenA.add(1))).to.be.revertedWith(
+        'JobTokenInsufficient()'
+      );
     });
 
     it('should revert if job is not disputed', async () => {
       await jobDisputable.setVariable('disputes', {
         [job]: false,
       });
-      await expect(jobDisputable.slashTokenFromJob(job, tokenA.address, initialTokenA)).to.be.revertedWith('NotDisputed()');
+      await expect(jobDisputable.connect(slasher).slashTokenFromJob(job, tokenA.address, initialTokenA)).to.be.revertedWith('NotDisputed()');
     });
 
     it('should remove token from list if there is no remaining', async () => {
-      await jobDisputable.slashTokenFromJob(job, tokenA.address, initialTokenA);
+      await jobDisputable.connect(slasher).slashTokenFromJob(job, tokenA.address, initialTokenA);
       expect(await jobDisputable.internalJobTokens(job)).to.deep.equal([tokenB.address]);
     });
 
     context('when partially slashing a token', () => {
       beforeEach(async () => {
         tokenA.transfer.returns(true);
-        tx = await jobDisputable.slashTokenFromJob(job, tokenA.address, tokenAToRemove);
+        tx = await jobDisputable.connect(slasher).slashTokenFromJob(job, tokenA.address, tokenAToRemove);
       });
 
       it('should transfer the tokens to governance', async () => {
@@ -287,19 +147,35 @@ describe('Keep3rJobDisputable', () => {
       });
 
       it('should emit event', async () => {
-        await expectEventsFromTx(tx, [
-          {
-            name: 'JobSlashToken',
-            args: [job, tokenA.address, tokenAToRemove],
-          },
-        ]);
+        await expect(tx).to.emit(jobDisputable, 'JobSlashToken').withArgs(job, tokenA.address, slasher.address, tokenAToRemove);
+      });
+    });
+
+    context('when some transfer fails', () => {
+      beforeEach(async () => {
+        tokenA.transfer.reverts();
+      });
+
+      it('should not revert', async () => {
+        await expect(jobDisputable.connect(slasher).slashTokenFromJob(job, tokenA.address, initialTokenA)).not.to.be.reverted;
+      });
+
+      it('should call the transfer function', async () => {
+        await jobDisputable.connect(slasher).slashTokenFromJob(job, tokenA.address, initialTokenA);
+
+        expect(tokenA.transfer).to.be.calledOnceWith(governance.address, initialTokenA);
+      });
+
+      it('should slash the token', async () => {
+        await jobDisputable.connect(slasher).slashTokenFromJob(job, tokenA.address, initialTokenA);
+
+        expect(await jobDisputable.jobTokenCredits(job, tokenA.address)).to.equal(initialTokenA.sub(initialTokenA));
       });
     });
   });
 
   describe('slashLiquidityFromJob', () => {
     let tx: ContractTransaction;
-
     let initialLiquidityA: BigNumber;
     let initialLiquidityB: BigNumber;
     let initialLiquidityCredits = toUnit(1);
@@ -312,8 +188,6 @@ describe('Keep3rJobDisputable', () => {
       // setup liquidity
       liquidityA = await smock.fake<UniV3PairManager>('UniV3PairManager');
       liquidityB = await smock.fake<UniV3PairManager>('UniV3PairManager');
-      await jobDisputable.setVariable('_liquidityPool', { [liquidityA.address]: oraclePool.address });
-      await jobDisputable.setVariable('_liquidityPool', { [liquidityB.address]: oraclePool.address });
 
       await jobDisputable.setApprovedLiquidity(liquidityA.address);
       await jobDisputable.setApprovedLiquidity(liquidityB.address);
@@ -333,14 +207,19 @@ describe('Keep3rJobDisputable', () => {
 
       const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
       await jobDisputable.setVariable('rewardedAt', { [job]: blockTimestamp });
+
+      await jobDisputable.setVariable('_tick', { [liquidityA.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
+      await jobDisputable.setVariable('_tick', { [liquidityB.address]: { period: mathUtils.calcPeriod(blockTimestamp) } });
     });
 
     it('should fail to slash unexistent liquidity', async () => {
-      await expect(jobDisputable.slashLiquidityFromJob(job, wallet.generateRandomAddress(), 1)).to.be.revertedWith('JobLiquidityUnexistent()');
+      await expect(jobDisputable.connect(slasher).slashLiquidityFromJob(job, wallet.generateRandomAddress(), 1)).to.be.revertedWith(
+        'JobLiquidityUnexistent()'
+      );
     });
 
     it('should fail to slash more than balance', async () => {
-      await expect(jobDisputable.slashLiquidityFromJob(job, liquidityA.address, initialLiquidityA.add(1))).to.be.revertedWith(
+      await expect(jobDisputable.connect(slasher).slashLiquidityFromJob(job, liquidityA.address, initialLiquidityA.add(1))).to.be.revertedWith(
         'JobLiquidityInsufficient()'
       );
     });
@@ -349,27 +228,47 @@ describe('Keep3rJobDisputable', () => {
       await jobDisputable.setVariable('disputes', {
         [job]: false,
       });
-      await expect(jobDisputable.slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove)).to.be.revertedWith('NotDisputed()');
+      await expect(jobDisputable.connect(slasher).slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove)).to.be.revertedWith(
+        'NotDisputed()'
+      );
     });
 
     it('should remove liquidity from list if there is no remaining', async () => {
       liquidityA.transfer.returns(true);
 
-      await jobDisputable.slashLiquidityFromJob(job, liquidityA.address, initialLiquidityA);
+      await jobDisputable.connect(slasher).slashLiquidityFromJob(job, liquidityA.address, initialLiquidityA);
       expect(await jobDisputable.internalJobLiquidities(job)).to.deep.equal([liquidityB.address]);
+    });
+
+    context('when liquidity is revoked', () => {
+      beforeEach(async () => {
+        liquidityA.transfer.returns(true);
+        await jobDisputable.setRevokedLiquidity(liquidityA.address);
+      });
+
+      it('should transfer the tokens to governance', async () => {
+        await jobDisputable.connect(slasher).slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove);
+        expect(liquidityA.transfer).to.be.calledOnceWith(governance.address, liquidityAToRemove);
+      });
+
+      it('should emit an event', async () => {
+        await expect(jobDisputable.connect(slasher).slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove))
+          .to.emit(jobDisputable, 'JobSlashLiquidity')
+          .withArgs(job, liquidityA.address, slasher.address, liquidityAToRemove);
+      });
     });
 
     context('when partially slashing a liquidity', () => {
       beforeEach(async () => {
         liquidityA.transfer.returns(true);
-        tx = await jobDisputable.slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove);
+        tx = await jobDisputable.connect(slasher).slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove);
       });
 
       it('should transfer the tokens to governance', async () => {
         expect(liquidityA.transfer).to.be.calledOnceWith(governance.address, liquidityAToRemove);
       });
 
-      it('should reduce the specified amount from balance', async () => {
+      it('should reduce the specified amount from liquidity accountance', async () => {
         expect(await jobDisputable.liquidityAmount(job, liquidityA.address)).to.equal(initialLiquidityA.sub(liquidityAToRemove));
       });
 
@@ -377,7 +276,11 @@ describe('Keep3rJobDisputable', () => {
         expect(await jobDisputable.internalJobLiquidities(job)).to.deep.equal([liquidityA.address, liquidityB.address]);
       });
 
-      it('should reduce liquidity credits proportion', async () => {
+      it('should not affect other liquidity balance', async () => {
+        expect(await jobDisputable.liquidityAmount(job, liquidityB.address)).to.equal(initialLiquidityB);
+      });
+
+      it('should reduce liquidity credits proportionally', async () => {
         const totalLiquidity = initialLiquidityA.add(initialLiquidityB);
         const expected = initialLiquidityCredits.mul(totalLiquidity.sub(liquidityAToRemove)).div(totalLiquidity);
         expect(await jobDisputable.jobLiquidityCredits(job)).to.equal(expected);
@@ -391,29 +294,28 @@ describe('Keep3rJobDisputable', () => {
         expect(await jobDisputable.jobPeriodCredits(job)).to.equal(quotedCredits);
       });
 
-      it('should not affect other liquidity balance', async () => {
-        expect(await jobDisputable.liquidityAmount(job, liquidityB.address)).to.equal(initialLiquidityB);
-      });
-
       it('should emit event', async () => {
-        await expectEventsFromTx(tx, [
-          {
-            name: 'JobSlashLiquidity',
-            args: [job, liquidityA.address, liquidityAToRemove],
-          },
-        ]);
+        await expect(tx).to.emit(jobDisputable, 'JobSlashLiquidity').withArgs(job, liquidityA.address, slasher.address, liquidityAToRemove);
       });
     });
 
-    context('when liquidity is revoked', () => {
+    context('when some transfer fails', () => {
       beforeEach(async () => {
-        liquidityA.transfer.returns(true);
-        await jobDisputable.setRevokedLiquidity(liquidityA.address);
+        liquidityA.transfer.reverts();
       });
 
-      it('should transfer the tokens to governance', async () => {
-        await jobDisputable.slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove);
+      it('should not revert', async () => {
+        await expect(jobDisputable.connect(slasher).slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove)).not.to.be.reverted;
+      });
+
+      it('should call the transfer function', async () => {
+        await jobDisputable.connect(slasher).slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove);
         expect(liquidityA.transfer).to.be.calledOnceWith(governance.address, liquidityAToRemove);
+      });
+
+      it('should slash the liquidity', async () => {
+        await jobDisputable.connect(slasher).slashLiquidityFromJob(job, liquidityA.address, liquidityAToRemove);
+        expect(await jobDisputable.liquidityAmount(job, liquidityA.address)).to.equal(initialLiquidityA.sub(liquidityAToRemove));
       });
     });
   });

@@ -41,7 +41,7 @@ describe('Governable', () => {
 
       it('should emit event', async () => {
         const tx = await governable.connect(governance).setGovernance(randomAddress);
-        expect(tx).to.emit(governable, 'GovernanceProposal').withArgs(randomAddress);
+        await expect(tx).to.emit(governable, 'GovernanceProposal').withArgs(randomAddress);
       });
     });
 
@@ -64,7 +64,7 @@ describe('Governable', () => {
 
       it('should emit event', async () => {
         const tx = await governable.connect(pendingGovernance).acceptGovernance();
-        expect(tx).to.emit(governable, 'GovernanceSet').withArgs(pendingGovernance.address);
+        await expect(tx).to.emit(governable, 'GovernanceSet').withArgs(pendingGovernance.address);
       });
     });
   });

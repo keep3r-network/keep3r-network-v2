@@ -18,6 +18,7 @@ const config: HardhatUserConfig = {
     ? {
         hardhat: {
           allowUnlimitedContractSize: true,
+          initialBaseFeePerGas: 1,
         },
       }
     : {
@@ -124,6 +125,9 @@ const config: HardhatUserConfig = {
     deployer: 0,
     governor: 1,
     feeRecipient: 2,
+  },
+  paths: {
+    sources: './solidity',
   },
 };
 
