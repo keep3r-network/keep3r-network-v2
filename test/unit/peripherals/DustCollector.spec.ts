@@ -9,7 +9,6 @@ import { toUnit } from '@utils/bn';
 import { ETH_ADDRESS, ZERO_ADDRESS } from '@utils/constants';
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { beforeEach } from 'mocha';
 
 chai.use(smock.matchers);
 
