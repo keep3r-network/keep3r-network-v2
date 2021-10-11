@@ -10,6 +10,8 @@
 .env
 .env.example
 **/LICENSE
+docs
+*.sh
 
 # Hardhat
 artifacts
@@ -24,6 +26,3 @@ yarn.lock
 # Coverage
 coverage
 coverage.json
-
-# Solidity
-contracts/mock
