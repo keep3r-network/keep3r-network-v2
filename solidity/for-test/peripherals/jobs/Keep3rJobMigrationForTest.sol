@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../../peripherals/jobs/Keep3rJobMigration.sol';
+import '../../../contracts/peripherals/jobs/Keep3rJobMigration.sol';
 
 contract Keep3rJobMigrationForTest is Keep3rJobMigration {
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -23,19 +23,19 @@ contract Keep3rJobMigrationForTest is Keep3rJobMigration {
     _jobLiquidities[_job].add(_liquidity);
   }
 
-  function getJobTokenListLength(address _job) external view returns (uint256) {
+  function viewJobTokenListLength(address _job) external view returns (uint256) {
     return _jobTokens[_job].length();
   }
 
-  function getJobLiquidityList(address _job) external view returns (address[] memory _list) {
+  function viewJobLiquidityList(address _job) external view returns (address[] memory _list) {
     _list = _jobLiquidities[_job].values();
   }
 
-  function getJobPeriodCredits(address _job) external view returns (uint256) {
+  function viewJobPeriodCredits(address _job) external view returns (uint256) {
     return _jobPeriodCredits[_job];
   }
 
-  function getJobLiquidityCredits(address _job) external view returns (uint256) {
+  function viewJobLiquidityCredits(address _job) external view returns (uint256) {
     return _jobLiquidityCredits[_job];
   }
 

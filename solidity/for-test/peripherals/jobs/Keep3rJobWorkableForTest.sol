@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../../peripherals/jobs/Keep3rJobWorkable.sol';
+import '../../../contracts/peripherals/jobs/Keep3rJobWorkable.sol';
 
 contract Keep3rJobWorkableForTest is Keep3rJobWorkable {
   using EnumerableSet for EnumerableSet.AddressSet;

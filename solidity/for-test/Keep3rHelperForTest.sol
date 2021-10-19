@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.0 <0.9.0;
 
-import '../Keep3rHelper.sol';
+import '../contracts/Keep3rHelper.sol';
 
 contract Keep3rHelperForTest is Keep3rHelper {
   uint256 public basefee;

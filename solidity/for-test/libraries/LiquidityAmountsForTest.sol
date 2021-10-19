@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../libraries/FullMath.sol';
-import '../libraries/FixedPoint96.sol';
+import '../../contracts/libraries/FullMath.sol';
+import '../../contracts/libraries/FixedPoint96.sol';
 
-/// @dev Made this library into a contract to be able to calculate liquidity more
-/// @dev precisely for tests
+/// @dev Made this library into a contract to be able to calculate liquidity more precisely for tests
 
 // solhint-disable
-contract LiquidityAmountsTest {
+contract LiquidityAmountsForTest {
   function toUint128(uint256 x) private pure returns (uint128 y) {
     require((y = uint128(x)) == x);
   }
@@ -17,7 +16,7 @@ contract LiquidityAmountsTest {
     uint160 sqrtRatioAX96,
     uint160 sqrtRatioBX96,
     uint256 amount0
-  ) internal pure returns (uint128 liquidity) {
+  ) public pure returns (uint128 liquidity) {
     if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
     uint256 intermediate = FullMath.mulDiv(sqrtRatioAX96, sqrtRatioBX96, FixedPoint96.Q96);
     return toUint128(FullMath.mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
@@ -27,7 +26,7 @@ contract LiquidityAmountsTest {
     uint160 sqrtRatioAX96,
     uint160 sqrtRatioBX96,
     uint256 amount1
-  ) internal pure returns (uint128 liquidity) {
+  ) public pure returns (uint128 liquidity) {
     if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
     return toUint128(FullMath.mulDiv(amount1, FixedPoint96.Q96, sqrtRatioBX96 - sqrtRatioAX96));
   }
@@ -57,7 +56,7 @@ contract LiquidityAmountsTest {
     uint160 sqrtRatioAX96,
     uint160 sqrtRatioBX96,
     uint128 liquidity
-  ) internal pure returns (uint256 amount0) {
+  ) public pure returns (uint256 amount0) {
     if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
 
     return FullMath.mulDiv(uint256(liquidity) << FixedPoint96.RESOLUTION, sqrtRatioBX96 - sqrtRatioAX96, sqrtRatioBX96) / sqrtRatioAX96;
@@ -67,7 +66,7 @@ contract LiquidityAmountsTest {
     uint160 sqrtRatioAX96,
     uint160 sqrtRatioBX96,
     uint128 liquidity
-  ) internal pure returns (uint256 amount1) {
+  ) public pure returns (uint256 amount1) {
     if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
 
     return FullMath.mulDiv(liquidity, sqrtRatioBX96 - sqrtRatioAX96, FixedPoint96.Q96);

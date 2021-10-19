@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../../peripherals/jobs/Keep3rJobFundableCredits.sol';
+import '../../../contracts/peripherals/jobs/Keep3rJobFundableCredits.sol';
 
 contract Keep3rJobFundableCreditsForTest is Keep3rJobFundableCredits {
   using EnumerableSet for EnumerableSet.AddressSet;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../interfaces/peripherals/IKeep3rJobs.sol';
+import '../../../interfaces/peripherals/IKeep3rJobs.sol';
 import './Keep3rJobFundableCredits.sol';
 import './Keep3rJobFundableLiquidity.sol';
 
@@ -9,9 +9,12 @@ abstract contract Keep3rJobMigration is IKeep3rJobMigration, Keep3rJobFundableCr
   using EnumerableSet for EnumerableSet.AddressSet;
 
   uint256 internal constant _MIGRATION_COOLDOWN = 1 minutes;
+
+  /// @inheritdoc IKeep3rJobMigration
   mapping(address => address) public override pendingJobMigrations;
   mapping(address => mapping(address => uint256)) internal _migrationCreatedAt;
 
+  /// @inheritdoc IKeep3rJobMigration
   function migrateJob(address _fromJob, address _toJob) external override onlyJobOwner(_fromJob) {
     if (_fromJob == _toJob) revert JobMigrationImpossible();
 
@@ -21,6 +24,7 @@ abstract contract Keep3rJobMigration is IKeep3rJobMigration, Keep3rJobFundableCr
     emit JobMigrationRequested(_fromJob, _toJob);
   }
 
+  /// @inheritdoc IKeep3rJobMigration
   function acceptJobMigration(address _fromJob, address _toJob) external override onlyJobOwner(_toJob) {
     if (disputes[_fromJob] || disputes[_toJob]) revert JobDisputed();
     if (pendingJobMigrations[_fromJob] != _toJob) revert JobMigrationUnavailable();

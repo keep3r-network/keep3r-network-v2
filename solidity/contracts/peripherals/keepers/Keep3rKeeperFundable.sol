@@ -3,10 +3,10 @@ pragma solidity >=0.8.4 <0.9.0;
 
 import '../Keep3rAccountance.sol';
 import '../Keep3rParameters.sol';
-import '../../interfaces/peripherals/IKeep3rKeepers.sol';
+import '../../../interfaces/peripherals/IKeep3rKeepers.sol';
 
-import '../../interfaces/external/IKeep3rV1.sol';
-import '../../interfaces/external/IKeep3rV1Proxy.sol';
+import '../../../interfaces/external/IKeep3rV1.sol';
+import '../../../interfaces/external/IKeep3rV1Proxy.sol';
 
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -16,11 +16,7 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
   using EnumerableSet for EnumerableSet.AddressSet;
   using SafeERC20 for IERC20;
 
-  /**
-   * @notice begin the bonding process for a new keeper
-   * @param _bonding the asset being bound
-   * @param _amount the amount of bonding asset being bound
-   */
+  /// @inheritdoc IKeep3rKeeperFundable
   function bond(address _bonding, uint256 _amount) external override nonReentrant {
     if (disputes[msg.sender]) revert Disputed();
     if (_jobs.contains(msg.sender)) revert AlreadyAJob();
@@ -32,13 +28,10 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
 
     hasBonded[msg.sender] = true;
     pendingBonds[msg.sender][_bonding] += _amount;
-    emit Bonding(msg.sender, block.number, canActivateAfter[msg.sender][_bonding], _amount);
+    emit Bonding(msg.sender, _bonding, _amount);
   }
 
-  /**
-   * @notice allows a keeper to activate/register themselves after bonding
-   * @param _bonding the asset being activated as bond collateral
-   */
+  /// @inheritdoc IKeep3rKeeperFundable
   function activate(address _bonding) external override {
     if (disputes[msg.sender]) revert Disputed();
     if (canActivateAfter[msg.sender][_bonding] == 0) revert BondsUnexistent();
@@ -47,22 +40,15 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
     _activate(msg.sender, _bonding);
   }
 
-  /**
-   * @notice begin the unbonding process to stop being a keeper
-   * @param _bonding the asset being unbound
-   * @param _amount allows for partial unbonding
-   */
+  /// @inheritdoc IKeep3rKeeperFundable
   function unbond(address _bonding, uint256 _amount) external override {
     canWithdrawAfter[msg.sender][_bonding] = block.timestamp + unbondTime;
     bonds[msg.sender][_bonding] -= _amount;
     pendingUnbonds[msg.sender][_bonding] += _amount;
-    emit Unbonding(msg.sender, block.number, canWithdrawAfter[msg.sender][_bonding], _amount);
+    emit Unbonding(msg.sender, _bonding, _amount);
   }
 
-  /**
-   * @notice withdraw funds after unbonding has finished
-   * @param _bonding the asset to withdraw from the bonding pool
-   */
+  /// @inheritdoc IKeep3rKeeperFundable
   function withdraw(address _bonding) external override nonReentrant {
     if (canWithdrawAfter[msg.sender][_bonding] == 0) revert UnbondsUnexistent();
     if (canWithdrawAfter[msg.sender][_bonding] >= block.timestamp) revert UnbondsLocked();
@@ -94,11 +80,11 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
   function _activate(address _keeper, address _bonding) internal {
     if (firstSeen[_keeper] == 0) {
       firstSeen[_keeper] = block.timestamp;
-      lastJob[_keeper] = block.timestamp;
     }
     _keepers.add(_keeper);
-    _bond(_bonding, _keeper, pendingBonds[_keeper][_bonding]);
+    uint256 _amount = pendingBonds[_keeper][_bonding];
+    _bond(_bonding, _keeper, _amount);
     pendingBonds[_keeper][_bonding] = 0;
-    emit Activation(_keeper, block.number, block.timestamp, bonds[_keeper][_bonding]);
+    emit Activation(_keeper, _bonding, _amount);
   }
 }

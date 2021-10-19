@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../Keep3r.sol';
+import '../contracts/Keep3r.sol';
 
 contract Keep3rForTest is Keep3r {
   constructor(

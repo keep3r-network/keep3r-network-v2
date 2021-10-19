@@ -6,13 +6,14 @@ import './peripherals/keepers/Keep3rKeepers.sol';
 import './peripherals/Keep3rAccountance.sol';
 import './peripherals/Keep3rRoles.sol';
 import './peripherals/Keep3rParameters.sol';
+import './peripherals/DustCollector.sol';
 
-contract Keep3r is Keep3rJobs, Keep3rKeepers {
+contract Keep3r is DustCollector, Keep3rJobs, Keep3rKeepers {
   constructor(
     address _governance,
     address _keep3rHelper,
     address _keep3rV1,
     address _keep3rV1Proxy,
     address _kp3rWethPool
-  ) Keep3rParameters(_keep3rHelper, _keep3rV1, _keep3rV1Proxy, _kp3rWethPool) Keep3rRoles(_governance) {}
+  ) Keep3rParameters(_keep3rHelper, _keep3rV1, _keep3rV1Proxy, _kp3rWethPool) Keep3rRoles(_governance) DustCollector() {}
 }

@@ -6,13 +6,13 @@ import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 
 // solhint-disable func-name-mixedcase
 interface IKeep3rV1 is IERC20, IERC20Metadata {
-  // structs
+  // Structs
   struct Checkpoint {
     uint32 fromBlock;
     uint256 votes;
   }
 
-  // events
+  // Events
   event DelegateChanged(address indexed _delegator, address indexed _fromDelegate, address indexed _toDelegate);
   event DelegateVotesChanged(address indexed _delegate, uint256 _previousBalance, uint256 _newBalance);
   event SubmitJob(address indexed _job, address indexed _liquidity, address indexed _provider, uint256 _block, uint256 _credit);
@@ -29,10 +29,10 @@ interface IKeep3rV1 is IERC20, IERC20Metadata {
   event KeeperSlashed(address indexed _keeper, address indexed _slasher, uint256 _block, uint256 _slash);
   event KeeperDispute(address indexed _keeper, uint256 _block);
   event KeeperResolved(address indexed _keeper, uint256 _block);
-  event AddCredit(address indexed _credit, address indexed _job, address indexed _creditor, uint256 _block, uint256 _amount);
+  event TokenCreditAddition(address indexed _credit, address indexed _job, address indexed _creditor, uint256 _block, uint256 _amount);
 
-  // variables
-  function keep3rHelper() external returns (address);
+  // Variables
+  function KPRH() external returns (address);
 
   function delegates(address _delegator) external view returns (address);
 
@@ -134,7 +134,7 @@ interface IKeep3rV1 is IERC20, IERC20Metadata {
 
   function liquidityPairs(uint256 _index) external view returns (address);
 
-  // methods
+  // Methods
   function getCurrentVotes(address _account) external view returns (uint256);
 
   function addCreditETH(address _job) external payable;

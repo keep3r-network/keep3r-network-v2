@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../../peripherals/jobs/Keep3rJobFundableLiquidity.sol';
+import '../../../contracts/peripherals/jobs/Keep3rJobFundableLiquidity.sol';
 
 contract Keep3rJobFundableLiquidityForTest is Keep3rJobFundableLiquidity {
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -21,6 +21,10 @@ contract Keep3rJobFundableLiquidityForTest is Keep3rJobFundableLiquidity {
     return _jobLiquidities[_job].add(_liquidity);
   }
 
+  function setApprovedLiquidity(address _liquidity) external {
+    _approvedLiquidities.add(_liquidity);
+  }
+
   function setRevokedLiquidity(address _liquidity) external {
     _approvedLiquidities.remove(_liquidity);
   }
@@ -29,15 +33,15 @@ contract Keep3rJobFundableLiquidityForTest is Keep3rJobFundableLiquidity {
     _tickCache = _tick[_liquidity];
   }
 
+  function viewTickOrder(address _liquidity) external view returns (bool) {
+    return _isKP3RToken0[_liquidity];
+  }
+
   function internalJobLiquidities(address _job) external view returns (address[] memory _list) {
     _list = _jobLiquidities[_job].values();
   }
 
   function internalSettleJobAccountance(address _job) external {
     _settleJobAccountance(_job);
-  }
-
-  function viewTickOrder(address _liquidity) external view returns (bool) {
-    return _isKP3RToken0[_liquidity];
   }
 }

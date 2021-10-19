@@ -38,6 +38,6 @@ contract ERC20ForTest is ERC20 {
   }
 
   function deposit(uint256 _amount) external payable {
-    // function added for compatibility with WETH
+    // Function added for compatibility with WETH
   }
 }

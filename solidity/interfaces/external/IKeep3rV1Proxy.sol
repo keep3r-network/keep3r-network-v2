@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import './IKeep3rGovernance.sol';
+import '../peripherals/IGovernable.sol';
 
-interface IKeep3rV1Proxy is IKeep3rGovernance {
-  // structs
+interface IKeep3rV1Proxy is IGovernable {
+  // Structs
   struct Recipient {
     address recipient;
     uint256 caps;
   }
 
-  // variables
+  // Variables
   function keep3rV1() external view returns (address);
 
   function minter() external view returns (address);
@@ -23,13 +23,13 @@ interface IKeep3rV1Proxy is IKeep3rGovernance {
 
   function recipientsCaps() external view returns (Recipient[] memory);
 
-  // errors
+  // Errors
   error Cooldown();
   error NoDrawableAmount();
   error ZeroAddress();
   error OnlyMinter();
 
-  // methods
+  // Methods
   function addRecipient(address recipient, uint256 amount) external;
 
   function removeRecipient(address recipient) external;

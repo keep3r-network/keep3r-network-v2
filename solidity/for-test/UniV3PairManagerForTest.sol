@@ -4,15 +4,14 @@ pragma solidity >=0.8.4 <0.9.0;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
-import '../libraries/LiquidityAmounts.sol';
-import '../libraries/PoolAddress.sol';
-import '../libraries/FixedPoint96.sol';
-import '../libraries/FullMath.sol';
-import '../libraries/TickMath.sol';
-
+import '../contracts/libraries/LiquidityAmounts.sol';
+import '../contracts/libraries/PoolAddress.sol';
+import '../contracts/libraries/FixedPoint96.sol';
+import '../contracts/libraries/FullMath.sol';
+import '../contracts/libraries/TickMath.sol';
+import '../contracts/UniV3PairManager.sol';
 import '../interfaces/external/IWeth9.sol';
 import '../interfaces/IUniV3PairManager.sol';
-import '../UniV3PairManager.sol';
 
 contract UniV3PairManagerForTest is UniV3PairManager {
   constructor(address _pool, address _governance) UniV3PairManager(_pool, _governance) {}

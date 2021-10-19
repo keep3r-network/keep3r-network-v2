@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../../peripherals/keepers/Keep3rKeeperFundable.sol';
+import '../../../contracts/peripherals/keepers/Keep3rKeeperFundable.sol';
 
 contract Keep3rKeeperFundableForTest is Keep3rKeeperFundable {
   using EnumerableSet for EnumerableSet.AddressSet;

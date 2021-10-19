@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../../peripherals/jobs/Keep3rJobDisputable.sol';
+import '../../../contracts/peripherals/jobs/Keep3rJobDisputable.sol';
 
 contract Keep3rJobDisputableForTest is Keep3rJobDisputable {
   using EnumerableSet for EnumerableSet.AddressSet;

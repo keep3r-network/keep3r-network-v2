@@ -1,26 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../interfaces/peripherals/IKeep3rJobs.sol';
+import '../../../interfaces/peripherals/IKeep3rJobs.sol';
 
 abstract contract Keep3rJobOwnership is IKeep3rJobOwnership {
-  /// @notice owner of the job (job => user)
+  /// @inheritdoc IKeep3rJobOwnership
   mapping(address => address) public override jobOwner;
-  /// @notice pending owner of the job (job => user)
+
+  /// @inheritdoc IKeep3rJobOwnership
   mapping(address => address) public override jobPendingOwner;
 
+  /// @inheritdoc IKeep3rJobOwnership
   function changeJobOwnership(address _job, address _newOwner) external override onlyJobOwner(_job) {
     jobPendingOwner[_job] = _newOwner;
     emit JobOwnershipChange(_job, jobOwner[_job], _newOwner);
   }
 
+  /// @inheritdoc IKeep3rJobOwnership
   function acceptJobOwnership(address _job) external override onlyPendingJobOwner(_job) {
     address _previousOwner = jobOwner[_job];
 
     jobOwner[_job] = jobPendingOwner[_job];
     delete jobPendingOwner[_job];
 
-    emit JobOwnershipAssent(_job, _previousOwner, msg.sender);
+    emit JobOwnershipAssent(msg.sender, _job, _previousOwner);
   }
 
   modifier onlyJobOwner(address _job) {

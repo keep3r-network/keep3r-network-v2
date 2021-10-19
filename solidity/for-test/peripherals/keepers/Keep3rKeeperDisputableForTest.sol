@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../../peripherals/keepers/Keep3rKeeperDisputable.sol';
+import '../../../contracts/peripherals/keepers/Keep3rKeeperDisputable.sol';
 
 contract Keep3rKeeperDisputableForTest is Keep3rKeeperDisputable {
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -13,7 +13,7 @@ contract Keep3rKeeperDisputableForTest is Keep3rKeeperDisputable {
     address _kp3rWethPool
   ) Keep3rParameters(_kph, _keep3rV1, _keep3rV1Proxy, _kp3rWethPool) Keep3rRoles(msg.sender) {}
 
-  function addKeeper(address _keeper) external {
+  function setKeeper(address _keeper) external {
     _keepers.add(_keeper);
   }
 
