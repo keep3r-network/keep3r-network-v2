@@ -72,6 +72,10 @@ describe('Keep3rHelper', () => {
 
       expect(await helper.callStatic.quote(toQuote)).to.be.closeTo(quoteResult, toUnit(0.001).toNumber());
     });
+
+    it('should work with 100 ETH', async () => {
+      await expect(helper.quote(toUnit(100))).not.to.be.reverted;
+    });
   });
 
   describe('bonds', () => {
@@ -141,7 +145,7 @@ describe('Keep3rHelper', () => {
       const proxy = await proxyFactory.deploy();
 
       // call getRewardAmount through proxy
-      await proxy.connect(randomKeeper).call(helper.address, helper.interface.encodeFunctionData('getRewardAmount', [toUnit(1)]));
+      await proxy.connect(randomKeeper).call(helper.address, helper.interface.encodeFunctionData('getRewardAmount', [gasUsed]));
 
       // should use tx.origin and not msg.sender
       expect(keep3r.bonds).to.be.calledOnceWith(randomKeeper.address, keep3rV1.address);
@@ -301,14 +305,13 @@ describe('Keep3rHelper', () => {
 
   describe('getQuoteAtTick', () => {
     const precision = 1_000_000;
-    const baseAmount = toUnit(1);
+    const baseAmount = toUnit(3);
     const tickTimeDifference = 1;
-    const tick1 = 23027;
+    const tick1 = -23027;
     const tick2 = 0;
 
     it('should calculate a token conversion from a tick', async () => {
       /* Calculation
-      // liquidity = sqrt( x * y )
       // sqrtPrice = sqrt( y / x )
       // price = 1.0001 ^ tick = 1.0001 ^ (t2-t1)/tickTimeDifference
       // x = price * y
@@ -317,7 +320,10 @@ describe('Keep3rHelper', () => {
       const price = 1.0001 ** ((tick1 - tick2) / tickTimeDifference);
       const expectedQuote = baseAmount.mul(precision).div(Math.floor(price * precision));
 
-      expect(await helper.getQuoteAtTick(baseAmount, tick1 - tick2, tickTimeDifference)).to.be.closeTo(expectedQuote, toUnit(0.0001).toNumber());
+      expect(await helper.getQuoteAtTick(baseAmount, tick1 - tick2, tickTimeDifference)).to.be.closeTo(
+        expectedQuote,
+        toUnit(0.00001).toNumber()
+      );
     });
   });
 });

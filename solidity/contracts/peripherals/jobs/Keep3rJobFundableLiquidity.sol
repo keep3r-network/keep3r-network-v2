@@ -321,7 +321,7 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   /// @notice Returns a fraction of the multiplier or the whole multiplier if equal or more than a rewardPeriodTime has passed
   function _phase(uint256 _timePassed, uint256 _multiplier) internal view returns (uint256 _result) {
     if (_timePassed < rewardPeriodTime) {
-      _result = ((_timePassed % rewardPeriodTime) * _multiplier) / rewardPeriodTime;
+      _result = (_timePassed * _multiplier) / rewardPeriodTime;
     } else _result = _multiplier;
   }
 

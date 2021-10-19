@@ -41,7 +41,7 @@ contract Keep3rHelper is IKeep3rHelper {
     int56 _tickDifference = IKeep3r(keep3rV2).observeLiquidity(KP3R_WETH_POOL).difference;
     _tickDifference = _isKP3RToken0 ? _tickDifference : -_tickDifference;
     uint256 _tickInterval = IKeep3r(keep3rV2).rewardPeriodTime();
-    _amountOut = getQuoteAtTick(_eth, _tickDifference, _tickInterval);
+    _amountOut = getQuoteAtTick(uint128(_eth), _tickDifference, _tickInterval);
   }
 
   /// @inheritdoc IKeep3rHelper
@@ -117,13 +117,19 @@ contract Keep3rHelper is IKeep3rHelper {
 
   /// @inheritdoc IKeep3rHelper
   function getQuoteAtTick(
-    uint256 _baseAmount,
+    uint128 _baseAmount,
     int56 _tickDifference,
     uint256 _timeInterval
   ) public pure override returns (uint256 _quoteAmount) {
     uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(int24(_tickDifference / int256(_timeInterval)));
-    uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
-    _quoteAmount = FullMath.mulDiv(1 << 128, _baseAmount, ratioX128);
+
+    if (sqrtRatioX96 <= type(uint128).max) {
+      uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
+      _quoteAmount = FullMath.mulDiv(1 << 192, _baseAmount, ratioX192);
+    } else {
+      uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
+      _quoteAmount = FullMath.mulDiv(1 << 128, _baseAmount, ratioX128);
+    }
   }
 
   /// @notice Gets the block's base fee

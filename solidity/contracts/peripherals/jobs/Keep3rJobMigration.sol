@@ -65,7 +65,12 @@ abstract contract Keep3rJobMigration is IKeep3rJobMigration, Keep3rJobFundableCr
     delete rewardedAt[_fromJob];
     _jobs.remove(_fromJob);
 
-    pendingJobMigrations[_fromJob] = address(0);
+    // delete unused data slots
+    delete jobOwner[_fromJob];
+    delete jobPendingOwner[_fromJob];
+    delete _migrationCreatedAt[_fromJob][_toJob];
+    delete pendingJobMigrations[_fromJob];
+
     emit JobMigrationSuccessful(_fromJob, _toJob);
   }
 }

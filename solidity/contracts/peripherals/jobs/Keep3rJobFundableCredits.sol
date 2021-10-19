@@ -33,7 +33,6 @@ abstract contract Keep3rJobFundableCredits is IKeep3rJobFundableCredits, Reentra
     uint256 _before = IERC20(_token).balanceOf(address(this));
     IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
     uint256 _received = IERC20(_token).balanceOf(address(this)) - _before;
-    /* IDEA make FEE variable with Keep3rHelper f(token) */
     uint256 _tokenFee = (_received * fee) / BASE;
     jobTokenCredits[_job][_token] += _received - _tokenFee;
     jobTokenCreditsAddedAt[_job][_token] = block.timestamp;

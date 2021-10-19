@@ -39,6 +39,10 @@ contract Keep3rJobMigrationForTest is Keep3rJobMigration {
     return _jobLiquidityCredits[_job];
   }
 
+  function viewMigrationCreatedAt(address _fromJob, address _toJob) external view returns (uint256) {
+    return _migrationCreatedAt[_fromJob][_toJob];
+  }
+
   function isJob(address _job) external view returns (bool) {
     return _jobs.contains(_job);
   }

@@ -113,7 +113,7 @@ interface IKeep3rHelper {
   /// @param _timeInterval Time value used to calculate the quote
   /// @return _quoteAmount Amount of credits deserved for the baseAmount at the tick value
   function getQuoteAtTick(
-    uint256 _baseAmount,
+    uint128 _baseAmount,
     int56 _tickDifference,
     uint256 _timeInterval
   ) external pure returns (uint256 _quoteAmount);

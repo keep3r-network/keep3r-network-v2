@@ -28,6 +28,7 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
 
     hasBonded[msg.sender] = true;
     pendingBonds[msg.sender][_bonding] += _amount;
+
     emit Bonding(msg.sender, _bonding, _amount);
   }
 
@@ -45,6 +46,7 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
     canWithdrawAfter[msg.sender][_bonding] = block.timestamp + unbondTime;
     bonds[msg.sender][_bonding] -= _amount;
     pendingUnbonds[msg.sender][_bonding] += _amount;
+
     emit Unbonding(msg.sender, _bonding, _amount);
   }
 
@@ -60,10 +62,10 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
       IKeep3rV1Proxy(keep3rV1Proxy).mint(_amount);
     }
 
+    pendingUnbonds[msg.sender][_bonding] = 0;
     IERC20(_bonding).safeTransfer(msg.sender, _amount);
 
     emit Withdrawal(msg.sender, _bonding, _amount);
-    pendingUnbonds[msg.sender][_bonding] = 0;
   }
 
   function _bond(
@@ -83,8 +85,9 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
     }
     _keepers.add(_keeper);
     uint256 _amount = pendingBonds[_keeper][_bonding];
-    _bond(_bonding, _keeper, _amount);
     pendingBonds[_keeper][_bonding] = 0;
+    _bond(_bonding, _keeper, _amount);
+
     emit Activation(_keeper, _bonding, _amount);
   }
 }

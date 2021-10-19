@@ -252,6 +252,18 @@ describe('Keep3rJobMigration', () => {
         expect(await jobMigration.isJob(fromJob)).to.be.false;
       });
 
+      it('should delete fromJob owner', async () => {
+        expect(await jobMigration.jobOwner(fromJob)).to.be.eq(ZERO_ADDRESS);
+      });
+
+      it('should delete fromJob pending owner', async () => {
+        expect(await jobMigration.jobPendingOwner(fromJob)).to.be.eq(ZERO_ADDRESS);
+      });
+
+      it('should delete migration creation timestamp', async () => {
+        expect(await jobMigration.viewMigrationCreatedAt(fromJob, toJob)).to.be.eq(0);
+      });
+
       it('should emit event', async () => {
         await expect(tx).to.emit(jobMigration, 'JobMigrationSuccessful').withArgs(fromJob, toJob);
       });
