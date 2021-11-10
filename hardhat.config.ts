@@ -28,7 +28,7 @@ const config: HardhatUserConfig = {
             url: process.env.MAINNET_HTTPS_URL as string,
           },
         },
-        localMainnet: {
+        localhost: {
           url: process.env.LOCAL_MAINNET_HTTPS_URL,
           accounts: [process.env.LOCAL_MAINNET_PRIVATE_KEY as string],
         },
@@ -46,52 +46,6 @@ const config: HardhatUserConfig = {
     compilers: [
       {
         version: '0.8.7',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1,
-          },
-          outputSelection: {
-            '*': {
-              '*': ['storageLayout'],
-            },
-          },
-        },
-      },
-      {
-        version: '0.7.6',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: '0.5.16',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: '0.6.12',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-          outputSelection: {
-            '*': {
-              '*': ['storageLayout'],
-            },
-          },
-        },
-      },
-      {
-        version: '0.4.18',
         settings: {
           optimizer: {
             enabled: true,

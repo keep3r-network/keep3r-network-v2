@@ -17,6 +17,6 @@
       "@solidity/*": ["artifacts/solidity/*"]
     }
   },
-  "include": ["./scripts", "./deploy", "./test"],
+  "include": ["./scripts", "./deploy", "./test", "./utils"],
   "files": ["./hardhat.config.ts"]
 }
