@@ -1,7 +1,7 @@
 {
   "name": "keep3r-v2",
-  "version": "0.0.0",
-  "description": "Keep3rV2",
+  "version": "1.0.0",
+  "description": "The Keep3r Network is a decentralized network for projects that need external devops, and for external teams to find keeper jobs",
   "keywords": [
     "ethereum",
     "smart",
@@ -9,13 +9,14 @@
     "test",
     "solidity",
     "hardhat",
-    "keep3r"
+    "keep3r",
+    "KP3R"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/defi-wonderland/keep3r-v2.git"
+    "url": "git+https://github.com/keep3r-network/keep3r-network-v2.git"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": {
     "name": "DeFi Wonderland",
     "url": "https://github.com/defi-wonderland"

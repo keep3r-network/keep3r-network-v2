@@ -10,8 +10,6 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   await hre.deployments.execute('Keep3r', { from: deployer, gasLimit: 100000, log: true }, 'setGovernance', keep3rMultisig);
 
   await hre.deployments.execute('UniV3PairManagerFactory', { from: deployer, gasLimit: 100000, log: true }, 'setGovernance', keep3rMultisig);
-
-  await hre.deployments.execute('UniV3PairManager', { from: deployer, gasLimit: 100000, log: true }, 'setGovernance', keep3rMultisig);
 };
 
 deployFunction.tags = ['Governance', 'mainnet'];

@@ -12,6 +12,7 @@
 **/LICENSE
 docs
 *.sh
+audits
 
 # Hardhat
 artifacts
