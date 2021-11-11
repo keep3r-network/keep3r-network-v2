@@ -35,7 +35,6 @@ const config: HardhatUserConfig = {
         mainnet: {
           url: process.env.MAINNET_HTTPS_URL,
           accounts: [process.env.MAINNET_PRIVATE_KEY as string],
-          gasPrice: 'auto',
         },
         ropsten: {
           url: process.env.ROPSTEN_HTTPS_URL,

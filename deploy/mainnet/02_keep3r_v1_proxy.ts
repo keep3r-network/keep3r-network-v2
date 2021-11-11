@@ -13,6 +13,6 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   });
 };
 
-deployFunction.tags = ['Keep3rV1Proxy', 'mainnet'];
+deployFunction.tags = ['Keep3rV1Proxy', 'Keep3r', 'mainnet'];
 
 export default deployFunction;

@@ -1,6 +1,5 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { shouldVerifyContract } from '../../utils/deploy';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
@@ -22,14 +21,6 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     log: true,
   });
 
-  if (await shouldVerifyContract(keep3rHelper)) {
-    await hre.run('verify:verify', {
-      contract: 'solidity/contracts/Keep3rHelper.sol:Keep3rHelper',
-      address: keep3rHelper.address,
-      constructorArguments: keep3rHelperArgs,
-    });
-  }
-
   // pool to use as a KP3R/WETH oracle
   const uniV3PoolAddress = '0x11b7a6bc0259ed6cf9db8f499988f9ecc7167bf5';
 
@@ -41,16 +32,8 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     args: keep3rV2Args,
     log: true,
   });
-
-  if (await shouldVerifyContract(keep3rV2)) {
-    await hre.run('verify:verify', {
-      contract: 'solidity/contracts/Keep3r.sol:Keep3r',
-      address: keep3rV2.address,
-      constructorArguments: keep3rV2Args,
-    });
-  }
 };
 
-deployFunction.tags = ['Keep3rHelper', 'Keep3r', 'mainnet'];
+deployFunction.tags = ['Keep3r', 'mainnet'];
 
 export default deployFunction;

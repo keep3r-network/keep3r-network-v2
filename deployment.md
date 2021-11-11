@@ -35,7 +35,10 @@
 
 5. **Create UniswapV3PairManager using the UniswapV3PairManagerFactory**
 
-   Keep3r multisig should call: `UniswapV3PairManagerFactory.createPairManager(UniswapV3PoolAddress)`
+   Keep3r multisig should call:
+
+   1. `UniswapV3PairManagerFactory.acceptGovernance()`
+   2. `UniswapV3PairManagerFactory.createPairManager(UniswapV3PoolAddress)`
 
 6. **Approve UniswapV3PairManager WETH/KP3R liquidity**
 
