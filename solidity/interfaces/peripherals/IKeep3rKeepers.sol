@@ -31,7 +31,7 @@ interface IKeep3rKeeperFundable {
   function bond(address _bonding, uint256 _amount) external;
 
   /// @notice Beginning of the unbonding process
-  /// @param _bonding The asset being unbounded
+  /// @param _bonding The asset being unbonded
   /// @param _amount Allows for partial unbonding
   function unbond(address _bonding, uint256 _amount) external;
 

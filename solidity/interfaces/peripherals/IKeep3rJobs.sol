@@ -209,8 +209,8 @@ interface IKeep3rJobFundableLiquidity {
 
   /// @notice Unbond liquidity for a job
   /// @dev Can only be called by the job's owner
-  /// @param _job The address of the job being unbound from
-  /// @param _liquidity The liquidity being unbound
+  /// @param _job The address of the job being unbonded from
+  /// @param _liquidity The liquidity being unbonded
   /// @param _amount The amount of liquidity being removed
   function unbondLiquidityFromJob(
     address _job,
