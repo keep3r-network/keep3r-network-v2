@@ -103,7 +103,7 @@ describe('Keep3rJobWorkable', () => {
       const gasRecord = await readArgFromEvent(tx, 'KeeperValidation', '_gasLeft');
 
       await expect(tx).to.emit(jobWorkable, 'KeeperValidation');
-      expect(gasRecord).to.be.closeTo(gasLimit.sub(gasUsed), 2000);
+      expect(gasRecord).to.be.closeTo(gasLimit.sub(gasUsed), 50000);
     });
   });
 
@@ -150,7 +150,7 @@ describe('Keep3rJobWorkable', () => {
       const gasRecord = await readArgFromEvent(tx, 'KeeperValidation', '_gasLeft');
 
       await expect(tx).to.emit(jobWorkable, 'KeeperValidation');
-      expect(gasRecord).to.be.closeTo(gasLimit.sub(gasUsed), 2000);
+      expect(gasRecord).to.be.closeTo(gasLimit.sub(gasUsed), 50000);
     });
   });
 
@@ -207,7 +207,7 @@ describe('Keep3rJobWorkable', () => {
         const gasRecord = await readArgFromEvent(tx, 'KeeperWork', '_gasLeft');
 
         expect(eventArgs.slice(0, -1)).to.be.deep.eq([keep3rV1.address, approvedJob.address, randomKeeper.address, BigNumber.from(0)]);
-        expect(gasRecord).to.be.closeTo(gasLimit.sub(gasUsed), 3000);
+        expect(gasRecord).to.be.closeTo(gasLimit.sub(gasUsed), 50000);
       });
 
       it('should update KP3R/WETH quote if needed', async () => {
@@ -303,6 +303,9 @@ describe('Keep3rJobWorkable', () => {
       context('when job credits are not enough for payment', () => {
         beforeEach(async () => {
           helper.observe.returns([oneTenth, 0, true]);
+          helper.getQuoteAtTick.returns(([amount]: [BigNumber]) => {
+            return amount.div(10);
+          });
           helper.getKP3RsAtTick.returns(([amount]: [BigNumber]) => {
             return amount.div(10);
           });

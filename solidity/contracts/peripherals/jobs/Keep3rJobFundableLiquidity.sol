@@ -343,6 +343,12 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
     }
   }
 
+  /// @notice Returns KP3R amount for a given ETH amount
+  function _quoteKp3rs(uint256 _eth) internal view returns (uint256 _amountOut) {
+    int56 _tickDifference = _isKP3RToken0[kp3rWethPool] ? _tick[kp3rWethPool].difference : -_tick[kp3rWethPool].difference;
+    _amountOut = IKeep3rHelper(keep3rHelper).getQuoteAtTick(uint128(_eth), _tickDifference, rewardPeriodTime);
+  }
+
   /// @notice Updates job credits to current quotes and rewards job's pending minted credits
   /// @dev Ensures a maximum of 1 period of credits
   function _settleJobAccountance(address _job) internal virtual {

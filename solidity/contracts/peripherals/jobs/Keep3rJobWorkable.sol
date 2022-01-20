@@ -18,7 +18,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
   function isKeeper(address _keeper) external override returns (bool _isKeeper) {
     _initialGas = gasleft();
     if (_keepers.contains(_keeper)) {
-      emit KeeperValidation(gasleft());
+      emit KeeperValidation(_initialGas);
       return true;
     }
   }
@@ -38,7 +38,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
       workCompleted[_keeper] >= _earned &&
       block.timestamp - firstSeen[_keeper] >= _age
     ) {
-      emit KeeperValidation(gasleft());
+      emit KeeperValidation(_initialGas);
       return true;
     }
   }
@@ -56,18 +56,18 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     uint256 _gasRecord = gasleft();
     uint256 _boost = IKeep3rHelper(keep3rHelper).getRewardBoostFor(bonds[_keeper][keep3rV1]);
 
-    uint256 _payment = (_quoteLiquidity(_initialGas - _gasRecord, kp3rWethPool) * _boost) / BASE;
+    uint256 _payment = _quoteKp3rs(((_initialGas - _gasRecord) * _boost) / BASE);
 
     if (_payment > _jobLiquidityCredits[_job]) {
       _rewardJobCredits(_job);
       emit LiquidityCreditsReward(_job, rewardedAt[_job], _jobLiquidityCredits[_job], _jobPeriodCredits[_job]);
     }
 
-    uint256 _gasUsed = _initialGas - gasleft();
-    _payment = (_gasUsed * _payment) / (_initialGas - _gasRecord);
+    uint256 _gasLeft = gasleft();
+    _payment = ((_initialGas - _gasLeft) * _payment) / (_initialGas - _gasRecord);
 
     _bondedPayment(_job, _keeper, _payment);
-    emit KeeperWork(keep3rV1, _job, _keeper, _payment, gasleft());
+    emit KeeperWork(keep3rV1, _job, _keeper, _payment, _gasLeft);
   }
 
   /// @inheritdoc IKeep3rJobWorkable

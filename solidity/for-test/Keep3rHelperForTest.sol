@@ -11,4 +11,8 @@ contract Keep3rHelperForTest is Keep3rHelper {
   function _getBasefee() internal view override returns (uint256) {
     return basefee;
   }
+
+  function setBaseFee(uint256 _baseFee) external {
+    basefee = _baseFee;
+  }
 }
