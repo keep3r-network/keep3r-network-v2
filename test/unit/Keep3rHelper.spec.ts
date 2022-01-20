@@ -183,7 +183,9 @@ describe('Keep3rHelper', () => {
     });
 
     it('should boost gasPrice depending on the bonded KP3R of the keeper', async () => {
-      expect((await helper.getRewardBoostFor(targetBond.sub(toUnit(1)))).div(baseFee)).to.be.within(11000, 12000);
+      const min = 11000;
+      const max = 12000;
+      expect((await helper.getRewardBoostFor(targetBond.div(2))).div(baseFee)).to.be.eq((min + max) / 2);
     });
 
     it('should return at most a 120% boost on gasPrice', async () => {
