@@ -37,11 +37,11 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance, Keep
   /// @inheritdoc IKeep3rParameters
   uint256 public override fee = 30;
 
-  /// @inheritdoc IKeep3rParameters
-  uint256 public constant override BASE = 10000;
+  /// @notice The base that will be used to calculate the fee
+  uint256 internal constant _BASE = 10000;
 
-  /// @inheritdoc IKeep3rParameters
-  uint256 public constant override MIN_REWARD_PERIOD_TIME = 1 days;
+  /// @notice The minimum reward period
+  uint256 internal constant _MIN_REWARD_PERIOD_TIME = 1 days;
 
   constructor(
     address _keep3rHelper,
@@ -107,7 +107,7 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance, Keep
 
   /// @inheritdoc IKeep3rParameters
   function setRewardPeriodTime(uint256 _rewardPeriodTime) external override onlyGovernance {
-    if (_rewardPeriodTime < MIN_REWARD_PERIOD_TIME) revert MinRewardPeriod();
+    if (_rewardPeriodTime < _MIN_REWARD_PERIOD_TIME) revert MinRewardPeriod();
     rewardPeriodTime = _rewardPeriodTime;
     emit RewardPeriodTimeChange(_rewardPeriodTime);
   }

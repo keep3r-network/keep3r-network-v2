@@ -26,12 +26,12 @@ interface IKeep3rKeeperFundable {
   // Methods
 
   /// @notice Beginning of the bonding process
-  /// @param _bonding The asset being bound
-  /// @param _amount The amount of bonding asset being bound
+  /// @param _bonding The asset being bonded
+  /// @param _amount The amount of bonding asset being bonded
   function bond(address _bonding, uint256 _amount) external;
 
   /// @notice Beginning of the unbonding process
-  /// @param _bonding The asset being unbound
+  /// @param _bonding The asset being unbounded
   /// @param _amount Allows for partial unbonding
   function unbond(address _bonding, uint256 _amount) external;
 
@@ -50,17 +50,15 @@ interface IKeep3rKeeperDisputable {
   // Events
 
   /// @notice Emitted when Keep3rKeeperDisputable#slash is called
-  /// @param _keeper The slashed keeper
+  /// @param _keeper The address of the slashed keeper
   /// @param _slasher The user that called Keep3rKeeperDisputable#slash
   /// @param _amount The amount of credits slashed from the keeper
   event KeeperSlash(address indexed _keeper, address indexed _slasher, uint256 _amount);
 
   /// @notice Emitted when Keep3rKeeperDisputable#revoke is called
-  /// @param _keeper The revoked keeper
+  /// @param _keeper The address of the revoked keeper
   /// @param _slasher The user that called Keep3rKeeperDisputable#revoke
   event KeeperRevoke(address indexed _keeper, address indexed _slasher);
-
-  /// @notice Keeper revoked
 
   // Methods
 

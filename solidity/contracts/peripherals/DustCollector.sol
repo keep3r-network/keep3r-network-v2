@@ -10,7 +10,7 @@ import '../../interfaces/peripherals/IDustCollector.sol';
 abstract contract DustCollector is IDustCollector, Governable {
   using SafeERC20 for IERC20;
 
-  address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  address internal constant _ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   function sendDust(
     address _token,
@@ -18,7 +18,7 @@ abstract contract DustCollector is IDustCollector, Governable {
     address _to
   ) external override onlyGovernance {
     if (_to == address(0)) revert ZeroAddress();
-    if (_token == ETH_ADDRESS) {
+    if (_token == _ETH_ADDRESS) {
       payable(_to).transfer(_amount);
     } else {
       IERC20(_token).safeTransfer(_to, _amount);

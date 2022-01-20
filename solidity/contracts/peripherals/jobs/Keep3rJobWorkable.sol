@@ -56,7 +56,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     uint256 _gasRecord = gasleft();
     uint256 _boost = IKeep3rHelper(keep3rHelper).getRewardBoostFor(bonds[_keeper][keep3rV1]);
 
-    uint256 _payment = _quoteKp3rs(((_initialGas - _gasRecord) * _boost) / BASE);
+    uint256 _payment = _quoteKp3rs(((_initialGas - _gasRecord) * _boost) / _BASE);
 
     if (_payment > _jobLiquidityCredits[_job]) {
       _rewardJobCredits(_job);

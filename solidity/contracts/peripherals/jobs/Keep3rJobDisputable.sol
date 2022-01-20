@@ -25,7 +25,6 @@ abstract contract Keep3rJobDisputable is IKeep3rJobDisputable, Keep3rDisputable,
       _jobTokens[_job].remove(_token);
     }
 
-    // emit event
     emit JobSlashToken(_job, _token, msg.sender, _amount);
   }
 

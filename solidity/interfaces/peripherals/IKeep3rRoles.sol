@@ -24,11 +24,13 @@ interface IKeep3rRoles {
 
   // Variables
 
-  /// @notice Maps an address to a boolean to determine whether the address is a slasher or not.
+  /// @notice Tracks whether the address is a slasher or not
+  /// @param _slasher Address being checked as a slasher
   /// @return _isSlasher Whether the address is a slasher or not
   function slashers(address _slasher) external view returns (bool _isSlasher);
 
-  /// @notice Maps an address to a boolean to determine whether the address is a disputer or not.
+  /// @notice Tracks whether the address is a disputer or not
+  /// @param _disputer Address being checked as a disputer
   /// @return _isDisputer Whether the address is a disputer or not
   function disputers(address _disputer) external view returns (bool _isDisputer);
 

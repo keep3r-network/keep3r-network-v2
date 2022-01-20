@@ -38,7 +38,7 @@ interface IGovernable {
   // Methods
 
   /// @notice Proposes a new address to be governance
-  /// @param _governance The address of the user proposed to be the new governance
+  /// @param _governance The address being proposed as the new governance
   function setGovernance(address _governance) external;
 
   /// @notice Changes the governance from the current governance to the previously proposed address
