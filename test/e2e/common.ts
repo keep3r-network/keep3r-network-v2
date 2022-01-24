@@ -7,15 +7,15 @@ import {
   JobForTest,
   JobForTest__factory,
   Keep3r,
-  Keep3rHelper,
-  Keep3rHelper__factory,
+  Keep3rHelperForTest,
+  Keep3rHelperForTest__factory,
   Keep3r__factory,
   UniV3PairManager,
   UniV3PairManager__factory,
 } from '@types';
 import { contracts, wallet } from '@utils';
 import { toUnit } from '@utils/bn';
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { ethers } from 'hardhat';
 
 export const FORK_BLOCK_NUMBER = 13232191;
@@ -41,7 +41,7 @@ export async function setupKeep3r(): Promise<{
   keep3rV1: IKeep3rV1;
   keep3rV1Proxy: IKeep3rV1Proxy;
   keep3rV1ProxyGovernance: JsonRpcSigner;
-  helper: Keep3rHelper;
+  helper: Keep3rHelperForTest;
 }> {
   // create governance with some eth
   const governance = await wallet.impersonate(wallet.generateRandomAddress());
@@ -50,22 +50,21 @@ export async function setupKeep3r(): Promise<{
   // deploy proxy and set it as Keep3rV1 governance
   const { keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance } = await setupKeep3rV1();
 
-  const helperFactory = (await ethers.getContractFactory('Keep3rHelper')) as Keep3rHelper__factory;
+  const helperFactory = (await ethers.getContractFactory('Keep3rHelperForTest')) as Keep3rHelperForTest__factory;
   const keep3rFactory = (await ethers.getContractFactory('Keep3r')) as Keep3r__factory;
 
   // calculate keep3rV2 deployment address
   const currentNonce = await ethers.provider.getTransactionCount(governance._address);
   const keeperV2Address = ethers.utils.getContractAddress({ from: governance._address, nonce: currentNonce + 1 });
 
-  // deploy Keep3rHelper and Keep3r contract
-  const helper = await helperFactory.deploy(keeperV2Address);
-  const keep3r = await keep3rFactory.deploy(
-    governance._address,
-    helper.address,
-    keep3rV1.address,
-    keep3rV1Proxy.address,
-    KP3R_WETH_V3_POOL_ADDRESS
-  );
+  // deploy Keep3rHelperForTest and Keep3r contract
+  const helper = await helperFactory.connect(governance).deploy(keeperV2Address);
+  const keep3r = await keep3rFactory
+    .connect(governance)
+    .deploy(governance._address, helper.address, keep3rV1.address, keep3rV1Proxy.address, KP3R_WETH_V3_POOL_ADDRESS);
+
+  const baseFee = utils.parseUnits('100', 'gwei');
+  await helper.setBaseFee(baseFee);
 
   // set Keep3r as proxy minter
   await keep3rV1Proxy.connect(keep3rV1ProxyGovernance).setMinter(keep3r.address);

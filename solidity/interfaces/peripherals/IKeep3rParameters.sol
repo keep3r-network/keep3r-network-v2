@@ -91,17 +91,6 @@ interface IKeep3rParameters is IBaseErrors {
   /// @return _amount The fee amount to be sent to governance when a user adds liquidity to a job
   function fee() external view returns (uint256 _amount);
 
-  // solhint-disable func-name-mixedcase
-  /// @notice The base that will be used to calculate the fee
-  /// @return _base The base that will be used to calculate the fee
-  function BASE() external view returns (uint256 _base);
-
-  /// @notice The minimum rewardPeriodTime value to be set
-  /// @return _minPeriod The minimum reward period in seconds
-  function MIN_REWARD_PERIOD_TIME() external view returns (uint256 _minPeriod);
-
-  // solhint-enable func-name-mixedcase
-
   // Errors
 
   /// @notice Throws if the reward period is less than the minimum reward period time

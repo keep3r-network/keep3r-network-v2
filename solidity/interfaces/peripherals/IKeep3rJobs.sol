@@ -33,7 +33,9 @@ interface IKeep3rJobFundableCredits {
 
   // Variables
 
-  /// @notice Last block where tokens were added to the job [job => token => timestamp]
+  /// @notice Last block where tokens were added to the job
+  /// @param _job The address of the job credited
+  /// @param _token The address of the token credited
   /// @return _timestamp The last block where tokens were added to the job
   function jobTokenCreditsAddedAt(address _job, address _token) external view returns (uint256 _timestamp);
 
@@ -172,13 +174,13 @@ interface IKeep3rJobFundableLiquidity {
 
   /// @notice Calculates how many credits should be rewarded periodically for a given liquidity amount
   /// @dev _periodCredits = underlying KP3Rs for given liquidity amount * rewardPeriod / inflationPeriod
-  /// @param _liquidity The liquidity to provide
+  /// @param _liquidity The address of the liquidity to provide
   /// @param _amount The amount of liquidity to provide
   /// @return _periodCredits The amount of KP3R periodically minted for the given liquidity
   function quoteLiquidity(address _liquidity, uint256 _amount) external view returns (uint256 _periodCredits);
 
   /// @notice Observes the current state of the liquidity pair being observed and updates TickCache with the information
-  /// @param _liquidity The liquidity pair being observed
+  /// @param _liquidity The address of the liquidity pair being observed
   /// @return _tickCache The updated TickCache
   function observeLiquidity(address _liquidity) external view returns (TickCache memory _tickCache);
 
@@ -207,8 +209,8 @@ interface IKeep3rJobFundableLiquidity {
 
   /// @notice Unbond liquidity for a job
   /// @dev Can only be called by the job's owner
-  /// @param _job The address of the job being unbound from
-  /// @param _liquidity The liquidity being unbound
+  /// @param _job The address of the job being unbonded from
+  /// @param _liquidity The liquidity being unbonded
   /// @param _amount The amount of liquidity being removed
   function unbondLiquidityFromJob(
     address _job,
@@ -279,12 +281,14 @@ interface IKeep3rJobWorkable {
 
   // Methods
 
-  /// @notice Confirms if the current keeper is registered, can be used for general (non critical) functions
+  /// @notice Confirms if the current keeper is registered
+  /// @dev Can be used for general (non critical) functions
   /// @param _keeper The keeper being investigated
   /// @return _isKeeper Whether the address passed as a parameter is a keeper or not
   function isKeeper(address _keeper) external returns (bool _isKeeper);
 
-  /// @notice Confirms if the current keeper is registered and has a minimum bond of any asset. Should be used for protected functions
+  /// @notice Confirms if the current keeper is registered and has a minimum bond of any asset.
+  /// @dev Should be used for protected functions
   /// @param _keeper The keeper to check
   /// @param _bond The bond token being evaluated
   /// @param _minBond The minimum amount of bonded tokens
@@ -300,7 +304,7 @@ interface IKeep3rJobWorkable {
   ) external returns (bool _isBondedKeeper);
 
   /// @notice Implemented by jobs to show that a keeper performed work
-  /// @dev Automatically calculates the payment for the keeper
+  /// @dev Automatically calculates the payment for the keeper and pays the keeper with bonded KP3R
   /// @param _keeper Address of the keeper that performed the work
   function worked(address _keeper) external;
 
@@ -336,7 +340,7 @@ interface IKeep3rJobOwnership {
   /// @notice Emitted when Keep3rJobOwnership#JobOwnershipAssent is called
   /// @param _job The address of the job which the proposed owner will now own
   /// @param _previousOwner The previous owner of the job
-  /// @param _newOwner The newowner of the job
+  /// @param _newOwner The new owner of the job
   event JobOwnershipAssent(address indexed _job, address indexed _previousOwner, address indexed _newOwner);
 
   // Errors
@@ -349,20 +353,25 @@ interface IKeep3rJobOwnership {
 
   // Variables
 
-  /// @notice Maps the job to the owner of the job (job => user)
-  /// @return _owner The addres of the owner of the job
+  /// @notice Maps the job to the owner of the job
+  /// @param _job The address of the job
+  /// @return _owner The address of the owner of the job
   function jobOwner(address _job) external view returns (address _owner);
 
-  /// @notice Maps the owner of the job to its pending owner (job => user)
+  /// @notice Maps the job to its pending owner
+  /// @param _job The address of the job
   /// @return _pendingOwner The address of the pending owner of the job
   function jobPendingOwner(address _job) external view returns (address _pendingOwner);
 
   // Methods
 
   /// @notice Proposes a new address to be the owner of the job
+  /// @param _job The address of the job
+  /// @param _newOwner The address of the proposed new owner
   function changeJobOwnership(address _job, address _newOwner) external;
 
   /// @notice The proposed address accepts to be the owner of the job
+  /// @param _job The address of the job
   function acceptJobOwnership(address _job) external;
 }
 
