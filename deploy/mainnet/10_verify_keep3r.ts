@@ -9,7 +9,6 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   const keep3rV1Proxy = await hre.deployments.get('Keep3rV1Proxy');
   const keep3rHelper = await hre.deployments.get('Keep3rHelper');
   const keep3rV2 = await hre.deployments.get('Keep3r');
-  const uniV3PairManagerFactory = await hre.deployments.get('UniV3PairManagerFactory');
 
   const keep3rHelperArgs = [keep3rV2.address];
   const uniV3PoolAddress = '0x11b7a6bc0259ed6cf9db8f499988f9ecc7167bf5';
@@ -26,13 +25,8 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     address: keep3rV2.address,
     constructorArguments: keep3rV2Args,
   });
-
-  await hre.run('verify:verify', {
-    contract: 'solidity/contracts/UniV3PairManagerFactory.sol:UniV3PairManagerFactory',
-    address: uniV3PairManagerFactory.address,
-  });
 };
 
-deployFunction.tags = ['verify', 'mainnet'];
+deployFunction.tags = ['verify-keep3r', 'mainnet'];
 
 export default deployFunction;

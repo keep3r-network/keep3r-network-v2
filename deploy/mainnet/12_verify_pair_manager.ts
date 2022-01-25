@@ -14,6 +14,6 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   });
 };
 
-deployFunction.tags = ['verify', 'pair-manager', 'mainnet'];
+deployFunction.tags = ['verify-pair-manager', 'pair-manager', 'mainnet'];
 
 export default deployFunction;
