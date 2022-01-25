@@ -26,7 +26,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
 
   const keep3rV2Args = [governance, keep3rHelper.address, keep3rV1.address, keep3rV1Proxy.address, uniV3PoolAddress];
 
-  const keep3rV2 = await hre.deployments.deploy('Keep3r', {
+  await hre.deployments.deploy('Keep3r', {
     contract: 'solidity/contracts/Keep3r.sol:Keep3r',
     from: deployer,
     args: keep3rV2Args,
@@ -34,6 +34,6 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   });
 };
 
-deployFunction.tags = ['Keep3r', 'mainnet'];
+deployFunction.tags = ['deploy-keep3r', 'Keep3r', 'mainnet'];
 
 export default deployFunction;
