@@ -38,7 +38,7 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance, Keep
   uint256 public override fee = 30;
 
   /// @notice The base that will be used to calculate the fee
-  uint256 internal constant _BASE = 10000;
+  uint256 internal constant _BASE = 10_000;
 
   /// @notice The minimum reward period
   uint256 internal constant _MIN_REWARD_PERIOD_TIME = 1 days;
@@ -106,6 +106,7 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance, Keep
   }
 
   /// @inheritdoc IKeep3rParameters
+  // TODO: check what happens to credit minting when changing this. Shouldn't we update the cached ticks?
   function setRewardPeriodTime(uint256 _rewardPeriodTime) external override onlyGovernance {
     if (_rewardPeriodTime < _MIN_REWARD_PERIOD_TIME) revert MinRewardPeriod();
     rewardPeriodTime = _rewardPeriodTime;

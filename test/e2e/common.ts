@@ -18,10 +18,11 @@ import { toUnit } from '@utils/bn';
 import { BigNumber, utils } from 'ethers';
 import { ethers } from 'hardhat';
 
-export const FORK_BLOCK_NUMBER = 13232191;
+export const FORK_BLOCK_NUMBER = 14271200;
 export const DAI_ADDRESS = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
 export const WETH_ADDRESS = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 export const RICH_ETH_ADDRESS = '0xcA8Fa8f0b631EcdB18Cda619C4Fc9d197c8aFfCa';
+export const RICH_ETH_2_ADDRESS = '0x7abE0cE388281d2aCF297Cb089caef3819b13448';
 export const RICH_ETH_DAI_ADDRESS = '0xE78388b4CE79068e89Bf8aA7f218eF6b9AB0e9d0';
 export const RICH_WETH_ADDRESS = '0x56178a0d5f301baf6cf3e1cd53d9863437345bf9';
 export const RICH_KP3R_ADDRESS = '0xf977814e90da44bfa03b6295a0616a897441acec';
@@ -33,7 +34,10 @@ export const UNISWAP_V2_FACTORY_ADDRESS = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc
 export const KP3R_V1_ADDRESS = '0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44';
 export const KP3R_V1_PROXY_ADDRESS = '0xFC48aC750959d5d5aE9A4bb38f548A7CA8763F8d';
 export const KP3R_V1_PROXY_GOVERNANCE_ADDRESS = '0x0d5dc686d0a2abbfdafdfb4d0533e886517d4e83';
-export const KP3R_V1_GOVERNANCE_ADDRESS = '0x0d5dc686d0a2abbfdafdfb4d0533e886517d4e83';
+export const KP3R_V1_GOVERNANCE_ADDRESS = '0xFC48aC750959d5d5aE9A4bb38f548A7CA8763F8d';
+export const KASPAROV_JOB = '0x54A8265ADC50fD66FD0F961cfCc8B62DE0f2B57f';
+export const CHAINLINK_KP3R_ETH_PRICE_FEED = '0xe7015ccb7e5f788b8c1010fc22343473eaac3741';
+export const HELPER_FOR_TEST_BASE_FEE = utils.parseUnits('100', 'gwei');
 
 export async function setupKeep3r(): Promise<{
   keep3r: Keep3r;
@@ -58,13 +62,12 @@ export async function setupKeep3r(): Promise<{
   const keeperV2Address = ethers.utils.getContractAddress({ from: governance._address, nonce: currentNonce + 1 });
 
   // deploy Keep3rHelperForTest and Keep3r contract
-  const helper = await helperFactory.connect(governance).deploy(keeperV2Address);
+  const helper = await helperFactory.connect(governance).deploy(keeperV2Address, governance._address);
   const keep3r = await keep3rFactory
     .connect(governance)
     .deploy(governance._address, helper.address, keep3rV1.address, keep3rV1Proxy.address, KP3R_WETH_V3_POOL_ADDRESS);
 
-  const baseFee = utils.parseUnits('100', 'gwei');
-  await helper.setBaseFee(baseFee);
+  await helper.setBaseFee(HELPER_FOR_TEST_BASE_FEE);
 
   // set Keep3r as proxy minter
   await keep3rV1Proxy.connect(keep3rV1ProxyGovernance).setMinter(keep3r.address);
@@ -84,15 +87,10 @@ export async function setupKeep3rV1(): Promise<{
   // get Keep3rV1 and it's governance
   const keep3rV1 = (await ethers.getContractAt('IKeep3rV1', KP3R_V1_ADDRESS)) as IKeep3rV1;
   const keep3rV1Proxy = (await ethers.getContractAt('IKeep3rV1Proxy', KP3R_V1_PROXY_ADDRESS)) as IKeep3rV1Proxy;
-  const keep3rV1Governance = await wallet.impersonate(KP3R_V1_GOVERNANCE_ADDRESS);
   const keep3rV1ProxyGovernance = await wallet.impersonate(KP3R_V1_PROXY_GOVERNANCE_ADDRESS);
 
-  // send some ETH to keep3r V1 Governance
-  const ethWhale = await wallet.impersonate(RICH_ETH_ADDRESS);
-  await ethWhale.sendTransaction({ value: toUnit(500), to: keep3rV1Governance._address });
+  contracts.setBalance(keep3rV1ProxyGovernance._address, toUnit(1000));
 
-  // set proxy as Keep3rV1 governance
-  await keep3rV1.connect(keep3rV1Governance).setGovernance(keep3rV1Proxy.address);
   await keep3rV1Proxy.connect(keep3rV1ProxyGovernance).acceptKeep3rV1Governance();
 
   return { keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance };

@@ -267,9 +267,9 @@ interface IKeep3rJobWorkable {
   /// @param _credit The address of the asset in which the keeper is paid
   /// @param _job The address of the job the keeper has worked
   /// @param _keeper The address of the keeper that has worked the job
-  /// @param _amount The amount that has been paid out to the keeper in exchange for working the job
+  /// @param _payment The amount that has been paid out to the keeper in exchange for working the job
   /// @param _gasLeft The amount of gas that the transaction has left at the moment of payment
-  event KeeperWork(address indexed _credit, address indexed _job, address indexed _keeper, uint256 _amount, uint256 _gasLeft);
+  event KeeperWork(address indexed _credit, address indexed _job, address indexed _keeper, uint256 _payment, uint256 _gasLeft);
 
   // Errors
 

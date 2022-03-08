@@ -18,7 +18,6 @@ const config: HardhatUserConfig = {
     ? {
         hardhat: {
           allowUnlimitedContractSize: true,
-          initialBaseFeePerGas: 1,
         },
       }
     : {

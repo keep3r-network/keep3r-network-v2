@@ -1,10 +1,9 @@
 import { JsonRpcSigner } from '@ethersproject/providers';
-import { IKeep3rV1, IUniswapV3Pool, JobForTest, Keep3r, Keep3rHelperForTest, UniV3PairManager } from '@types';
+import { IAggregatorV3, IKeep3rV1, IKeep3rV1Proxy, IUniswapV3Pool, JobForTest, Keep3r, Keep3rHelperForTest, UniV3PairManager } from '@types';
 import { evm, wallet } from '@utils';
 import { toUnit } from '@utils/bn';
-import { snapshot } from '@utils/evm';
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers } from 'hardhat';
 import moment from 'moment';
 import * as common from './common';
@@ -16,12 +15,13 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
   let helper: Keep3rHelperForTest;
   let job: JobForTest;
   let governance: JsonRpcSigner;
+  let keep3rV1Proxy: IKeep3rV1Proxy;
+  let keep3rV1ProxyGovernance: JsonRpcSigner;
   let keeper: JsonRpcSigner;
-  let snapshotId: string;
   let pair: UniV3PairManager;
   let pool: IUniswapV3Pool;
 
-  before(async () => {
+  beforeEach(async () => {
     await evm.reset({
       jsonRpcUrl: process.env.MAINNET_HTTPS_URL,
       blockNumber: common.FORK_BLOCK_NUMBER,
@@ -30,7 +30,7 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
     jobOwner = await wallet.impersonate(common.RICH_KP3R_ADDRESS);
     keeper = await wallet.impersonate(common.RICH_ETH_ADDRESS);
 
-    ({ keep3r, governance, keep3rV1, helper } = await common.setupKeep3r());
+    ({ keep3r, governance, keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance, helper } = await common.setupKeep3r());
 
     // create job
     job = await common.createJobForTest(keep3r.address, jobOwner);
@@ -45,12 +45,6 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
     await keep3r.connect(governance).approveLiquidity(pair.address);
 
     pool = (await ethers.getContractAt('IUniswapV3Pool', common.KP3R_WETH_V3_POOL_ADDRESS)) as IUniswapV3Pool;
-
-    snapshotId = await snapshot.take();
-  });
-
-  beforeEach(async () => {
-    await snapshot.revert(snapshotId);
   });
 
   it('should not be able to work if there are no funds in job', async () => {
@@ -82,7 +76,32 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
     expect(liquidityCreditsSpent).to.be.eq(bondsEarned);
   });
 
-  it('should pay the keeper for the accounted gas', async () => {
+  [
+    { fnName: 'work', workFn: async () => await job.connect(keeper).work() },
+    { fnName: 'workHard', workFn: async () => await job.connect(keeper).workHard(10) },
+  ].forEach(({ fnName, workFn }) => {
+    context(fnName, () => {
+      it('should pay the keeper for the accounted gas plus extra with min boost', async () => {
+        const minBoost = await helper.minBoost();
+        await testKeeperPayment(minBoost, workFn);
+      });
+
+      it('should pay the keeper for the accounted gas plus extra with max boost', async () => {
+        // mint, bond and activate a ton of KP3R
+        const toBond = toUnit(500);
+        await keep3rV1Proxy.connect(keep3rV1ProxyGovernance)['mint(address,uint256)'](keeper._address, toBond);
+        await keep3rV1.connect(keeper).approve(keep3r.address, toBond);
+        await keep3r.connect(keeper).bond(keep3rV1.address, toBond);
+        await evm.advanceTimeAndBlock(moment.duration(3, 'days').as('seconds'));
+        await keep3r.connect(keeper).activate(keep3rV1.address);
+
+        const maxBoost = await helper.maxBoost();
+        await testKeeperPayment(maxBoost, workFn);
+      });
+    });
+  });
+
+  async function testKeeperPayment(expectedBoost: BigNumber, workFn: () => Promise<ContractTransaction>) {
     // add liquidity to pair
     const { liquidity } = await common.addLiquidityToPair(jobOwner, pair, toUnit(100), jobOwner);
     // add credit to job
@@ -90,62 +109,57 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
     await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, liquidity);
     // wait some time to mint credits
     await evm.advanceTimeAndBlock(moment.duration(5, 'days').as('seconds'));
-    const keeperBondsBeforeWork: BigNumber = await keep3r.bonds(keeper._address, keep3rV1.address);
+
+    await job.connect(keeper).work(); // avoid first work tx outlier
 
     let initialGas: BigNumber;
     let finalGas: BigNumber;
 
     // work as keeper
-    const tx = await job.connect(keeper).work();
+    const blockNumberBeforeWork = await ethers.provider.getBlockNumber();
+    const keeperBondsBeforeWork: BigNumber = await keep3r.bonds(keeper._address, keep3rV1.address);
+    const workTx = await workFn();
+    const keeperBondsAfterWork: BigNumber = await keep3r.bonds(keeper._address, keep3rV1.address);
 
-    // event logs
-    let filter = {
-      address: keep3r.address,
-      fromBlock: tx.blockNumber,
-      toBlock: tx.blockNumber,
-      topics: [ethers.utils.id('KeeperValidation(uint256)')],
-    };
+    // events
+    const validationEvent = (await keep3r.queryFilter(keep3r.filters.KeeperValidation(), workTx.blockNumber, workTx.blockNumber))[0];
+    const workEvent = (await keep3r.queryFilter(keep3r.filters.KeeperWork(), workTx.blockNumber, workTx.blockNumber))[0];
 
-    const logsValidation = await ethers.provider.getLogs(filter);
-    initialGas = BigNumber.from(logsValidation[0].data);
-
-    filter.topics = [ethers.utils.id('KeeperWork(address,address,address,uint256,uint256)')];
-    const logsWork = await ethers.provider.getLogs(filter);
-    finalGas = BigNumber.from('0x' + logsWork[0].data.substring(66, 130));
+    initialGas = BigNumber.from(validationEvent.args._gasLeft);
+    finalGas = BigNumber.from(workEvent.args._gasLeft);
 
     // gas calculation
-    const gasUsed = initialGas.sub(finalGas);
-    const quote = await helper.getRewardAmount(gasUsed);
-    const keeperBondsAfterWork: BigNumber = await keep3r.bonds(keeper._address, keep3rV1.address);
+    const accountedGas = initialGas.sub(finalGas);
+    const extraGas = await helper.workExtraGas();
+    const gasRewarded = accountedGas.add(extraGas);
+
+    const quote = await helper.connect(keeper).getRewardAmount(gasRewarded, { blockTag: blockNumberBeforeWork });
     const bondsEarned: BigNumber = keeperBondsAfterWork.sub(keeperBondsBeforeWork);
 
     // twap calculation
-    const BASE = 10_000;
-    const observation = await keep3r.observeLiquidity(common.KP3R_WETH_V3_POOL_ADDRESS);
-    const period = await keep3r.rewardPeriodTime();
-    const twapQuote = 1.0001 ** observation.difference.div(period).toNumber();
+    const BASE = 1_000_000;
     const baseFee = await helper.basefee();
-    const expectedReward = gasUsed
-      .mul(baseFee)
-      .mul(BASE)
-      .div(Math.floor(twapQuote * BASE));
+    const boostBase = await helper.BOOST_BASE();
+    const ethToQuote = gasRewarded.mul(baseFee).mul(expectedBoost).div(boostBase);
+    const expectedReward = await helper.quote(ethToQuote);
 
     // uniswap calculation
-    const timestamp = (await ethers.provider.getBlock('latest')).timestamp;
-    const secondsAgo0 = timestamp % period.toNumber();
-    const secondsAgo1 = secondsAgo0 + period.toNumber();
-    const uniswapObservation = await pool.observe([secondsAgo0, secondsAgo1]);
+    const period = await helper.quoteTwapTime();
+    const { tickCumulatives } = await pool.observe([period, 0]);
+    const tick0 = tickCumulatives[0];
+    const tick1 = tickCumulatives[1];
+    const uniswapQuote = 1.0001 ** tick1.sub(tick0).div(period).toNumber();
+    const calculatedReward = ethToQuote.mul(BASE).div(Math.floor(uniswapQuote * BASE));
 
-    const tick0 = uniswapObservation.tickCumulatives[0];
-    const tick1 = uniswapObservation.tickCumulatives[1];
-    const uniswapQuote = 1.0001 ** tick0.sub(tick1).div(period).toNumber();
-    const calculatedReward = gasUsed
-      .mul(baseFee)
-      .mul(BASE)
-      .div(Math.floor(uniswapQuote * BASE));
+    // chainlink price feed calculation
+    const aggregatorV3 = (await ethers.getContractAt('IAggregatorV3', common.CHAINLINK_KP3R_ETH_PRICE_FEED)) as IAggregatorV3;
+    const { answer: priceFeedAnswer } = await aggregatorV3.latestRoundData();
+    const chainlinkQuotedReward = ethToQuote.mul(toUnit(1)).div(priceFeedAnswer);
 
-    expect(bondsEarned).to.be.eq(quote);
-    expect(bondsEarned).to.be.closeTo(expectedReward.mul(11).div(10), toUnit(0.001).toNumber());
-    expect(bondsEarned).to.be.closeTo(calculatedReward.mul(11).div(10), toUnit(0.001).toNumber());
-  });
+    expect((await workTx.wait()).gasUsed).to.be.closeTo(gasRewarded, 3_000);
+    expect(bondsEarned).to.be.closeTo(quote, 1);
+    expect(bondsEarned).to.be.closeTo(expectedReward, toUnit(0.001).toNumber());
+    expect(bondsEarned).to.be.closeTo(calculatedReward, toUnit(0.001).toNumber());
+    expect(bondsEarned).to.be.closeTo(chainlinkQuotedReward, toUnit(0.1) as any);
+  }
 });
