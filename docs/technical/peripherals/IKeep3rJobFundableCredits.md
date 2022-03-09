@@ -7,7 +7,7 @@ Handles the addition and withdrawal of credits from a job
 
 ### `jobTokenCreditsAddedAt(address _job, address _token) → uint256 _timestamp` (external)
 
-Last block where tokens were added to the job [job => token => timestamp]
+Last block where tokens were added to the job
 
 
 

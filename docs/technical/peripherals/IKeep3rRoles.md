@@ -7,14 +7,14 @@ Manages the Keep3r specific roles
 
 ### `slashers(address _slasher) → bool _isSlasher` (external)
 
-Maps an address to a boolean to determine whether the address is a slasher or not.
+Tracks whether the address is a slasher or not
 
 
 
 
 ### `disputers(address _disputer) → bool _isDisputer` (external)
 
-Maps an address to a boolean to determine whether the address is a disputer or not.
+Tracks whether the address is a disputer or not
 
 
 

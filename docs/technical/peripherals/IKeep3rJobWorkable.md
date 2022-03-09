@@ -7,16 +7,18 @@ Handles the mechanisms jobs can pay keepers with along with the restrictions job
 
 ### `isKeeper(address _keeper) → bool _isKeeper` (external)
 
-Confirms if the current keeper is registered, can be used for general (non critical) functions
+Confirms if the current keeper is registered
 
 
+Can be used for general (non critical) functions
 
 
 ### `isBondedKeeper(address _keeper, address _bond, uint256 _minBond, uint256 _earned, uint256 _age) → bool _isBondedKeeper` (external)
 
-Confirms if the current keeper is registered and has a minimum bond of any asset. Should be used for protected functions
+Confirms if the current keeper is registered and has a minimum bond of any asset.
 
 
+Should be used for protected functions
 
 
 ### `worked(address _keeper)` (external)
@@ -24,7 +26,7 @@ Confirms if the current keeper is registered and has a minimum bond of any asset
 Implemented by jobs to show that a keeper performed work
 
 
-Automatically calculates the payment for the keeper
+Automatically calculates the payment for the keeper and pays the keeper with bonded KP3R
 
 
 ### `bondedPayment(address _keeper, uint256 _payment)` (external)
@@ -51,7 +53,7 @@ Emitted when a keeper is validated before a job
 
 
 
-### `KeeperWork(address _credit, address _job, address _keeper, uint256 _amount, uint256 _gasLeft)`
+### `KeeperWork(address _credit, address _job, address _keeper, uint256 _payment, uint256 _gasLeft)`
 
 Emitted when a keeper works a job
 
