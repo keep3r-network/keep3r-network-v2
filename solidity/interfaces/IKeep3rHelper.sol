@@ -3,6 +3,7 @@ pragma solidity >=0.8.4 <0.9.0;
 
 /// @title Keep3rHelper contract
 /// @notice Contains all the helper functions used throughout the different files.
+
 interface IKeep3rHelper {
   // Errors
 
