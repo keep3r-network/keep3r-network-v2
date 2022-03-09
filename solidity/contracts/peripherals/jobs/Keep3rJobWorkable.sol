@@ -16,7 +16,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
 
   /// @inheritdoc IKeep3rJobWorkable
   function isKeeper(address _keeper) external override returns (bool _isKeeper) {
-    _initialGas = gasleft();
+    _initialGas = _getGasLeft();
     if (_keepers.contains(_keeper)) {
       emit KeeperValidation(_initialGas);
       return true;
@@ -31,7 +31,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     uint256 _earned,
     uint256 _age
   ) public override returns (bool _isBondedKeeper) {
-    _initialGas = gasleft();
+    _initialGas = _getGasLeft();
     if (
       _keepers.contains(_keeper) &&
       bonds[_keeper][_bond] >= _minBond &&
@@ -53,18 +53,18 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
       emit LiquidityCreditsReward(_job, rewardedAt[_job], _jobLiquidityCredits[_job], _jobPeriodCredits[_job]);
     }
 
-    uint256 _gasRecord = gasleft();
-    uint256 _boost = IKeep3rHelper(keep3rHelper).getRewardBoostFor(bonds[_keeper][keep3rV1]);
+    (uint256 _boost, uint256 _oneEthQuote, uint256 _extraGas) = IKeep3rHelper(keep3rHelper).getPaymentParams(bonds[_keeper][keep3rV1]);
 
-    uint256 _payment = _quoteKp3rs(((_initialGas - _gasRecord) * _boost) / _BASE);
+    uint256 _gasLeft = _getGasLeft();
+    uint256 _payment = _calculatePayment(_gasLeft, _extraGas, _oneEthQuote, _boost);
 
     if (_payment > _jobLiquidityCredits[_job]) {
       _rewardJobCredits(_job);
       emit LiquidityCreditsReward(_job, rewardedAt[_job], _jobLiquidityCredits[_job], _jobPeriodCredits[_job]);
-    }
 
-    uint256 _gasLeft = gasleft();
-    _payment = ((_initialGas - _gasLeft) * _payment) / (_initialGas - _gasRecord);
+      _gasLeft = _getGasLeft();
+      _payment = _calculatePayment(_gasLeft, _extraGas, _oneEthQuote, _boost);
+    }
 
     _bondedPayment(_job, _keeper, _payment);
     emit KeeperWork(keep3rV1, _job, _keeper, _payment, _gasLeft);
@@ -87,20 +87,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     }
 
     _bondedPayment(_job, _keeper, _payment);
-    emit KeeperWork(keep3rV1, _job, _keeper, _payment, gasleft());
-  }
-
-  function _bondedPayment(
-    address _job,
-    address _keeper,
-    uint256 _payment
-  ) internal {
-    if (_payment > _jobLiquidityCredits[_job]) revert InsufficientFunds();
-
-    workedAt[_job] = block.timestamp;
-    _jobLiquidityCredits[_job] -= _payment;
-    bonds[_keeper][keep3rV1] += _payment;
-    workCompleted[_keeper] += _payment;
+    emit KeeperWork(keep3rV1, _job, _keeper, _payment, _getGasLeft());
   }
 
   /// @inheritdoc IKeep3rJobWorkable
@@ -117,6 +104,41 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     if (jobTokenCredits[_job][_token] < _amount) revert InsufficientFunds();
     jobTokenCredits[_job][_token] -= _amount;
     IERC20(_token).safeTransfer(_keeper, _amount);
-    emit KeeperWork(_token, _job, _keeper, _amount, gasleft());
+    emit KeeperWork(_token, _job, _keeper, _amount, _getGasLeft());
+  }
+
+  function _bondedPayment(
+    address _job,
+    address _keeper,
+    uint256 _payment
+  ) internal {
+    if (_payment > _jobLiquidityCredits[_job]) revert InsufficientFunds();
+
+    workedAt[_job] = block.timestamp;
+    _jobLiquidityCredits[_job] -= _payment;
+    bonds[_keeper][keep3rV1] += _payment;
+    workCompleted[_keeper] += _payment;
+  }
+
+  /// @notice Calculate amount to be payed in KP3R, taking into account multiple parameters
+  /// @param _gasLeft Amount of gas left after working the job
+  /// @param _extraGas Amount of expected unaccounted gas
+  /// @param _oneEthQuote Amount of KP3R equivalent to 1 ETH
+  /// @param _boost Reward given to the keeper for having bonded KP3R tokens
+  /// @return _payment Amount to be payed in KP3R tokens
+  function _calculatePayment(
+    uint256 _gasLeft,
+    uint256 _extraGas,
+    uint256 _oneEthQuote,
+    uint256 _boost
+  ) internal view returns (uint256 _payment) {
+    uint256 _accountedGas = _initialGas - _gasLeft + _extraGas;
+    _payment = (((_accountedGas * _boost) / _BASE) * _oneEthQuote) / 1 ether;
+  }
+
+  /// @notice Return the gas left and add 1/64 in order to match real gas left at first level of depth (EIP-150)
+  /// @return _gasLeft Amount of gas left recording taking into account EIP-150
+  function _getGasLeft() internal view returns (uint256 _gasLeft) {
+    _gasLeft = (gasleft() * 64) / 63;
   }
 }

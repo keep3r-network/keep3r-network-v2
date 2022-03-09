@@ -32,6 +32,8 @@ describe('UniV3PairManagerFactory', () => {
     pair.token1.returns(token1.address);
     token0.symbol.returns('DAI');
     token1.symbol.returns('WETH');
+
+    pair.tickSpacing.returns(10);
   });
 
   beforeEach(async () => {

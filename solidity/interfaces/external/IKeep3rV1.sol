@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity >=0.8.4 <0.9.0;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
@@ -25,7 +25,7 @@ interface IKeep3rV1 is IERC20, IERC20Metadata {
   event KeeperBonding(address indexed _keeper, uint256 _block, uint256 _active, uint256 _bond);
   event KeeperBonded(address indexed _keeper, uint256 _block, uint256 _activated, uint256 _bond);
   event KeeperUnbonding(address indexed _keeper, uint256 _block, uint256 _deactive, uint256 _bond);
-  event KeeperUnbond(address indexed _keeper, uint256 _block, uint256 _deactivated, uint256 _bond);
+  event KeeperUnbound(address indexed _keeper, uint256 _block, uint256 _deactivated, uint256 _bond);
   event KeeperSlashed(address indexed _keeper, address indexed _slasher, uint256 _block, uint256 _slash);
   event KeeperDispute(address indexed _keeper, uint256 _block);
   event KeeperResolved(address indexed _keeper, uint256 _block);

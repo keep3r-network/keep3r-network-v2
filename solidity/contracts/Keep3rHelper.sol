@@ -20,44 +20,24 @@ pragma solidity >=0.8.7 <0.9.0;
 import './libraries/FullMath.sol';
 import './libraries/TickMath.sol';
 import '../interfaces/IKeep3r.sol';
-import '../interfaces/external/IKeep3rV1.sol';
 import '../interfaces/IKeep3rHelper.sol';
+import './Keep3rHelperParameters.sol';
 
 import '@openzeppelin/contracts/utils/math/Math.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
-contract Keep3rHelper is IKeep3rHelper {
-  address public immutable keep3rV2;
-
-  constructor(address _keep3rV2) {
-    keep3rV2 = _keep3rV2;
-  }
-
-  /// @inheritdoc IKeep3rHelper
-  address public constant override KP3R = 0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44;
-
-  /// @inheritdoc IKeep3rHelper
-  address public constant override KP3R_WETH_POOL = 0x11B7a6bc0259ed6Cf9DB8F499988F9eCc7167bf5;
-
-  /// @inheritdoc IKeep3rHelper
-  uint256 public constant override MIN = 11_000;
-
-  /// @inheritdoc IKeep3rHelper
-  uint256 public constant override MAX = 12_000;
-
-  /// @inheritdoc IKeep3rHelper
-  uint256 public constant override BOOST_BASE = 10_000;
-
-  /// @inheritdoc IKeep3rHelper
-  uint256 public constant override TARGETBOND = 200 ether;
+contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
+  constructor(address _keep3rV2, address _governance) Keep3rHelperParameters(_keep3rV2, _governance) {}
 
   /// @inheritdoc IKeep3rHelper
   function quote(uint256 _eth) public view override returns (uint256 _amountOut) {
-    bool _isKP3RToken0 = isKP3RToken0(KP3R_WETH_POOL);
-    int56 _tickDifference = IKeep3r(keep3rV2).observeLiquidity(KP3R_WETH_POOL).difference;
-    _tickDifference = _isKP3RToken0 ? _tickDifference : -_tickDifference;
-    uint256 _tickInterval = IKeep3r(keep3rV2).rewardPeriodTime();
-    _amountOut = getQuoteAtTick(uint128(_eth), _tickDifference, _tickInterval);
+    uint32[] memory _secondsAgos = new uint32[](2);
+    _secondsAgos[0] = 0;
+    _secondsAgos[1] = quoteTwapTime;
+
+    (int56[] memory _tickCumulatives, ) = IUniswapV3Pool(kp3rWethPool.poolAddress).observe(_secondsAgos);
+    int56 _difference = _tickCumulatives[0] - _tickCumulatives[1];
+    _amountOut = getQuoteAtTick(uint128(_eth), kp3rWethPool.isKP3RToken0 ? _difference : -_difference, quoteTwapTime);
   }
 
   /// @inheritdoc IKeep3rHelper
@@ -79,8 +59,8 @@ contract Keep3rHelper is IKeep3rHelper {
 
   /// @inheritdoc IKeep3rHelper
   function getRewardBoostFor(uint256 _bonds) public view override returns (uint256 _rewardBoost) {
-    _bonds = Math.min(_bonds, TARGETBOND);
-    uint256 _cap = Math.max(MIN, MIN + ((MAX - MIN) * _bonds) / TARGETBOND);
+    _bonds = Math.min(_bonds, targetBond);
+    uint256 _cap = Math.max(minBoost, minBoost + ((maxBoost - minBoost) * _bonds) / targetBond);
     _rewardBoost = _cap * _getBasefee();
   }
 
@@ -119,6 +99,22 @@ contract Keep3rHelper is IKeep3rHelper {
       }
       _success = true;
     } catch (bytes memory) {}
+  }
+
+  /// @inheritdoc IKeep3rHelper
+  function getPaymentParams(uint256 _bonds)
+    external
+    view
+    override
+    returns (
+      uint256 _boost,
+      uint256 _oneEthQuote,
+      uint256 _extra
+    )
+  {
+    _oneEthQuote = quote(1 ether);
+    _boost = getRewardBoostFor(_bonds);
+    _extra = workExtraGas;
   }
 
   /// @inheritdoc IKeep3rHelper

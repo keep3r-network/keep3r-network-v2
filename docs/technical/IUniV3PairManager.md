@@ -13,6 +13,27 @@ The fee of the Uniswap pool passed into the constructor
 
 
 
+### `tickUpper() → int24 _tickUpper` (external)
+
+Highest tick in the Uniswap's curve
+
+
+
+
+### `tickLower() → int24 _tickLower` (external)
+
+Lowest tick in the Uniswap's curve
+
+
+
+
+### `tickSpacing() → int24 _tickSpacing` (external)
+
+The pair tick spacing
+
+
+
+
 ### `sqrtRatioAX96() → uint160 _sqrtPriceA96` (external)
 
 The sqrtRatioAX96 at the lowest tick (-887200) of the Uniswap pool

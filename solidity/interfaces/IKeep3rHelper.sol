@@ -1,44 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity >=0.8.4 <0.9.0;
 
 /// @title Keep3rHelper contract
 /// @notice Contains all the helper functions used throughout the different files.
+
 interface IKeep3rHelper {
   // Errors
 
   /// @notice Throws when none of the tokens in the liquidity pair is KP3R
   error LiquidityPairInvalid();
-
-  // Variables
-
-  /// @notice Address of KP3R token
-  /// @return _kp3r Address of KP3R token
-  // solhint-disable func-name-mixedcase
-  function KP3R() external view returns (address _kp3r);
-
-  /// @notice Address of KP3R-WETH pool to use as oracle
-  /// @return _kp3rWeth Address of KP3R-WETH pool to use as oracle
-  function KP3R_WETH_POOL() external view returns (address _kp3rWeth);
-
-  /// @notice The minimum multiplier used to calculate the amount of gas paid to the Keeper for the gas used to perform a job
-  ///         For example: if the quoted gas used is 1000, then the minimum amount to be paid will be 1000 * MIN / BOOST_BASE
-  /// @return _multiplier The MIN multiplier
-  function MIN() external view returns (uint256 _multiplier);
-
-  /// @notice The maximum multiplier used to calculate the amount of gas paid to the Keeper for the gas used to perform a job
-  ///         For example: if the quoted gas used is 1000, then the maximum amount to be paid will be 1000 * MAX / BOOST_BASE
-  /// @return _multiplier The MAX multiplier
-  function MAX() external view returns (uint256 _multiplier);
-
-  /// @notice The boost base used to calculate the boost rewards for the keeper
-  /// @return _base The boost base number
-  function BOOST_BASE() external view returns (uint256 _base);
-
-  /// @notice The targeted amount of bonded KP3Rs to max-up reward multiplier
-  ///         For example: if the amount of KP3R the keeper has bonded is TARGETBOND or more, then the keeper will get
-  ///                      the maximum boost possible in his rewards, if it's less, the reward boost will be proportional
-  /// @return _target The amount of KP3R that comforms the TARGETBOND
-  function TARGETBOND() external view returns (uint256 _target);
 
   // Methods
   // solhint-enable func-name-mixedcase
@@ -94,6 +64,20 @@ interface IKeep3rHelper {
       int56 _tickCumulative1,
       int56 _tickCumulative2,
       bool _success
+    );
+
+  /// @notice Get multiplier, quote, and extra, in order to calculate keeper payment
+  /// @param _bonds Amount of bonded KP3R owned by the keeper
+  /// @return _boost Multiplier per gas unit. Takes into account the base fee and the amount of bonded KP3R
+  /// @return _oneEthQuote Amount of KP3R tokens equivalent to 1 ETH
+  /// @return _extra Amount of extra gas that should be added to the gas spent
+  function getPaymentParams(uint256 _bonds)
+    external
+    view
+    returns (
+      uint256 _boost,
+      uint256 _oneEthQuote,
+      uint256 _extra
     );
 
   /// @notice Given a tick and a liquidity amount, calculates the underlying KP3R tokens

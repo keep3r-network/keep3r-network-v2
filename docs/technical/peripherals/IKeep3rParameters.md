@@ -75,20 +75,6 @@ The fee to be sent to governance when a user adds liquidity to a job
 
 
 
-### `BASE() → uint256 _base` (external)
-
-The base that will be used to calculate the fee
-
-
-
-
-### `MIN_REWARD_PERIOD_TIME() → uint256 _minPeriod` (external)
-
-The minimum rewardPeriodTime value to be set
-
-
-
-
 ### `setKeep3rHelper(address _keep3rHelper)` (external)
 
 Sets the Keep3rHelper address

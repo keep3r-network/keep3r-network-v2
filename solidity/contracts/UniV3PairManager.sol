@@ -59,11 +59,18 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
   /// @inheritdoc IUniV3PairManager
   uint160 public immutable override sqrtRatioBX96;
 
-  /// @notice Lowest possible tick in the Uniswap's curve
-  int24 private constant _TICK_LOWER = -887200;
+  /// @inheritdoc IUniV3PairManager
+  int24 public immutable override tickLower;
 
-  /// @notice Highest possible tick in the Uniswap's curve
-  int24 private constant _TICK_UPPER = 887200;
+  /// @inheritdoc IUniV3PairManager
+  int24 public immutable override tickUpper;
+
+  /// @inheritdoc IUniV3PairManager
+  int24 public immutable override tickSpacing;
+
+  /// @notice Uniswap's maximum tick
+  /// @dev Due to tick spacing, pools with different fees may have differences between _MAX_TICK and tickUpper. Use tickUpper to find the max tick of the pool.
+  int24 private constant _MAX_TICK = 887272;
 
   /// @inheritdoc IERC20Metadata
   //solhint-disable-next-line const-name-snakecase
@@ -79,17 +86,25 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
   PoolAddress.PoolKey private _poolKey;
 
   constructor(address _pool, address _governance) Governable(_governance) {
-    pool = _pool;
     uint24 _fee = IUniswapV3Pool(_pool).fee();
-    fee = _fee;
     address _token0 = IUniswapV3Pool(_pool).token0();
     address _token1 = IUniswapV3Pool(_pool).token1();
+    int24 _tickSpacing = IUniswapV3Pool(_pool).tickSpacing();
+    int24 _tickUpper = _MAX_TICK - (_MAX_TICK % _tickSpacing);
+    int24 _tickLower = -_tickUpper;
+
+    pool = _pool;
+    fee = _fee;
+    tickSpacing = _tickSpacing;
+    tickUpper = _tickUpper;
+    tickLower = _tickLower;
     token0 = _token0;
     token1 = _token1;
     name = string(abi.encodePacked('Keep3rLP - ', ERC20(_token0).symbol(), '/', ERC20(_token1).symbol()));
     symbol = string(abi.encodePacked('kLP-', ERC20(_token0).symbol(), '/', ERC20(_token1).symbol()));
-    sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_TICK_LOWER);
-    sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_TICK_UPPER);
+
+    sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower);
+    sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper);
     _poolKey = PoolAddress.PoolKey({token0: _token0, token1: _token1, fee: _fee});
   }
 
@@ -125,20 +140,20 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
     uint256 amount1Min,
     address to
   ) external override returns (uint256 amount0, uint256 amount1) {
-    (amount0, amount1) = IUniswapV3Pool(pool).burn(_TICK_LOWER, _TICK_UPPER, liquidity);
+    (amount0, amount1) = IUniswapV3Pool(pool).burn(tickLower, tickUpper, liquidity);
 
     if (amount0 < amount0Min || amount1 < amount1Min) revert ExcessiveSlippage();
 
-    IUniswapV3Pool(pool).collect(to, _TICK_LOWER, _TICK_UPPER, uint128(amount0), uint128(amount1));
+    IUniswapV3Pool(pool).collect(to, tickLower, tickUpper, uint128(amount0), uint128(amount1));
     _burn(msg.sender, liquidity);
   }
 
   /// @inheritdoc IUniV3PairManager
   function collect() external override onlyGovernance returns (uint256 amount0, uint256 amount1) {
     (, , , uint128 tokensOwed0, uint128 tokensOwed1) = IUniswapV3Pool(pool).positions(
-      keccak256(abi.encodePacked(address(this), _TICK_LOWER, _TICK_UPPER))
+      keccak256(abi.encodePacked(address(this), tickLower, tickUpper))
     );
-    (amount0, amount1) = IUniswapV3Pool(pool).collect(governance, _TICK_LOWER, _TICK_UPPER, tokensOwed0, tokensOwed1);
+    (amount0, amount1) = IUniswapV3Pool(pool).collect(governance, tickLower, tickUpper, tokensOwed0, tokensOwed1);
   }
 
   /// @inheritdoc IUniV3PairManager
@@ -155,7 +170,7 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
     )
   {
     (liquidity, feeGrowthInside0LastX128, feeGrowthInside1LastX128, tokensOwed0, tokensOwed1) = IUniswapV3Pool(pool).positions(
-      keccak256(abi.encodePacked(address(this), _TICK_LOWER, _TICK_UPPER))
+      keccak256(abi.encodePacked(address(this), tickLower, tickUpper))
     );
   }
 
@@ -222,8 +237,8 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
 
     (amount0, amount1) = IUniswapV3Pool(pool).mint(
       address(this),
-      _TICK_LOWER,
-      _TICK_UPPER,
+      tickLower,
+      tickUpper,
       liquidity,
       abi.encode(MintCallbackData({_poolKey: _poolKey, payer: msg.sender}))
     );

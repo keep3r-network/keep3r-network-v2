@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity >=0.8.4 <0.9.0;
 
 import './IPairManager.sol';
 import '../contracts/libraries/PoolAddress.sol';
@@ -23,6 +23,18 @@ interface IUniV3PairManager is IGovernable, IPairManager {
   /// @notice The fee of the Uniswap pool passed into the constructor
   /// @return _fee The fee of the Uniswap pool passed into the constructor
   function fee() external view returns (uint24 _fee);
+
+  /// @notice Highest tick in the Uniswap's curve
+  /// @return _tickUpper The highest tick in the Uniswap's curve
+  function tickUpper() external view returns (int24 _tickUpper);
+
+  /// @notice Lowest tick in the Uniswap's curve
+  /// @return _tickLower The lower tick in the Uniswap's curve
+  function tickLower() external view returns (int24 _tickLower);
+
+  /// @notice The pair tick spacing
+  /// @return _tickSpacing The pair tick spacing
+  function tickSpacing() external view returns (int24 _tickSpacing);
 
   /// @notice The sqrtRatioAX96 at the lowest tick (-887200) of the Uniswap pool
   /// @return _sqrtPriceA96 A Fixed point Q64.96 number representing the sqrt of the ratio of the two assets (token1/token0)

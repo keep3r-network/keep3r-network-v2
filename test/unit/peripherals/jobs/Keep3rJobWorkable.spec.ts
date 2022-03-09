@@ -98,7 +98,7 @@ describe('Keep3rJobWorkable', () => {
       await jobWorkable.setKeeper(randomKeeper.address);
       const gasLimit = BigNumber.from(30_000_000);
 
-      const tx = await jobWorkable.isKeeper(randomKeeper.address, { gasLimit });
+      const tx = await jobWorkable.isKeeper(randomKeeper.address, { gasLimit: gasLimit.mul(63).div(64) });
       const gasUsed = (await tx.wait()).gasUsed;
       const gasRecord = await readArgFromEvent(tx, 'KeeperValidation', '_gasLeft');
 
@@ -145,7 +145,9 @@ describe('Keep3rJobWorkable', () => {
       await jobWorkable.setKeeper(randomKeeper.address);
       const gasLimit = BigNumber.from(30_000_000);
 
-      const tx = await jobWorkable.isBondedKeeper(randomKeeper.address, randomLiquidity.address, 0, 0, 0, { gasLimit });
+      const tx = await jobWorkable.isBondedKeeper(randomKeeper.address, randomLiquidity.address, 0, 0, 0, {
+        gasLimit: gasLimit.mul(63).div(64),
+      });
       const gasUsed = (await tx.wait()).gasUsed;
       const gasRecord = await readArgFromEvent(tx, 'KeeperValidation', '_gasLeft');
 
@@ -170,14 +172,10 @@ describe('Keep3rJobWorkable', () => {
     context('when job is allowed', () => {
       let blockTimestamp: number;
       let jobCredits: BigNumber;
-      let oneTenth: number;
       let oneTick: number;
 
       beforeEach(async () => {
-        oneTenth = -23027 * rewardPeriodTime;
         oneTick = rewardPeriodTime;
-        // 1.0001^-23027 => 1ETH / 10KP3R
-        // 1.0001^1 => 1 tickDifference
 
         blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 
@@ -201,7 +199,7 @@ describe('Keep3rJobWorkable', () => {
         const gasLimit = BigNumber.from(30_000_000);
         await jobWorkable.setVariable('_initialGas', gasLimit);
 
-        const tx = await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit });
+        const tx = await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit: gasLimit.mul(63).div(64) });
         const eventArgs = (await readArgsFromEvent(tx, 'KeeperWork'))[0];
         const gasUsed = (await tx.wait()).gasUsed;
         const gasRecord = await readArgFromEvent(tx, 'KeeperWork', '_gasLeft');
@@ -301,20 +299,20 @@ describe('Keep3rJobWorkable', () => {
       });
 
       context('when job credits are not enough for payment', () => {
+        const oneEthQuote = toUnit(0.1); // 1 ETH = 10 KP3R
+        const extraGas = 0;
+
         beforeEach(async () => {
-          helper.observe.returns([oneTenth, 0, true]);
-          helper.getQuoteAtTick.returns(([amount]: [BigNumber]) => {
-            return amount.div(10);
-          });
           helper.getKP3RsAtTick.returns(([amount]: [BigNumber]) => {
             return amount.div(10);
           });
-
           blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+
           // work pays more gas than current credits
           // rewardETH = gasUsed * 120% * 20Gwei
           // rewardKP3R = rewardETH / oneTenth
-          helper.getRewardBoostFor.returns(toGwei(20).mul(1.2 * 10_000));
+          const boost = toGwei(20).mul(1.2 * 10_000);
+          helper.getPaymentParams.returns([boost, oneEthQuote, extraGas]);
 
           // job rewarded mid last period but less than a rewardPeriodTime ago
           const previousRewardedAt = blockTimestamp + 15 - rewardPeriodTime;
@@ -338,7 +336,8 @@ describe('Keep3rJobWorkable', () => {
           await evm.advanceTimeAndBlock(moment.duration(1, 'days').as('seconds'));
           await jobWorkable.setVariable('rewardedAt', { [approvedJob.address]: mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime) });
 
-          helper.getRewardBoostFor.returns(toGwei(200).mul(1.2 * 10_000));
+          const biggerBoost = toGwei(200).mul(1.2 * 10_000);
+          helper.getPaymentParams.returns([biggerBoost, oneEthQuote, extraGas]);
           const tx = await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit: 1_000_000 });
 
           blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
@@ -367,6 +366,7 @@ describe('Keep3rJobWorkable', () => {
           await jobWorkable.setVariable('rewardedAt', { [approvedJob.address]: mathUtils.calcPeriod(blockTimestamp) });
           await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit: 1_000_000 });
           const bondsAcc1 = await jobWorkable.bonds(randomKeeper.address, keep3rV1.address);
+
           // second job shouldn't reward the job and earn less KP3R
           await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit: 1_000_000 });
           const bondsAcc2 = await jobWorkable.bonds(randomKeeper.address, keep3rV1.address);
@@ -448,7 +448,7 @@ describe('Keep3rJobWorkable', () => {
           const payment = toUnit(1);
           const gasLimit = BigNumber.from(30_000_000);
 
-          const tx = await jobWorkable.connect(approvedJob).bondedPayment(randomKeeper.address, payment, { gasLimit });
+          const tx = await jobWorkable.connect(approvedJob).bondedPayment(randomKeeper.address, payment, { gasLimit: gasLimit.mul(63).div(64) });
           const gasUsed = (await tx.wait()).gasUsed;
           const eventArgs = (await readArgsFromEvent(tx, 'KeeperWork'))[0];
           const gasRecord = await readArgFromEvent(tx, 'KeeperWork', '_gasLeft');
@@ -615,7 +615,9 @@ describe('Keep3rJobWorkable', () => {
         const payment = toUnit(1);
         const gasLimit = BigNumber.from(30_000_000);
 
-        const tx = await jobWorkable.connect(approvedJob).directTokenPayment(token.address, randomKeeper.address, payment, { gasLimit });
+        const tx = await jobWorkable
+          .connect(approvedJob)
+          .directTokenPayment(token.address, randomKeeper.address, payment, { gasLimit: gasLimit.mul(63).div(64) });
         const gasUsed = (await tx.wait()).gasUsed;
         const gasRecord = await readArgFromEvent(tx, 'KeeperWork', '_gasLeft');
         const eventArgs = await readArgsFromEvent(tx, 'KeeperWork');
