@@ -12,7 +12,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   const keep3rV1 = await hre.deployments.get('Keep3rV1');
   const keep3rV1Proxy = await hre.deployments.get('Keep3rV1Proxy');
 
-  const keep3rHelperArgs = [keeperV2Address];
+  const keep3rHelperArgs = [keeperV2Address, governance];
 
   const keep3rHelper = await hre.deployments.deploy('Keep3rHelper', {
     from: deployer,
