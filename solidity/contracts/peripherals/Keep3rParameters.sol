@@ -106,7 +106,6 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance, Keep
   }
 
   /// @inheritdoc IKeep3rParameters
-  // TODO: check what happens to credit minting when changing this. Shouldn't we update the cached ticks?
   function setRewardPeriodTime(uint256 _rewardPeriodTime) external override onlyGovernance {
     if (_rewardPeriodTime < _MIN_REWARD_PERIOD_TIME) revert MinRewardPeriod();
     rewardPeriodTime = _rewardPeriodTime;

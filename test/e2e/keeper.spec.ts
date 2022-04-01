@@ -44,13 +44,17 @@ describe('@skip-on-coverage Keep3r', () => {
   });
 
   it('should fail to withdraw funds without waiting 3 days after unbond', async () => {
+    // send some KP3R to keeper
+    await keep3rV1Proxy.connect(keep3rV1ProxyGovernance)['mint(address,uint256)'](keeper._address, toUnit(1));
+
     // bond and activate
-    await keep3r.connect(keeper).bond(keep3rV1.address, 0);
+    await keep3rV1.connect(keeper).approve(keep3r.address, toUnit(1));
+    await keep3r.connect(keeper).bond(keep3rV1.address, toUnit(1));
     await evm.advanceTimeAndBlock(moment.duration(3, 'days').as('seconds'));
     await keep3r.connect(keeper).activate(keep3rV1.address);
 
     // unbond and withdraw
-    await keep3r.connect(keeper).unbond(keep3rV1.address, 0);
+    await keep3r.connect(keeper).unbond(keep3rV1.address, toUnit(1));
     await evm.advanceTimeAndBlock(moment.duration(3, 'days').as('seconds') - 60);
     await expect(keep3r.connect(keeper).withdraw(keep3rV1.address)).to.be.revertedWith('UnbondsLocked()');
   });

@@ -32,7 +32,6 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
   /// @inheritdoc IKeep3rHelper
   function quote(uint256 _eth) public view override returns (uint256 _amountOut) {
     uint32[] memory _secondsAgos = new uint32[](2);
-    _secondsAgos[0] = 0;
     _secondsAgos[1] = quoteTwapTime;
 
     (int56[] memory _tickCumulatives, ) = IUniswapV3Pool(kp3rWethPool.poolAddress).observe(_secondsAgos);

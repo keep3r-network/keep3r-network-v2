@@ -20,9 +20,10 @@ contract Keep3rKeeperDisputableForTest is Keep3rKeeperDisputable {
   function internalSlash(
     address _bonded,
     address _keeper,
-    uint256 _amount
+    uint256 _bondAmount,
+    uint256 _unbondAmount
   ) external {
-    _slash(_bonded, _keeper, _amount);
+    _slash(_bonded, _keeper, _bondAmount, _unbondAmount);
   }
 
   function isKeeper(address _address) external view returns (bool _isKeeper) {

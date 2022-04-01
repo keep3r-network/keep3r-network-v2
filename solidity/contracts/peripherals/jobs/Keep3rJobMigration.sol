@@ -38,7 +38,7 @@ abstract contract Keep3rJobMigration is IKeep3rJobMigration, Keep3rJobFundableCr
     while (_jobTokens[_fromJob].length() > 0) {
       address _tokenToMigrate = _jobTokens[_fromJob].at(0);
       jobTokenCredits[_toJob][_tokenToMigrate] += jobTokenCredits[_fromJob][_tokenToMigrate];
-      jobTokenCredits[_fromJob][_tokenToMigrate] = 0;
+      delete jobTokenCredits[_fromJob][_tokenToMigrate];
       _jobTokens[_fromJob].remove(_tokenToMigrate);
       _jobTokens[_toJob].add(_tokenToMigrate);
     }

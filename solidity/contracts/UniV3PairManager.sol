@@ -39,7 +39,7 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
   string public override symbol;
 
   /// @inheritdoc IERC20
-  uint256 public override totalSupply = 0;
+  uint256 public override totalSupply;
 
   /// @inheritdoc IPairManager
   address public immutable override token0;

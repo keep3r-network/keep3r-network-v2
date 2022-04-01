@@ -65,11 +65,13 @@ interface IKeep3rKeeperDisputable {
   /// @notice Allows governance to slash a keeper based on a dispute
   /// @param _keeper The address being slashed
   /// @param _bonded The asset being slashed
-  /// @param _amount The amount being slashed
+  /// @param _bondAmount The bonded amount being slashed
+  /// @param _unbondAmount The pending unbond amount being slashed
   function slash(
     address _keeper,
     address _bonded,
-    uint256 _amount
+    uint256 _bondAmount,
+    uint256 _unbondAmount
   ) external;
 
   /// @notice Blacklists a keeper from participating in the network
