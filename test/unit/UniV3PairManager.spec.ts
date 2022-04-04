@@ -85,6 +85,10 @@ describe('UniV3PairManager', () => {
   });
 
   describe('constructor', () => {
+    it('should assign factory to the msg sender', async () => {
+      expect(await uniV3PairManager.factory()).to.equal(deployer.address);
+    });
+
     it('should assign pool to the DAI-WETH pool', async () => {
       expect(await uniV3PairManager.pool()).to.equal(uniswapPool.address);
     });

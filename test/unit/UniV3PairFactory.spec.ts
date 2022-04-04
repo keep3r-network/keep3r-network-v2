@@ -59,12 +59,15 @@ describe('UniV3PairManagerFactory', () => {
 
     context('when deployed', () => {
       let deployedAddress: string;
+      let createdManager: UniV3PairManager;
 
       beforeEach(async () => {
         deployedAddress = await uniPairFactory.callStatic.createPairManager(pair.address);
 
         await uniPairFactory.createPairManager(pair.address);
+        createdManager = (await ethers.getContractAt('IUniV3PairManager', deployedAddress)) as UniV3PairManager;
       });
+
       it('should deploy a new manager', async () => {
         const createdManager = (await ethers.getContractAt('IUniV3PairManager', deployedAddress)) as UniV3PairManager;
         expect(await createdManager.callStatic.name()).to.equal('Keep3rLP - DAI/WETH');
@@ -72,6 +75,10 @@ describe('UniV3PairManagerFactory', () => {
 
       it('should add the deployed manager to the mapping', async () => {
         expect(await uniPairFactory.pairManagers(pair.address)).to.equal(deployedAddress);
+      });
+
+      it('should set its address as deployed manager factory', async () => {
+        expect(await createdManager.callStatic.factory()).to.equal(uniPairFactory.address);
       });
     });
 

@@ -42,6 +42,9 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
   uint256 public override totalSupply;
 
   /// @inheritdoc IPairManager
+  address public immutable override factory;
+
+  /// @inheritdoc IPairManager
   address public immutable override token0;
 
   /// @inheritdoc IPairManager
@@ -93,6 +96,7 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
     int24 _tickUpper = _MAX_TICK - (_MAX_TICK % _tickSpacing);
     int24 _tickLower = -_tickUpper;
 
+    factory = msg.sender;
     pool = _pool;
     fee = _fee;
     tickSpacing = _tickSpacing;
