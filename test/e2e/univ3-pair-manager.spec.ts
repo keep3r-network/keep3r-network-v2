@@ -104,7 +104,7 @@ describe('UniV3PairManager', () => {
     uniV3PairManagerFactory = (await ethers.getContractFactory('UniV3PairManagerFactory')) as UniV3PairManagerFactory__factory;
     liquidityAmountsFactory = (await ethers.getContractFactory('LiquidityAmountsForTest')) as LiquidityAmountsForTest__factory;
 
-    uniPairFactory = await uniV3PairManagerFactory.connect(governance).deploy();
+    uniPairFactory = await uniV3PairManagerFactory.deploy(governance.address);
 
     // deploying different pairs
     await uniPairFactory.createPairManager(KP3R_WETH_1);

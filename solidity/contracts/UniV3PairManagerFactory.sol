@@ -26,7 +26,7 @@ import './peripherals/Governable.sol';
 contract UniV3PairManagerFactory is IPairManagerFactory, Governable {
   mapping(address => address) public override pairManagers;
 
-  constructor() Governable(msg.sender) {}
+  constructor(address _governance) Governable(_governance) {}
 
   ///@inheritdoc IPairManagerFactory
   function createPairManager(address _pool) external override returns (address _pairManager) {
