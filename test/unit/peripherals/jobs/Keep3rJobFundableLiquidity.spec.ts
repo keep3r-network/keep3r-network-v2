@@ -1045,6 +1045,9 @@ describe('Keep3rJobFundableLiquidity', () => {
 
     it('should revert if unbonded tokens are still locked', async () => {
       const blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      await jobFundable.setVariable('pendingUnbonds', {
+        [randomJob]: { [approvedLiquidity.address]: toUnit(1) },
+      });
       await jobFundable.setVariable('canWithdrawAfter', {
         [randomJob]: { [approvedLiquidity.address]: blockTimestamp + moment.duration('1', 'hour').asSeconds() },
       });

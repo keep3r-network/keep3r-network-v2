@@ -194,12 +194,14 @@ describe('Keep3rKeeperFundable', () => {
 
     it('should revert if bondings are blocked', async () => {
       const lastBlock = await ethers.provider.getBlock('latest');
+      await keeperFundable.setVariable('pendingUnbonds', { [randomKeeper.address]: { [erc20.address]: toUnit(1) } });
       await keeperFundable.setVariable('canWithdrawAfter', { [randomKeeper.address]: { [erc20.address]: lastBlock.timestamp + 1000 } });
 
       await expect(keeperFundable.connect(randomKeeper).withdraw(erc20.address)).to.be.revertedWith('UnbondsLocked');
     });
     it('should revert to a disputed keeper', async () => {
       const lastBlock = await ethers.provider.getBlock('latest');
+      await keeperFundable.setVariable('pendingUnbonds', { [randomKeeper.address]: { [erc20.address]: toUnit(1) } });
       await keeperFundable.setVariable('canWithdrawAfter', { [randomKeeper.address]: { [erc20.address]: lastBlock.timestamp } });
 
       await keeperFundable.setVariable('disputes', { [randomKeeper.address]: true });

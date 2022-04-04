@@ -23,7 +23,7 @@ contract BasicJob {
   }
 
   function workRefund(uint256 _howHard) external upkeep {
-    for (uint256 i = 0; i < _howHard; i++) {
+    for (uint256 i; i < _howHard; i++) {
       array.push(i);
     }
 
