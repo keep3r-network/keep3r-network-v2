@@ -18,10 +18,10 @@ describe('UniV3PairManagerFactory', () => {
   let uniPairFactory: MockContract<UniV3PairManagerFactory>;
 
   //signers
-  let deployer: SignerWithAddress;
+  let governance: SignerWithAddress;
 
   before(async () => {
-    [deployer] = await ethers.getSigners();
+    [, governance] = await ethers.getSigners();
 
     uniV3PairManagerFactory = await smock.mock<UniV3PairManagerFactory__factory>('UniV3PairManagerFactory');
     pair = await smock.fake<IUniV3PairManager>('UniV3PairManager');
@@ -32,15 +32,17 @@ describe('UniV3PairManagerFactory', () => {
     pair.token1.returns(token1.address);
     token0.symbol.returns('DAI');
     token1.symbol.returns('WETH');
+
+    pair.tickSpacing.returns(10);
   });
 
   beforeEach(async () => {
-    uniPairFactory = await uniV3PairManagerFactory.deploy();
+    uniPairFactory = await uniV3PairManagerFactory.deploy(governance.address);
   });
 
   describe('constructor', () => {
     it('should set the governance to the deployer', async () => {
-      expect(await uniPairFactory.governance()).to.equal(deployer.address);
+      expect(await uniPairFactory.governance()).to.equal(governance.address);
     });
   });
 
@@ -57,12 +59,15 @@ describe('UniV3PairManagerFactory', () => {
 
     context('when deployed', () => {
       let deployedAddress: string;
+      let createdManager: UniV3PairManager;
 
       beforeEach(async () => {
         deployedAddress = await uniPairFactory.callStatic.createPairManager(pair.address);
 
         await uniPairFactory.createPairManager(pair.address);
+        createdManager = (await ethers.getContractAt('IUniV3PairManager', deployedAddress)) as UniV3PairManager;
       });
+
       it('should deploy a new manager', async () => {
         const createdManager = (await ethers.getContractAt('IUniV3PairManager', deployedAddress)) as UniV3PairManager;
         expect(await createdManager.callStatic.name()).to.equal('Keep3rLP - DAI/WETH');
@@ -70,6 +75,10 @@ describe('UniV3PairManagerFactory', () => {
 
       it('should add the deployed manager to the mapping', async () => {
         expect(await uniPairFactory.pairManagers(pair.address)).to.equal(deployedAddress);
+      });
+
+      it('should set its address as deployed manager factory', async () => {
+        expect(await createdManager.callStatic.factory()).to.equal(uniPairFactory.address);
       });
     });
 

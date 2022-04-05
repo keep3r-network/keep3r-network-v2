@@ -1,11 +1,12 @@
 import IUniswapV3PoolArtifact from '@artifacts/@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
+import { KP3R_V1_ADDRESS, KP3R_WETH_V3_POOL_ADDRESS } from '@e2e/common';
 import { BigNumber } from '@ethersproject/bignumber';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
 import IKeep3rArtifact from '@solidity/interfaces/IKeep3r.sol/IKeep3r.json';
 import { IKeep3r, IKeep3rV1, IUniswapV3Pool, Keep3rHelperForTest, Keep3rHelperForTest__factory, ProxyForTest__factory } from '@types';
-import { wallet } from '@utils';
+import { behaviours, wallet } from '@utils';
 import { toGwei, toUnit } from '@utils/bn';
 import { MathUtils, mathUtilsFactory } from '@utils/math';
 import chai, { expect } from 'chai';
@@ -22,40 +23,39 @@ describe('Keep3rHelper', () => {
   let helper: MockContract<Keep3rHelperForTest>;
 
   let kp3rV1Address: string;
-  let oraclePoolAddress: string;
   let targetBond: BigNumber;
+  let governance: SignerWithAddress;
   let randomKeeper: SignerWithAddress;
 
-  let rewardPeriodTime: number;
-  let oneTenth: number;
+  let workExtraGas: BigNumber;
+  let quoteTwapTime: number;
+  let oneTenthTick0: BigNumber;
+  let oneTenthTick1: BigNumber;
 
   let mathUtils: MathUtils;
 
   before(async () => {
-    [, randomKeeper] = await ethers.getSigners();
+    [, governance, randomKeeper] = await ethers.getSigners();
 
     helperFactory = await smock.mock<Keep3rHelperForTest__factory>('Keep3rHelperForTest');
     keep3r = await smock.fake(IKeep3rArtifact);
-    helper = await helperFactory.deploy(keep3r.address);
-
-    oraclePoolAddress = await helper.callStatic.KP3R_WETH_POOL();
-    oraclePool = await smock.fake(IUniswapV3PoolArtifact, { address: oraclePoolAddress });
+    oraclePool = await smock.fake(IUniswapV3PoolArtifact, { address: KP3R_WETH_V3_POOL_ADDRESS });
+    oraclePool.token1.returns(KP3R_V1_ADDRESS);
+    helper = await helperFactory.deploy(keep3r.address, governance.address);
 
     kp3rV1Address = await helper.callStatic.KP3R();
-    targetBond = await helper.callStatic.TARGETBOND();
+    targetBond = await helper.callStatic.targetBond();
+    quoteTwapTime = await helper.callStatic.quoteTwapTime();
+    workExtraGas = await helper.callStatic.workExtraGas();
+
+    // Twap calculation: 1.0001 ** (-23027) = 0.100000022 ~= 0.1
+    oneTenthTick0 = BigNumber.from(-23027).mul(quoteTwapTime);
+    oneTenthTick1 = BigNumber.from(0);
 
     keep3rV1 = await smock.fake(IKeep3rV1Artifact, { address: kp3rV1Address });
-
-    /* Twap calculation:
-    // 1.0001**(-23027) = 0.100000022 ~= 0.1
-    */
     mathUtils = mathUtilsFactory(0, 0);
 
-    rewardPeriodTime = 100_000;
-    oneTenth = -23027 * rewardPeriodTime;
-    oraclePool.token1.returns(kp3rV1Address);
-    keep3r.observeLiquidity.whenCalledWith(oraclePoolAddress).returns([0, oneTenth, 0]);
-    keep3r.rewardPeriodTime.returns(rewardPeriodTime);
+    oraclePool.observe.returns([[oneTenthTick0, oneTenthTick1], []]);
   });
 
   beforeEach(async () => {
@@ -66,11 +66,9 @@ describe('Keep3rHelper', () => {
     it('should return keep3r KP3R/WETH quote', async () => {
       const toQuote = toUnit(10);
       const quoteResult = toUnit(1);
-      /*
-      // 1.0001**(-23027) ~= 0.1
-      */
 
-      expect(await helper.callStatic.quote(toQuote)).to.be.closeTo(quoteResult, toUnit(0.001).toNumber());
+      const actualQuote = await helper.callStatic.quote(toQuote);
+      expect(actualQuote).to.be.closeTo(quoteResult, toUnit(0.001).toNumber());
     });
 
     it('should work with 100 ETH', async () => {
@@ -90,11 +88,10 @@ describe('Keep3rHelper', () => {
   describe('getRewardAmountFor', () => {
     const baseFee = toGwei(200);
     const gasUsed = BigNumber.from(30_000_000);
-    const expectedQuoteAmount = gasUsed.mul(baseFee).div(10);
+    let expectedQuoteAmount: BigNumber;
 
     beforeEach(async () => {
-      keep3r.observeLiquidity.whenCalledWith(oraclePoolAddress).returns([0, oneTenth, 0]);
-      keep3r.rewardPeriodTime.returns(rewardPeriodTime);
+      expectedQuoteAmount = gasUsed.mul(baseFee).div(10);
       await helper.setVariable('basefee', baseFee);
     });
 
@@ -132,11 +129,10 @@ describe('Keep3rHelper', () => {
   describe('getRewardAmount', () => {
     const baseFee = toGwei(200);
     const gasUsed = BigNumber.from(30_000_000);
+    let expectedQuoteAmount: BigNumber;
 
-    const expectedQuoteAmount = gasUsed.mul(baseFee).div(10);
     beforeEach(async () => {
-      keep3r.observeLiquidity.whenCalledWith(oraclePoolAddress).returns([0, oneTenth, 0]);
-      keep3r.rewardPeriodTime.returns(rewardPeriodTime);
+      expectedQuoteAmount = gasUsed.mul(baseFee).div(10);
       await helper.setVariable('basefee', baseFee);
     });
 
@@ -275,6 +271,7 @@ describe('Keep3rHelper', () => {
       // x = liquidity / sqrtPrice
       */
 
+      // Twap calculation: 1.0001 ** (-23027) = 0.100000022 ~= 0.1
       const tick1 = 23027;
 
       const sqrtPrice = 1.0001 ** (((tick1 - tick2) / 2) * tickTimeDifference);
@@ -309,6 +306,7 @@ describe('Keep3rHelper', () => {
     const precision = 1_000_000;
     const baseAmount = toUnit(3);
     const tickTimeDifference = 1;
+    // Twap calculation: 1.0001 ** (-23027) = 0.100000022 ~= 0.1
     const tick1 = -23027;
     const tick2 = 0;
 
@@ -326,6 +324,48 @@ describe('Keep3rHelper', () => {
         expectedQuote,
         toUnit(0.00001).toNumber()
       );
+    });
+  });
+
+  describe('setWorkExtraGas', () => {
+    const newValue = 123;
+    behaviours.onlyGovernance(() => helper, 'setWorkExtraGas', governance, [newValue]);
+
+    it('should assign specified value to variable', async () => {
+      expect(await helper.callStatic.workExtraGas()).not.to.equal(newValue);
+      await helper.connect(governance).setWorkExtraGas(newValue);
+      expect(await helper.callStatic.workExtraGas()).to.equal(newValue);
+    });
+
+    it('should emit event', async () => {
+      await expect(helper.connect(governance).setWorkExtraGas(newValue)).to.emit(helper, 'WorkExtraGasChange').withArgs(newValue);
+    });
+  });
+
+  describe('getPaymentParams', () => {
+    const bonds = toUnit(150);
+
+    let boost: BigNumber;
+    let oneEthQuote: BigNumber;
+    let extraGas: BigNumber;
+
+    before(async () => {
+      [boost, oneEthQuote, extraGas] = await helper.callStatic.getPaymentParams(bonds);
+    });
+
+    it('should return 1 eth quoted with getQuoteAtTick', async () => {
+      const expectedQuote = await helper.callStatic.quote(toUnit(1));
+      expect(expectedQuote).to.equal(oneEthQuote);
+    });
+
+    it('should return boost from getRewardBoostFor', async () => {
+      const expectedBoost = await helper.callStatic.getRewardBoostFor(bonds);
+      expect(expectedBoost).to.equal(boost);
+    });
+
+    it('should return workExtraGas', async () => {
+      const expectedExtraGas = await helper.callStatic.workExtraGas();
+      expect(expectedExtraGas).to.equal(extraGas);
     });
   });
 });

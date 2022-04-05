@@ -1,18 +1,15 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { KEEP3R_MSIG, KEEP3R_V1, KEEP3R_V1_PROXY, KP3R_WETH_V3_POOL } from './constants';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
-  const currentNonce: number = await hre.ethers.provider.getTransactionCount(deployer);
 
   // precalculate the address of Keep3rV2 contract
+  const currentNonce: number = await hre.ethers.provider.getTransactionCount(deployer);
   const keeperV2Address: string = hre.ethers.utils.getContractAddress({ from: deployer, nonce: currentNonce + 1 });
 
-  const governance = deployer;
-  const keep3rV1 = await hre.deployments.get('Keep3rV1');
-  const keep3rV1Proxy = await hre.deployments.get('Keep3rV1Proxy');
-
-  const keep3rHelperArgs = [keeperV2Address];
+  const keep3rHelperArgs = [keeperV2Address, KEEP3R_MSIG];
 
   const keep3rHelper = await hre.deployments.deploy('Keep3rHelper', {
     from: deployer,
@@ -21,10 +18,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     log: true,
   });
 
-  // pool to use as a KP3R/WETH oracle
-  const uniV3PoolAddress = '0x11b7a6bc0259ed6cf9db8f499988f9ecc7167bf5';
-
-  const keep3rV2Args = [governance, keep3rHelper.address, keep3rV1.address, keep3rV1Proxy.address, uniV3PoolAddress];
+  const keep3rV2Args = [deployer, keep3rHelper.address, KEEP3R_V1, KEEP3R_V1_PROXY, KP3R_WETH_V3_POOL];
 
   await hre.deployments.deploy('Keep3r', {
     contract: 'solidity/contracts/Keep3r.sol:Keep3r',
@@ -34,6 +28,6 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   });
 };
 
-deployFunction.tags = ['deploy-keep3r', 'Keep3r', 'mainnet'];
+deployFunction.tags = ['deploy-keep3r', 'keep3r', 'mainnet'];
 
 export default deployFunction;

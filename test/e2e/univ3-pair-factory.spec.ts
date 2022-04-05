@@ -30,7 +30,7 @@ describe('UniV3PairManagerFactory', () => {
 
     uniV3PairManagerFactory = (await ethers.getContractFactory('UniV3PairManagerFactory')) as UniV3PairManagerFactory__factory;
 
-    uniPairFactory = await uniV3PairManagerFactory.connect(governance).deploy();
+    uniPairFactory = await uniV3PairManagerFactory.deploy(governance.address);
 
     snapshotId = await snapshot.take();
   });

@@ -7,14 +7,14 @@ Handles the ownership of the jobs
 
 ### `jobOwner(address _job) → address _owner` (external)
 
-Maps the job to the owner of the job (job => user)
+Maps the job to the owner of the job
 
 
 
 
 ### `jobPendingOwner(address _job) → address _pendingOwner` (external)
 
-Maps the owner of the job to its pending owner (job => user)
+Maps the job to its pending owner
 
 
 
@@ -25,9 +25,11 @@ Proposes a new address to be the owner of the job
 
 
 
+
 ### `acceptJobOwnership(address _job)` (external)
 
 The proposed address accepts to be the owner of the job
+
 
 
 

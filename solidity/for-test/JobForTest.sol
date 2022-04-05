@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity >=0.8.4 <0.9.0;
 
 import '../interfaces/IKeep3r.sol';
 
@@ -15,7 +15,7 @@ contract JobForTest {
   function work() external {
     if (!IKeep3r(keep3r).isKeeper(msg.sender)) revert InvalidKeeper();
 
-    for (uint256 i = 0; i < 1000; i++) {
+    for (uint256 i; i < 1000; i++) {
       nonce++;
     }
 
@@ -25,7 +25,7 @@ contract JobForTest {
   function workHard(uint256 _factor) external {
     if (!IKeep3r(keep3r).isKeeper(msg.sender)) revert InvalidKeeper();
 
-    for (uint256 i = 0; i < 1000 * _factor; i++) {
+    for (uint256 i; i < 1000 * _factor; i++) {
       nonce++;
     }
 

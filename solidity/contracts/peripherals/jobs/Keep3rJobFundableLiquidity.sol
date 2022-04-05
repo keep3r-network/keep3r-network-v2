@@ -60,20 +60,14 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   function jobLiquidityCredits(address _job) public view override returns (uint256 _liquidityCredits) {
     uint256 _periodCredits = jobPeriodCredits(_job);
 
-    // A job can have liquidityCredits without periodCredits (forced by Governance)
-    if (rewardedAt[_job] > _period(block.timestamp - rewardPeriodTime)) {
-      // Will calculate job credits only if it was rewarded later than last period
-      if ((block.timestamp - rewardedAt[_job]) >= rewardPeriodTime) {
-        // Will return a full period if job was rewarded more than a period ago
-        _liquidityCredits = _periodCredits;
-      } else {
-        // Will update minted job credits (not forced) to new twaps if credits are outdated
-        _liquidityCredits = _periodCredits > 0
-          ? (_jobLiquidityCredits[_job] * _periodCredits) / _jobPeriodCredits[_job]
-          : _jobLiquidityCredits[_job];
-      }
+    // If the job was rewarded in the past 1 period time
+    if ((block.timestamp - rewardedAt[_job]) < rewardPeriodTime) {
+      // If the job has period credits, update minted job credits to new twap
+      _liquidityCredits = _periodCredits > 0
+        ? (_jobLiquidityCredits[_job] * _periodCredits) / _jobPeriodCredits[_job] // If the job has period credits, return remaining job credits updated to new twap
+        : _jobLiquidityCredits[_job]; // If not, return remaining credits, forced credits should not be updated
     } else {
-      // Will return a full period if job credits are expired
+      // Else return a full period worth of credits if current credits have expired
       _liquidityCredits = _periodCredits;
     }
   }
@@ -81,20 +75,20 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   /// @inheritdoc IKeep3rJobFundableLiquidity
   function totalJobCredits(address _job) external view override returns (uint256 _credits) {
     uint256 _periodCredits = jobPeriodCredits(_job);
-    uint256 _cooldown;
+    uint256 _cooldown = block.timestamp;
 
     if ((rewardedAt[_job] > _period(block.timestamp - rewardPeriodTime))) {
       // Will calculate cooldown if it outdated
       if ((block.timestamp - rewardedAt[_job]) >= rewardPeriodTime) {
         // Will calculate cooldown from last reward reference in this period
-        _cooldown = block.timestamp - (rewardedAt[_job] + rewardPeriodTime);
+        _cooldown -= (rewardedAt[_job] + rewardPeriodTime);
       } else {
         // Will calculate cooldown from last reward timestamp
-        _cooldown = block.timestamp - rewardedAt[_job];
+        _cooldown -= rewardedAt[_job];
       }
     } else {
       // Will calculate cooldown from period start if expired
-      _cooldown = block.timestamp - _period(block.timestamp);
+      _cooldown -= _period(block.timestamp);
     }
     _credits = jobLiquidityCredits(_job) + _phase(_cooldown, _periodCredits);
   }
@@ -144,7 +138,7 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
       if (success) {
         _tickCache.period = _period(block.timestamp);
       } else {
-        _tickCache.period = 0;
+        delete _tickCache.period;
       }
     }
   }
@@ -220,15 +214,17 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
     address _receiver
   ) external override onlyJobOwner(_job) {
     if (_receiver == address(0)) revert ZeroAddress();
-    if (canWithdrawAfter[_job][_liquidity] == 0) revert UnbondsUnexistent();
+    if (pendingUnbonds[_job][_liquidity] == 0) revert UnbondsUnexistent();
     if (canWithdrawAfter[_job][_liquidity] >= block.timestamp) revert UnbondsLocked();
     if (disputes[_job]) revert Disputed();
 
     uint256 _amount = pendingUnbonds[_job][_liquidity];
+
+    delete pendingUnbonds[_job][_liquidity];
+    delete canWithdrawAfter[_job][_liquidity];
+
     IERC20(_liquidity).safeTransfer(_receiver, _amount);
     emit LiquidityWithdrawal(_job, _liquidity, _receiver, _amount);
-
-    pendingUnbonds[_job][_liquidity] = 0;
   }
 
   // Internal functions
@@ -341,12 +337,6 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
       int56 _tickDifference = _isKP3RToken0[_liquidity] ? _tick[_liquidity].difference : -_tick[_liquidity].difference;
       _quote = IKeep3rHelper(keep3rHelper).getKP3RsAtTick(_amount, _tickDifference, rewardPeriodTime);
     }
-  }
-
-  /// @notice Returns KP3R amount for a given ETH amount
-  function _quoteKp3rs(uint256 _eth) internal view returns (uint256 _amountOut) {
-    int56 _tickDifference = _isKP3RToken0[kp3rWethPool] ? _tick[kp3rWethPool].difference : -_tick[kp3rWethPool].difference;
-    _amountOut = IKeep3rHelper(keep3rHelper).getQuoteAtTick(uint128(_eth), _tickDifference, rewardPeriodTime);
   }
 
   /// @notice Updates job credits to current quotes and rewards job's pending minted credits

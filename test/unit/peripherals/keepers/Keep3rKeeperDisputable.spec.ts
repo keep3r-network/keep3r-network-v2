@@ -53,11 +53,14 @@ describe('Keep3rKeeperDisputable', () => {
   });
 
   describe('slash', () => {
+    const bondAmount = toUnit(3);
+    const unbondAmount = toUnit(5);
+
     onlySlasher(
       () => keeperDisputable,
       'slash',
       [slasher],
-      () => [randomKeeper, keeperDisputable.address, 1]
+      () => [randomKeeper, keeperDisputable.address, 1, 1]
     );
 
     beforeEach(async () => {
@@ -65,7 +68,10 @@ describe('Keep3rKeeperDisputable', () => {
       keep3rV1.transferFrom.returns(true);
 
       await keeperDisputable.setVariable('bonds', {
-        [randomKeeper]: { [keep3rV1.address]: toUnit(3) },
+        [randomKeeper]: { [keep3rV1.address]: bondAmount },
+      });
+      await keeperDisputable.setVariable('pendingUnbonds', {
+        [randomKeeper]: { [keep3rV1.address]: unbondAmount },
       });
 
       await keeperDisputable.connect(disputer).dispute(randomKeeper);
@@ -73,20 +79,27 @@ describe('Keep3rKeeperDisputable', () => {
 
     it('should revert if keeper is not disputed', async () => {
       const undisputedKeeper = wallet.generateRandomAddress();
-      await expect(keeperDisputable.connect(slasher).slash(undisputedKeeper, keep3rV1.address, toUnit(0.123))).to.be.revertedWith(
+      await expect(keeperDisputable.connect(slasher).slash(undisputedKeeper, keep3rV1.address, toUnit(0.1), toUnit(0.1))).to.be.revertedWith(
         'NotDisputed()'
       );
     });
 
     it('should emit event', async () => {
-      await expect(keeperDisputable.connect(slasher).slash(randomKeeper, keep3rV1.address, toUnit(0.123)))
+      await expect(keeperDisputable.connect(slasher).slash(randomKeeper, keep3rV1.address, toUnit(0.1), toUnit(0.2)))
         .to.emit(keeperDisputable, 'KeeperSlash')
-        .withArgs(randomKeeper, slasher.address, toUnit(0.123));
+        .withArgs(randomKeeper, slasher.address, toUnit(0.1).add(toUnit(0.2)));
     });
 
     it('should slash specified bond amount', async () => {
-      await keeperDisputable.connect(slasher).slash(randomKeeper, keep3rV1.address, toUnit(2));
-      expect(await keeperDisputable.bonds(randomKeeper, keep3rV1.address)).to.equal(toUnit(1));
+      const slashBondAmount = toUnit(1);
+      await keeperDisputable.connect(slasher).slash(randomKeeper, keep3rV1.address, slashBondAmount, 0);
+      expect(await keeperDisputable.bonds(randomKeeper, keep3rV1.address)).to.equal(bondAmount.sub(slashBondAmount));
+    });
+
+    it('should slash specified unbond amount', async () => {
+      const slashUnbondAmount = toUnit(1);
+      await keeperDisputable.connect(slasher).slash(randomKeeper, keep3rV1.address, 0, slashUnbondAmount);
+      expect(await keeperDisputable.pendingUnbonds(randomKeeper, keep3rV1.address)).to.equal(unbondAmount.sub(slashUnbondAmount));
     });
   });
 
@@ -136,6 +149,8 @@ describe('Keep3rKeeperDisputable', () => {
 
   describe('internal slash', () => {
     context('when using an ERC20 bond', () => {
+      const bondAmount = toUnit(2);
+      const unbondAmount = toUnit(5);
       let erc20Factory: MockContractFactory<ERC20ForTest__factory>;
       let erc20: MockContract<ERC20ForTest>;
 
@@ -146,7 +161,10 @@ describe('Keep3rKeeperDisputable', () => {
       beforeEach(async () => {
         erc20 = await erc20Factory.deploy('Sample', 'SMP', keeperDisputable.address, toUnit(2));
         await keeperDisputable.setVariable('bonds', {
-          [randomKeeper]: { [erc20.address]: toUnit(2) },
+          [randomKeeper]: { [erc20.address]: bondAmount },
+        });
+        await keeperDisputable.setVariable('pendingUnbonds', {
+          [randomKeeper]: { [erc20.address]: unbondAmount },
         });
 
         erc20.transfer.returns(true);
@@ -154,37 +172,56 @@ describe('Keep3rKeeperDisputable', () => {
 
       it('should not revert if transfer fails', async () => {
         erc20.transfer.reverts();
-        await expect(keeperDisputable.internalSlash(randomKeeper, erc20.address, toUnit(1))).not.to.be.reverted;
+        await expect(keeperDisputable.internalSlash(randomKeeper, erc20.address, toUnit(1), toUnit(1))).not.to.be.reverted;
       });
 
-      it('should transfer tokens to governance', async () => {
-        await keeperDisputable.internalSlash(randomKeeper, erc20.address, toUnit(1));
-
-        expect(erc20.transfer).to.be.calledOnceWith(governance.address, toUnit(1));
+      it('should transfer both bond and pending unbond tokens to governance', async () => {
+        await keeperDisputable.internalSlash(randomKeeper, erc20.address, bondAmount, unbondAmount);
+        expect(erc20.transfer).to.be.calledOnceWith(governance.address, bondAmount.add(unbondAmount));
       });
 
       it('should reduce keeper bonds', async () => {
-        await keeperDisputable.internalSlash(randomKeeper, erc20.address, toUnit(1));
-        expect(await keeperDisputable.bonds(randomKeeper, erc20.address)).to.equal(toUnit(1));
+        const slashBondAmount = toUnit(1);
+        await keeperDisputable.internalSlash(randomKeeper, erc20.address, slashBondAmount, 0);
+        expect(await keeperDisputable.bonds(randomKeeper, erc20.address)).to.equal(bondAmount.sub(slashBondAmount));
+      });
+
+      it('should reduce keeper pending unbonds', async () => {
+        const slashUnbondAmount = toUnit(1);
+        await keeperDisputable.internalSlash(randomKeeper, erc20.address, 0, slashUnbondAmount);
+        expect(await keeperDisputable.pendingUnbonds(randomKeeper, erc20.address)).to.equal(unbondAmount.sub(slashUnbondAmount));
       });
     });
 
     context('when using a KP3R bond', () => {
+      const bondAmount = toUnit(2);
+      const unbondAmount = toUnit(5);
+
       beforeEach(async () => {
         await keeperDisputable.setVariable('bonds', {
-          [randomKeeper]: { [keep3rV1.address]: toUnit(2) },
+          [randomKeeper]: { [keep3rV1.address]: bondAmount },
+        });
+        await keeperDisputable.setVariable('pendingUnbonds', {
+          [randomKeeper]: { [keep3rV1.address]: unbondAmount },
         });
       });
 
       it('should reduce keeper bonds', async () => {
-        await keeperDisputable.internalSlash(randomKeeper, keep3rV1.address, toUnit(1));
-        expect(await keeperDisputable.bonds(randomKeeper, keep3rV1.address)).to.equal(toUnit(1));
+        const slashBondAmount = toUnit(1);
+        await keeperDisputable.internalSlash(randomKeeper, keep3rV1.address, slashBondAmount, 0);
+        expect(await keeperDisputable.bonds(randomKeeper, keep3rV1.address)).to.equal(bondAmount.sub(slashBondAmount));
+      });
+
+      it('should reduce keeper pending unbonds', async () => {
+        const slashUnbondAmount = toUnit(1);
+        await keeperDisputable.internalSlash(randomKeeper, keep3rV1.address, 0, slashUnbondAmount);
+        expect(await keeperDisputable.pendingUnbonds(randomKeeper, keep3rV1.address)).to.equal(unbondAmount.sub(slashUnbondAmount));
       });
     });
 
     it('should not remove the dispute from the keeper', async () => {
       await keeperDisputable.connect(disputer).dispute(randomKeeper);
-      await keeperDisputable.internalSlash(randomKeeper, keep3rV1.address, 0);
+      await keeperDisputable.internalSlash(randomKeeper, keep3rV1.address, 0, 0);
       expect(await keeperDisputable.disputes(randomKeeper)).to.equal(true);
     });
   });

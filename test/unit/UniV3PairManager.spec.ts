@@ -44,8 +44,8 @@ describe('UniV3PairManager', () => {
 
   let returnValues: BigNumber[];
   let tenTokens: BigNumber = toUnit(10);
-  let TICK_LOWER: number = -887200;
-  let TICK_UPPER: number = 887200;
+  let actualTickLower: number;
+  let actualTickUpper: number;
   let liquidity: number;
   let amount0Min: number;
   let amount1Min: number;
@@ -53,6 +53,8 @@ describe('UniV3PairManager', () => {
   let tokensOwed1: number;
   let amount0Desired: number;
   let amount1Desired: number;
+  const TICK_SPACING: number = 10;
+  const MAX_TICK: number = 887272;
 
   before(async () => {
     [deployer, newGovernance, randomJobProvider] = await ethers.getSigners();
@@ -69,38 +71,56 @@ describe('UniV3PairManager', () => {
 
     uniswapPool.token0.returns(token0.address);
     uniswapPool.token1.returns(token1.address);
+    uniswapPool.tickSpacing.returns(10);
     token0.symbol.returns('DAI');
     token1.symbol.returns('WETH');
 
     uniV3PairManager = await uniV3PairManagerFactory.deploy(uniswapPool.address, deployer.address);
     fakeERC20 = await fakeERC20Factory.deploy('FAKE', 'FAKE', deployer.address, toUnit(100));
 
+    actualTickLower = await uniV3PairManager.tickLower();
+    actualTickUpper = await uniV3PairManager.tickUpper();
+
     await fakeERC20.mint(uniV3PairManager.address, toUnit(100));
   });
 
   describe('constructor', () => {
+    it('should assign factory to the msg sender', async () => {
+      expect(await uniV3PairManager.factory()).to.equal(deployer.address);
+    });
+
     it('should assign pool to the DAI-WETH pool', async () => {
-      expect(await uniV3PairManager.pool()).to.deep.equal(uniswapPool.address);
+      expect(await uniV3PairManager.pool()).to.equal(uniswapPool.address);
     });
 
     it('should assign fee to the DAI-WETH fee', async () => {
-      expect(await uniV3PairManager.fee()).to.deep.equal(await uniswapPool.fee());
+      expect(await uniV3PairManager.fee()).to.equal(await uniswapPool.fee());
     });
 
     it('should assign token0 to the DAI-WETH pool token0', async () => {
-      expect(await uniV3PairManager.token0()).to.deep.equal(await uniswapPool.token0());
+      expect(await uniV3PairManager.token0()).to.equal(await uniswapPool.token0());
     });
 
     it('should assign token0 to the DAI-WETH pool token1', async () => {
-      expect(await uniV3PairManager.token1()).to.deep.equal(await uniswapPool.token1());
+      expect(await uniV3PairManager.token1()).to.equal(await uniswapPool.token1());
     });
 
     it('should assign name to Keep3rLP - DAI/WETH', async () => {
-      expect(await uniV3PairManager.name()).to.deep.equal('Keep3rLP - DAI/WETH');
+      expect(await uniV3PairManager.name()).to.equal('Keep3rLP - DAI/WETH');
     });
 
     it('should assign symbol to kLP-DAI/WETH', async () => {
-      expect(await uniV3PairManager.symbol()).to.deep.equal('kLP-DAI/WETH');
+      expect(await uniV3PairManager.symbol()).to.equal('kLP-DAI/WETH');
+    });
+
+    it('should assign the right lower tick', async () => {
+      const lowerTick = -(MAX_TICK - (MAX_TICK % TICK_SPACING));
+      expect(actualTickLower).to.equal(lowerTick);
+    });
+
+    it('should assign the right upper tick', async () => {
+      const upperTick = MAX_TICK - (MAX_TICK % TICK_SPACING);
+      expect(actualTickUpper).to.equal(upperTick);
     });
 
     it('should assign governance to deployer', async () => {
@@ -122,7 +142,7 @@ describe('UniV3PairManager', () => {
     it('should call uniswap pool positions function with the correct arguments', async () => {
       await uniV3PairManager.position();
       expect(uniswapPool.positions).to.be.calledOnceWith(
-        solidityKeccak256(['address', 'int24', 'int24'], [uniV3PairManager.address, TICK_LOWER, TICK_UPPER])
+        solidityKeccak256(['address', 'int24', 'int24'], [uniV3PairManager.address, actualTickLower, actualTickUpper])
       );
     });
 
@@ -145,7 +165,7 @@ describe('UniV3PairManager', () => {
 
       uniswapPool.positions.returns([1, 2, 3, 4, 5].map(BigNumber.from));
       await uniV3PairManager.collect();
-      expect(uniswapPool.collect).to.be.calledOnceWith(deployer.address, TICK_LOWER, TICK_UPPER, tokensOwed0, tokensOwed1);
+      expect(uniswapPool.collect).to.be.calledOnceWith(deployer.address, actualTickLower, actualTickUpper, tokensOwed0, tokensOwed1);
     });
 
     it('should return the correct return values of the pool collect function', async () => {
@@ -184,12 +204,12 @@ describe('UniV3PairManager', () => {
 
       it('should call the pools burn function with the correct arguments', async () => {
         await uniV3PairManager.connect(deployer).burn(liquidity, amount0Min, amount1Min, newGovernance.address);
-        expect(uniswapPool.burn).to.be.calledOnceWith(TICK_LOWER, TICK_UPPER, liquidity);
+        expect(uniswapPool.burn).to.be.calledOnceWith(actualTickLower, actualTickUpper, liquidity);
       });
 
       it('should call the pools collect function with the correct arguments', async () => {
         await uniV3PairManager.connect(deployer).burn(liquidity, amount0Min, amount1Min, newGovernance.address);
-        expect(uniswapPool.collect).to.be.calledOnceWith(newGovernance.address, TICK_LOWER, TICK_UPPER, tokensOwed0, tokensOwed1);
+        expect(uniswapPool.collect).to.be.calledOnceWith(newGovernance.address, actualTickLower, actualTickUpper, tokensOwed0, tokensOwed1);
       });
 
       it('should revert if burn returns less than amountMin', async () => {
@@ -307,7 +327,13 @@ describe('UniV3PairManager', () => {
           [await uniV3PairManager.token0(), await uniV3PairManager.token1(), await uniV3PairManager.fee(), deployer.address]
         );
         await uniV3PairManager.connect(deployer).internalAddLiquidity(amount0Desired, amount1Desired, amount0Min, amount1Min);
-        expect(uniswapPool.mint).to.have.been.calledOnceWith(uniV3PairManager.address, TICK_LOWER, TICK_UPPER, BigNumber.from(0), encodedStruct);
+        expect(uniswapPool.mint).to.have.been.calledOnceWith(
+          uniV3PairManager.address,
+          actualTickLower,
+          actualTickUpper,
+          BigNumber.from(0),
+          encodedStruct
+        );
       });
 
       it('should call pool slot0', async () => {
@@ -376,7 +402,7 @@ describe('UniV3PairManager', () => {
 
   describe('_pay', () => {
     it('should transfer tokens to the recipient', async () => {
-      fakeERC20.connect(deployer).approve(uniV3PairManager.address, tenTokens);
+      await fakeERC20.connect(deployer).approve(uniV3PairManager.address, tenTokens);
       await uniV3PairManager.internalPay(fakeERC20.address, deployer.address, newGovernance.address, tenTokens);
       expect(await fakeERC20.balanceOf(newGovernance.address)).to.equal(tenTokens);
     });

@@ -18,7 +18,6 @@ const config: HardhatUserConfig = {
     ? {
         hardhat: {
           allowUnlimitedContractSize: true,
-          initialBaseFeePerGas: 1,
         },
       }
     : {
@@ -48,7 +47,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 50,
+            runs: 33,
           },
           outputSelection: {
             '*': {

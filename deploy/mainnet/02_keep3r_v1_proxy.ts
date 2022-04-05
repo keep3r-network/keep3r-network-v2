@@ -1,18 +1,17 @@
 import IKeep3rV1Proxy from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { KEEP3R_V1_PROXY } from './constants';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const keep3rV1ProxyAddress = '0xFC48aC750959d5d5aE9A4bb38f548A7CA8763F8d';
-
-  console.log(`using already deployed "Keep3rV1Proxy" at ${keep3rV1ProxyAddress}`);
+  console.log(`using already deployed "Keep3rV1Proxy" at ${KEEP3R_V1_PROXY}`);
 
   hre.deployments.save('Keep3rV1Proxy', {
-    address: keep3rV1ProxyAddress,
+    address: KEEP3R_V1_PROXY,
     abi: IKeep3rV1Proxy.abi,
   });
 };
 
-deployFunction.tags = ['Keep3rV1Proxy', 'Keep3r', 'mainnet'];
+deployFunction.tags = ['keep3r-v1-proxy', 'keep3r', 'mainnet'];
 
 export default deployFunction;
