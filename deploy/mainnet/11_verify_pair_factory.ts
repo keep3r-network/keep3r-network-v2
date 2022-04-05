@@ -7,6 +7,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   await hre.run('verify:verify', {
     contract: 'solidity/contracts/UniV3PairManagerFactory.sol:UniV3PairManagerFactory',
     address: uniV3PairManagerFactory.address,
+    constructorArguments: uniV3PairManagerFactory.args,
   });
 };
 

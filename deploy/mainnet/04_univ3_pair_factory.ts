@@ -1,5 +1,6 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { KEEP3R_MSIG } from './constants';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await hre.getNamedAccounts();
@@ -8,9 +9,10 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     contract: 'solidity/contracts/UniV3PairManagerFactory.sol:UniV3PairManagerFactory',
     from: deployer,
     log: true,
+    args: [KEEP3R_MSIG],
   });
 };
 
-deployFunction.tags = ['deploy-factory', 'UniV3PairManager', 'UniV3PairManagerFactory', 'mainnet'];
+deployFunction.tags = ['deploy-factory', 'uni-v3-pair-manager-factory', 'mainnet'];
 
 export default deployFunction;
