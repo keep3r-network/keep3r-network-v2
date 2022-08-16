@@ -14,7 +14,6 @@ jobs:
           node-version: "14.x"
           registry-url: "https://registry.npmjs.org"
       - run: yarn
-      - run: yarn compile
       - run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
       - run: npm publish --access public --tag canary
         env:

@@ -9,9 +9,8 @@ contract Keep3rKeeperFundableForTest is Keep3rKeeperFundable {
   constructor(
     address _kph,
     address _keep3rV1,
-    address _keep3rV1Proxy,
-    address _kp3rWethPool
-  ) Keep3rParameters(_kph, _keep3rV1, _keep3rV1Proxy, _kp3rWethPool) Keep3rRoles(msg.sender) {}
+    address _keep3rV1Proxy
+  ) Keep3rParameters(_kph, _keep3rV1, _keep3rV1Proxy) Keep3rRoles(msg.sender) {}
 
   function isKeeper(address _keeper) external view returns (bool) {
     return _keepers.contains(_keeper);

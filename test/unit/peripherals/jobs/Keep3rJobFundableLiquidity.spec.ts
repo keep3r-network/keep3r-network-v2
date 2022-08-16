@@ -63,7 +63,7 @@ describe('Keep3rJobFundableLiquidity', () => {
     approvedLiquidity.transfer.returns(true);
     approvedLiquidity.transferFrom.returns(true);
 
-    jobFundable = await jobFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    jobFundable = await jobFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
     await jobFundable.setVariable('jobOwner', {
       [randomJob]: jobOwner.address,
@@ -571,11 +571,11 @@ describe('Keep3rJobFundableLiquidity', () => {
       });
 
       it('should return current tick', async () => {
-        expect(await jobFundable.observeLiquidity(randomLiquidity.address)).to.deep.equal([
-          BigNumber.from(0),
-          BigNumber.from(0),
-          BigNumber.from(period),
-        ]);
+        const observation = await jobFundable.observeLiquidity(randomLiquidity.address);
+
+        expect(observation.current).to.eq(BigNumber.from(0));
+        expect(observation.difference).to.eq(BigNumber.from(0));
+        expect(observation.period).to.eq(period);
       });
 
       it('should not call the oracle', async () => {
@@ -594,11 +594,11 @@ describe('Keep3rJobFundableLiquidity', () => {
       });
 
       it('should return oracle tick and calculate difference', async () => {
-        expect(await jobFundable.observeLiquidity(randomLiquidity.address)).to.deep.equal([
-          BigNumber.from(1),
-          BigNumber.from(1),
-          BigNumber.from(mathUtils.calcPeriod(blockTimestamp)),
-        ]);
+        const observation = await jobFundable.observeLiquidity(randomLiquidity.address);
+
+        expect(observation.current).to.eq(BigNumber.from(1));
+        expect(observation.difference).to.eq(BigNumber.from(1));
+        expect(observation.period).to.eq(mathUtils.calcPeriod(blockTimestamp));
       });
 
       it('should call the oracle', async () => {
@@ -613,12 +613,13 @@ describe('Keep3rJobFundableLiquidity', () => {
         helper.observe.returns([2, 1, true]);
       });
       it('should return oracle tick and difference', async () => {
-        expect(await jobFundable.observeLiquidity(approvedLiquidity.address)).to.deep.equal([
-          BigNumber.from(2),
-          BigNumber.from(1),
-          BigNumber.from(mathUtils.calcPeriod(blockTimestamp)),
-        ]);
+        const observation = await jobFundable.observeLiquidity(approvedLiquidity.address);
+
+        expect(observation.current).to.eq(BigNumber.from(2));
+        expect(observation.difference).to.eq(BigNumber.from(1));
+        expect(observation.period).to.eq(mathUtils.calcPeriod(blockTimestamp));
       });
+
       it('should call the oracle', async () => {
         await jobFundable.observeLiquidity(approvedLiquidity.address);
         blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;

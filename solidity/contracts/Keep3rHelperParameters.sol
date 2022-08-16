@@ -38,17 +38,20 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
   address public override keep3rV2;
 
   /// @inheritdoc IKeep3rHelperParameters
-  IKeep3rHelperParameters.Kp3rWethPool public override kp3rWethPool;
+  IKeep3rHelperParameters.TokenOraclePool public override kp3rWethPool;
 
-  constructor(address _keep3rV2, address _governance) Governable(_governance) {
+  constructor(
+    address _keep3rV2,
+    address _governance,
+    address _kp3rWethPool
+  ) Governable(_governance) {
     keep3rV2 = _keep3rV2;
-    _setKp3rWethPool(0x11B7a6bc0259ed6Cf9DB8F499988F9eCc7167bf5);
+    _setKp3rWethPool(_kp3rWethPool);
   }
 
   /// @inheritdoc IKeep3rHelperParameters
   function setKp3rWethPool(address _poolAddress) external override onlyGovernance {
     _setKp3rWethPool(_poolAddress);
-    emit Kp3rWethPoolChange(kp3rWethPool.poolAddress, kp3rWethPool.isKP3RToken0);
   }
 
   /// @inheritdoc IKeep3rHelperParameters
@@ -83,18 +86,25 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
 
   /// @inheritdoc IKeep3rHelperParameters
   function setQuoteTwapTime(uint32 _quoteTwapTime) external override onlyGovernance {
+    _setQuoteTwapTime(_quoteTwapTime);
+  }
+
+  function _setQuoteTwapTime(uint32 _quoteTwapTime) internal {
     quoteTwapTime = _quoteTwapTime;
     emit QuoteTwapTimeChange(quoteTwapTime);
   }
 
-  /// @notice Sets KP3R-WETH pool
-  /// @param _poolAddress The address of the KP3R-WETH pool
   function _setKp3rWethPool(address _poolAddress) internal {
-    bool _isKP3RToken0 = IUniswapV3Pool(_poolAddress).token0() == KP3R;
-    bool _isKP3RToken1 = IUniswapV3Pool(_poolAddress).token1() == KP3R;
+    kp3rWethPool = _validateOraclePool(_poolAddress, KP3R);
+    emit Kp3rWethPoolChange(kp3rWethPool.poolAddress, kp3rWethPool.isTKNToken0);
+  }
 
-    if (!_isKP3RToken0 && !_isKP3RToken1) revert InvalidKp3rPool();
+  function _validateOraclePool(address _poolAddress, address _token) internal view returns (TokenOraclePool memory _oraclePool) {
+    bool _isTKNToken0 = IUniswapV3Pool(_poolAddress).token0() == _token;
+    bool _isTKNToken1 = IUniswapV3Pool(_poolAddress).token1() == _token;
 
-    kp3rWethPool = Kp3rWethPool(_poolAddress, _isKP3RToken0);
+    if (!_isTKNToken0 && !_isTKNToken1) revert InvalidOraclePool();
+
+    return TokenOraclePool(_poolAddress, _isTKNToken0);
   }
 }

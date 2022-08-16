@@ -34,7 +34,7 @@ describe('Keep3r', () => {
   beforeEach(async () => {
     helper.isKP3RToken0.whenCalledWith(kp3rWethPool.address).returns(true);
 
-    keep3r = await keep3rFactory.deploy(governance.address, helper.address, keep3rV1.address, keep3rV1Proxy.address, kp3rWethPool.address);
+    keep3r = await keep3rFactory.deploy(governance.address, helper.address, keep3rV1.address, keep3rV1Proxy.address);
   });
 
   it('should be connected to Keep3r Helper', async () => {
@@ -47,14 +47,6 @@ describe('Keep3r', () => {
 
   it('should be connected to Keep3r V1 Proxy', async () => {
     expect(await keep3r.keep3rV1Proxy()).to.be.equal(keep3rV1Proxy.address);
-  });
-
-  it('should be connected to KP3R/WETH oracle pool', async () => {
-    expect(await keep3r.kp3rWethPool()).to.be.equal(kp3rWethPool.address);
-  });
-
-  it('should store the token order from the KP3R/WETH oracle pool', async () => {
-    expect(await keep3r.viewTickOrder(kp3rWethPool.address)).to.be.true;
   });
 
   it('should set deployer as governance', async () => {

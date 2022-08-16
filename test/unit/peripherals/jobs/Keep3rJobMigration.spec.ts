@@ -1,7 +1,6 @@
 import { MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
 import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
 import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
 import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
@@ -32,10 +31,9 @@ describe('Keep3rJobMigration', () => {
     const helper = await smock.fake(IKeep3rHelperArtifact);
     const keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     const keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    const oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     helper.observe.returns([0, 0, true]);
 
-    jobMigration = await jobMigrationFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    jobMigration = await jobMigrationFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
     await jobMigration.setVariable('jobOwner', {
       [fromJob]: fromJobOwner.address,
     });

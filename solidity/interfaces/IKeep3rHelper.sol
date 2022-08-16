@@ -54,8 +54,8 @@ interface IKeep3rHelper {
   /// @notice Given an array of secondsAgo, returns UniswapV3 pool cumulatives at that moment
   /// @param _pool Address of the pool to observe
   /// @param _secondsAgo Array with time references to observe
-  /// @return _tickCumulative1 Cummulative sum of ticks until first time reference
-  /// @return _tickCumulative2 Cummulative sum of ticks until second time reference
+  /// @return _tickCumulative1 Cumulative sum of ticks until first time reference
+  /// @return _tickCumulative2 Cumulative sum of ticks until second time reference
   /// @return _success Boolean indicating if the observe call was succesfull
   function observe(address _pool, uint32[] memory _secondsAgo)
     external

@@ -6,7 +6,11 @@ import '../contracts/Keep3rHelper.sol';
 contract Keep3rHelperForTest is Keep3rHelper {
   uint256 public basefee;
 
-  constructor(address _keep3rV2, address _governance) Keep3rHelper(_keep3rV2, _governance) {}
+  constructor(
+    address _keep3rV2,
+    address _governance,
+    address _kp3rWethPool
+  ) Keep3rHelper(_keep3rV2, _governance, _kp3rWethPool) {}
 
   function _getBasefee() internal view override returns (uint256) {
     return basefee;

@@ -17,9 +17,6 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance, Keep
   address public override keep3rHelper;
 
   /// @inheritdoc IKeep3rParameters
-  address public override kp3rWethPool;
-
-  /// @inheritdoc IKeep3rParameters
   uint256 public override bondTime = 3 days;
 
   /// @inheritdoc IKeep3rParameters
@@ -46,15 +43,11 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance, Keep
   constructor(
     address _keep3rHelper,
     address _keep3rV1,
-    address _keep3rV1Proxy,
-    address _kp3rWethPool
+    address _keep3rV1Proxy
   ) {
     keep3rHelper = _keep3rHelper;
     keep3rV1 = _keep3rV1;
     keep3rV1Proxy = _keep3rV1Proxy;
-    kp3rWethPool = _kp3rWethPool;
-    _liquidityPool[kp3rWethPool] = kp3rWethPool;
-    _isKP3RToken0[_kp3rWethPool] = IKeep3rHelper(keep3rHelper).isKP3RToken0(kp3rWethPool);
   }
 
   /// @inheritdoc IKeep3rParameters
@@ -76,15 +69,6 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance, Keep
     if (_keep3rV1Proxy == address(0)) revert ZeroAddress();
     keep3rV1Proxy = _keep3rV1Proxy;
     emit Keep3rV1ProxyChange(_keep3rV1Proxy);
-  }
-
-  /// @inheritdoc IKeep3rParameters
-  function setKp3rWethPool(address _kp3rWethPool) external override onlyGovernance {
-    if (_kp3rWethPool == address(0)) revert ZeroAddress();
-    kp3rWethPool = _kp3rWethPool;
-    _liquidityPool[kp3rWethPool] = kp3rWethPool;
-    _isKP3RToken0[_kp3rWethPool] = IKeep3rHelper(keep3rHelper).isKP3RToken0(_kp3rWethPool);
-    emit Kp3rWethPoolChange(_kp3rWethPool);
   }
 
   /// @inheritdoc IKeep3rParameters

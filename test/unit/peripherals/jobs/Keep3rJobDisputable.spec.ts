@@ -1,7 +1,6 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
-import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
 import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
 import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
 import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
@@ -9,7 +8,6 @@ import {
   ERC20,
   IKeep3rV1,
   IKeep3rV1Proxy,
-  IUniswapV3PoolForTest,
   Keep3rHelper,
   Keep3rJobDisputableForTest,
   Keep3rJobDisputableForTest__factory,
@@ -36,7 +34,6 @@ describe('Keep3rJobDisputable', () => {
   let jobDisputableFactory: MockContractFactory<Keep3rJobDisputableForTest__factory>;
   let liquidityA: FakeContract<UniV3PairManager>;
   let liquidityB: FakeContract<UniV3PairManager>;
-  let oraclePool: FakeContract<IUniswapV3PoolForTest>;
 
   // Parameter and function equivalent to contract's
   let rewardPeriodTime: number;
@@ -54,10 +51,9 @@ describe('Keep3rJobDisputable', () => {
     helper = await smock.fake(IKeep3rHelperArtifact);
     keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     helper.isKP3RToken0.returns(true);
 
-    jobDisputable = await jobDisputableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    jobDisputable = await jobDisputableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
     await jobDisputable.setVariable('slashers', { [slasher.address]: true });
     await jobDisputable.setVariable('disputers', { [disputer.address]: true });

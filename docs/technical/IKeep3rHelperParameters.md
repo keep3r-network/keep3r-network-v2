@@ -19,7 +19,7 @@ The boost base used to calculate the boost rewards for the keeper
 
 
 
-### `kp3rWethPool() → address poolAddress, bool isKP3RToken0` (external)
+### `kp3rWethPool() → address poolAddress, bool isTKNToken0` (external)
 
 KP3R-WETH pool that is being used as oracle
 
@@ -172,13 +172,13 @@ Emitted when the quote twap time is changed
 
 
 
-### `Kp3rWethPool`
+### `TokenOraclePool`
 
 
 address poolAddress
 
 
-bool isKP3RToken0
+bool isTKNToken0
 
 
 
