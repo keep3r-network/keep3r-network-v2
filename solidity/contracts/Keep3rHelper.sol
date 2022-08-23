@@ -143,9 +143,10 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
     }
   }
 
-  /// @notice Gets the block's base fee
-  /// @return _baseFee The block's basefee
+  /// @notice Gets the gas basefee cost to calculate keeper rewards
+  /// @dev Keepers are required to pay a priority fee to be included, this function recognizes a minimum priority fee
+  /// @return _baseFee The block's basefee + a minimum priority fee, or a preset minimum gas fee
   function _getBasefee() internal view virtual returns (uint256 _baseFee) {
-    return block.basefee;
+    return Math.max(minBaseFee, block.basefee + minPriorityFee);
   }
 }

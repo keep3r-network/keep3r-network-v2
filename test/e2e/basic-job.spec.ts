@@ -221,7 +221,10 @@ describe('@skip-on-coverage Basic Keeper Job Interaction', () => {
       const reward = afterWorkBondedKP3R.sub(initialBondedKP3R);
 
       // calculate expected reward
-      const txCost = (await workTx.wait()).gasUsed.mul(HELPER_FOR_TEST_BASE_FEE);
+      const minPriorityFee = await helper.minPriorityFee();
+      const gasPrice = minPriorityFee.add(HELPER_FOR_TEST_BASE_FEE);
+
+      const txCost = (await workTx.wait()).gasUsed.mul(gasPrice);
       const expectedReward = await helper.quote(txCost.mul(helperBoost).div(base));
 
       expect(reward).to.be.closeTo(expectedReward, toUnit(0.001).toNumber());

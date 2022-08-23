@@ -1,3 +1,4 @@
+import { BigNumber, BigNumberish } from 'ethers';
 import { network } from 'hardhat';
 
 export const advanceTimeAndBlock = async (time: number): Promise<void> => {
@@ -28,6 +29,13 @@ export const advanceBlock = async () => {
   await network.provider.request({
     method: 'evm_mine',
     params: [],
+  });
+};
+
+export const setBaseFee = async (baseFee: BigNumberish) => {
+  await network.provider.request({
+    method: 'hardhat_setNextBlockBaseFeePerGas',
+    params: [BigNumber.from(baseFee).toHexString().replace('0x0', '0x')],
   });
 };
 
