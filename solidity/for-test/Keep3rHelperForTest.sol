@@ -9,7 +9,7 @@ contract Keep3rHelperForTest is Keep3rHelper {
   constructor(address _keep3rV2, address _governance) Keep3rHelper(_keep3rV2, _governance) {}
 
   function _getBasefee() internal view override returns (uint256) {
-    return basefee;
+    return basefee != 0 ? (basefee + minPriorityFee) : super._getBasefee();
   }
 
   function setBaseFee(uint256 _baseFee) external {

@@ -81,9 +81,21 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
     { fnName: 'workHard', workFn: async () => await job.connect(keeper).workHard(10) },
   ].forEach(({ fnName, workFn }) => {
     context(fnName, () => {
+      it('should pay the keeper with a minimum gas fee if baseFee is too low', async () => {
+        await helper.setBaseFee(0);
+
+        const minBoost = await helper.minBoost();
+        const baseFee = await helper.minBaseFee();
+
+        await testKeeperPayment(minBoost, workFn, baseFee);
+      });
+
       it('should pay the keeper for the accounted gas plus extra with min boost', async () => {
         const minBoost = await helper.minBoost();
-        await testKeeperPayment(minBoost, workFn);
+        const baseFee = await helper.basefee();
+        const minPriorityFee = await helper.minPriorityFee();
+
+        await testKeeperPayment(minBoost, workFn, baseFee.add(minPriorityFee));
       });
 
       it('should pay the keeper for the accounted gas plus extra with max boost', async () => {
@@ -96,12 +108,15 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
         await keep3r.connect(keeper).activate(keep3rV1.address);
 
         const maxBoost = await helper.maxBoost();
-        await testKeeperPayment(maxBoost, workFn);
+        const baseFee = await helper.basefee();
+        const minPriorityFee = await helper.minPriorityFee();
+
+        await testKeeperPayment(maxBoost, workFn, baseFee.add(minPriorityFee));
       });
     });
   });
 
-  async function testKeeperPayment(expectedBoost: BigNumber, workFn: () => Promise<ContractTransaction>) {
+  async function testKeeperPayment(expectedBoost: BigNumber, workFn: () => Promise<ContractTransaction>, baseFee: BigNumber) {
     // add liquidity to pair
     const { liquidity } = await common.addLiquidityToPair(jobOwner, pair, toUnit(100), jobOwner);
     // add credit to job
@@ -138,7 +153,6 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
 
     // twap calculation
     const BASE = 1_000_000;
-    const baseFee = await helper.basefee();
     const boostBase = await helper.BOOST_BASE();
     const ethToQuote = gasRewarded.mul(baseFee).mul(expectedBoost).div(boostBase);
     const expectedReward = await helper.quote(ethToQuote);

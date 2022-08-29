@@ -65,6 +65,20 @@ The twap time for quoting
 
 
 
+### `minBaseFee() → uint256 _minBaseFee` (external)
+
+The minimum base fee that is used to calculate keeper rewards
+
+
+
+
+### `minPriorityFee() → uint256 _minPriorityFee` (external)
+
+The minimum priority fee that is also rewarded for keepers
+
+
+
+
 ### `keep3rV2() → address _keep3rV2` (external)
 
 Address of Keep3r V2
@@ -121,6 +135,20 @@ Sets the quote twap time
 
 
 
+### `setMinBaseFee(uint256 _minBaseFee)` (external)
+
+Sets the minimum rewarded gas fee
+
+
+
+
+### `setMinPriorityFee(uint256 _minPriorityFee)` (external)
+
+Sets the minimum rewarded gas priority fee
+
+
+
+
 
 ### `Kp3rWethPoolChange(address _address, bool _isKP3RToken0)`
 
@@ -167,6 +195,20 @@ Emitted when the work extra gas amount is changed
 ### `QuoteTwapTimeChange(uint32 _quoteTwapTime)`
 
 Emitted when the quote twap time is changed
+
+
+
+
+### `MinBaseFeeChange(uint256 _minBaseFee)`
+
+Emitted when minimum rewarded gas fee is changed
+
+
+
+
+### `MinPriorityFeeChange(uint256 _minPriorityFee)`
+
+Emitted when minimum rewarded priority fee is changed
 
 
 

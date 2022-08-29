@@ -118,6 +118,7 @@ describe('Keep3rHelperParameters', () => {
       { name: 'setKeep3rV2', parameter: 'keep3rV2', args: () => [randomKeep3rV2Address], event: 'Keep3rV2Change' },
       { name: 'setWorkExtraGas', parameter: 'workExtraGas', args: () => [toUnit(1)], event: 'WorkExtraGasChange' },
       { name: 'setQuoteTwapTime', parameter: 'quoteTwapTime', args: () => [60], event: 'QuoteTwapTimeChange' },
+      { name: 'setMinBaseFee', parameter: 'minBaseFee', args: () => [10e9], event: 'MinBaseFeeChange' },
     ].forEach((method) => {
       describe(method.name, () => {
         behaviours.onlyGovernance(() => parameters, method.name, governance, method.args);

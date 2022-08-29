@@ -35,6 +35,12 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
   uint32 public override quoteTwapTime = 10 minutes;
 
   /// @inheritdoc IKeep3rHelperParameters
+  uint256 public override minBaseFee = 15e9;
+
+  /// @inheritdoc IKeep3rHelperParameters
+  uint256 public override minPriorityFee = 2e9;
+
+  /// @inheritdoc IKeep3rHelperParameters
   address public override keep3rV2;
 
   /// @inheritdoc IKeep3rHelperParameters
@@ -85,6 +91,18 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
   function setQuoteTwapTime(uint32 _quoteTwapTime) external override onlyGovernance {
     quoteTwapTime = _quoteTwapTime;
     emit QuoteTwapTimeChange(quoteTwapTime);
+  }
+
+  /// @inheritdoc IKeep3rHelperParameters
+  function setMinBaseFee(uint256 _minBaseFee) external override onlyGovernance {
+    minBaseFee = _minBaseFee;
+    emit MinBaseFeeChange(minBaseFee);
+  }
+
+  /// @inheritdoc IKeep3rHelperParameters
+  function setMinPriorityFee(uint256 _minPriorityFee) external override onlyGovernance {
+    minPriorityFee = _minPriorityFee;
+    emit MinPriorityFeeChange(minPriorityFee);
   }
 
   /// @notice Sets KP3R-WETH pool
