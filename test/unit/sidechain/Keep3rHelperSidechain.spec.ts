@@ -102,6 +102,33 @@ describe('Keep3rHelperSidechain', () => {
     });
   });
 
+  describe('bonds', () => {
+    const randomNumber = 420;
+    const randomAddress = wallet.generateRandomAddress();
+    const wKP3R = wallet.generateRandomAddress();
+
+    beforeEach(async () => {
+      keep3r.keep3rV1.reset();
+      keep3r.bonds.reset();
+      keep3r.keep3rV1.returns(wKP3R);
+
+      await helper.bonds(randomAddress);
+    });
+
+    it('should call Keep3rSidechain querying wKP3R address', async () => {
+      expect(keep3r.keep3rV1).to.have.been.calledOnce;
+    });
+
+    it('should query wKP3R bonds for inputted address', async () => {
+      expect(keep3r.bonds).to.have.been.calledOnceWith(randomAddress, wKP3R);
+    });
+
+    it('should return the queried result', async () => {
+      keep3r.bonds.returns(randomNumber);
+      expect(await helper.bonds(randomAddress)).to.be.eq(randomNumber);
+    });
+  });
+
   describe('setOracle', () => {
     onlyGovernance(
       () => helper,

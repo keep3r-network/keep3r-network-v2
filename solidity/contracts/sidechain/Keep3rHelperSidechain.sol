@@ -11,7 +11,8 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
   /// @inheritdoc IKeep3rHelperSidechain
   IKeep3rHelperParameters.TokenOraclePool public override wethUSDPool;
 
-  address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+  /// @notice Ethereum mainnet WETH address used for quoting references
+  address public constant override WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
   /// @param _keep3rV2 Address of sidechain Keep3r implementation
   /// @param _governance Address of governance
@@ -26,6 +27,13 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
   ) Keep3rHelper(_keep3rV2, _governance, _kp3rWethOracle) {
     _setWethUsdPool(_wethUsdOracle);
     _setQuoteTwapTime(1 days);
+  }
+
+  /// @inheritdoc IKeep3rHelper
+  /// @notice Uses valid wKP3R address from Keep3rSidechain to query keeper bonds
+  function bonds(address _keeper) public view override(Keep3rHelper, IKeep3rHelper) returns (uint256 _amountBonded) {
+    address wKP3R = IKeep3r(keep3rV2).keep3rV1();
+    return IKeep3r(keep3rV2).bonds(_keeper, wKP3R);
   }
 
   /// @inheritdoc IKeep3rHelperSidechain

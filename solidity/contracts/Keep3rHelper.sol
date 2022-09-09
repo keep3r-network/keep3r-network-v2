@@ -44,7 +44,7 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
   }
 
   /// @inheritdoc IKeep3rHelper
-  function bonds(address _keeper) public view override returns (uint256 _amountBonded) {
+  function bonds(address _keeper) public view virtual override returns (uint256 _amountBonded) {
     return IKeep3r(keep3rV2).bonds(_keeper, KP3R);
   }
 

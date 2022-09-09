@@ -7,6 +7,7 @@ import '../peripherals/IMintable.sol';
 
 /// @title Keep3rEscrow contract
 /// @notice This contract acts as an escrow contract for wKP3R tokens on sidechains and L2s
+/// @dev Can be used as a replacement for keep3rV1Proxy in keep3r sidechain implementations
 interface IKeep3rEscrow is IMintable {
   /// @notice Emitted when Keep3rEscrow#deposit function is called
   /// @param _wKP3R The addess of the wrapped KP3R token

@@ -19,7 +19,7 @@ import { ethers } from 'hardhat';
 
 chai.use(smock.matchers);
 
-describe.only('Keep3rSidechain', () => {
+describe('Keep3rSidechain', () => {
   let governance: SignerWithAddress;
   let randomKeeper: SignerWithAddress;
   let keep3r: MockContract<Keep3rSidechainForTest>;
@@ -199,7 +199,7 @@ describe.only('Keep3rSidechain', () => {
     });
 
     it('should revert if called only with an address', async () => {
-      await expect(keep3r.connect(approvedJob.wallet)['worked(address)'](keeper)).to.be.revertedWith('Deprecated');
+      await expect(keep3r.connect(approvedJob.wallet)['worked(address)'](keeper)).to.be.revertedWith('Deprecated()');
     });
 
     it('should revert when called with unallowed job', async () => {

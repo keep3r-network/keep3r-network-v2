@@ -3,6 +3,8 @@ pragma solidity >=0.8.4 <0.9.0;
 
 import '../IKeep3rHelper.sol';
 
+/// @title Keep3rHelperSidechain contract
+/// @notice Contains all the helper functions for sidechain keep3r implementations
 interface IKeep3rHelperSidechain is IKeep3rHelper {
   // Events
 
@@ -17,6 +19,11 @@ interface IKeep3rHelperSidechain is IKeep3rHelper {
   event WethUSDPoolChange(address _address, bool _isWETHToken0);
 
   /// Variables
+
+  /// @notice Ethereum mainnet WETH address used for quoting references
+  /// @return _weth Address of WETH token
+  // solhint-disable func-name-mixedcase
+  function WETH() external view returns (address _weth);
 
   /// @return _oracle The address of the observable pool for given liquidity
   function oracle(address _liquidity) external view returns (address _oracle);

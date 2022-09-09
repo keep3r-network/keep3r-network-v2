@@ -28,6 +28,7 @@ const kp3rWhaleAddress = '0xa0f75491720835b36edc92d06ddc468d201e9b73';
 chai.use(solidity);
 
 const DAY = 86400;
+const ONE = bn.toUnit(1);
 const BONDS = bn.toUnit(10);
 const DELTA = bn.toUnit(0.001).toNumber();
 
@@ -41,7 +42,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
   let keep3rHelper: Keep3rHelperSidechain;
   let keep3rEscrow: Keep3rEscrow;
   let kp3rV1: IKeep3rV1;
-  let wKp3r: BridgeForTest;
+  let wKP3R: BridgeForTest;
   let wKLP: BridgeForTest;
   let weth: IWeth9;
   let pairManager: IUniV3PairManager;
@@ -73,14 +74,14 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
 
     kp3rWhale = await wallet.impersonate(kp3rWhaleAddress);
 
-    const wKp3rFactory = (await ethers.getContractFactory('BridgeForTest')) as BridgeForTest__factory;
-    wKp3r = await wKp3rFactory.deploy(kp3rV1.address);
+    const wKP3RFactory = (await ethers.getContractFactory('BridgeForTest')) as BridgeForTest__factory;
+    wKP3R = await wKP3RFactory.deploy(kp3rV1.address);
 
     const wKLPp3rFactory = (await ethers.getContractFactory('BridgeForTest')) as BridgeForTest__factory;
     wKLP = await wKLPp3rFactory.deploy(pairManager.address);
 
     const keep3rEscrowFactory = (await ethers.getContractFactory('Keep3rEscrow')) as Keep3rEscrow__factory;
-    keep3rEscrow = await keep3rEscrowFactory.deploy(governance.address, wKp3r.address);
+    keep3rEscrow = await keep3rEscrowFactory.deploy(governance.address, wKP3R.address);
 
     const currentNonce: number = await ethers.provider.getTransactionCount(deployer.address);
     const precalculatedAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: currentNonce + 1 });
@@ -97,7 +98,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     keep3r = await kp3rSidechainFactory.deploy(
       governance.address,
       keep3rHelper.address,
-      wKp3r.address,
+      wKP3R.address,
       keep3rEscrow.address // replaces keep3rV1Proxy
     );
 
@@ -114,14 +115,14 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     await pairManager.connect(kp3rWhale).mint(bn.toUnit(100), bn.toUnit(100), 1, 0, kp3rWhaleAddress);
 
     // bridge tokens
-    await kp3rV1.connect(kp3rWhale).approve(wKp3r.address, BONDS);
-    await wKp3r.connect(kp3rWhale).bridge(BONDS);
+    await kp3rV1.connect(kp3rWhale).approve(wKP3R.address, BONDS);
+    await wKP3R.connect(kp3rWhale).bridge(BONDS);
 
     await pairManager.connect(kp3rWhale).approve(wKLP.address, BONDS);
     await wKLP.connect(kp3rWhale).bridge(BONDS);
 
     // fund escrow
-    await wKp3r.connect(kp3rWhale).approve(keep3rEscrow.address, BONDS);
+    await wKP3R.connect(kp3rWhale).approve(keep3rEscrow.address, BONDS);
     await keep3rEscrow.connect(kp3rWhale).deposit(BONDS);
     await keep3rEscrow.connect(governance).setMinter(keep3r.address);
 
@@ -131,9 +132,9 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     await keep3r.connect(stranger).addJob(job.address);
 
     // activate a keeper
-    await keep3r.connect(keeper).bond(wKp3r.address, 0);
+    await keep3r.connect(keeper).bond(wKP3R.address, 0);
     await evm.advanceTimeAndBlock(3 * DAY);
-    await keep3r.connect(keeper).activate(wKp3r.address);
+    await keep3r.connect(keeper).activate(wKP3R.address);
 
     snapshotId = await evm.snapshot.take();
   });
@@ -147,33 +148,33 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     let previousEscrowBalance: BigNumber;
 
     beforeEach(async () => {
-      previousEscrowBalance = await wKp3r.balanceOf(keep3rEscrow.address);
+      previousEscrowBalance = await wKP3R.balanceOf(keep3rEscrow.address);
 
       // "bridge" wKP3R
-      await kp3rV1.connect(kp3rWhale).approve(wKp3r.address, BONDS);
-      await wKp3r.connect(kp3rWhale).bridge(BONDS);
+      await kp3rV1.connect(kp3rWhale).approve(wKP3R.address, BONDS);
+      await wKP3R.connect(kp3rWhale).bridge(BONDS);
 
       // bond to Keep3r
-      await wKp3r.connect(kp3rWhale).approve(keep3r.address, BONDS);
-      await keep3r.connect(kp3rWhale).bond(wKp3r.address, BONDS);
+      await wKP3R.connect(kp3rWhale).approve(keep3r.address, BONDS);
+      await keep3r.connect(kp3rWhale).bond(wKP3R.address, BONDS);
 
       // activate
       await evm.advanceTimeAndBlock(3 * DAY);
-      await keep3r.connect(kp3rWhale).activate(wKp3r.address);
+      await keep3r.connect(kp3rWhale).activate(wKP3R.address);
     });
 
     it('should deposit tokens on escrow contract when bonding', async () => {
-      expect(await wKp3r.balanceOf(keep3rEscrow.address)).to.be.eq(previousEscrowBalance.add(BONDS));
+      expect(await wKP3R.balanceOf(keep3rEscrow.address)).to.be.eq(previousEscrowBalance.add(BONDS));
     });
 
     it('should mint transfer tokens from the escrow contract when unbonding', async () => {
-      previousEscrowBalance = await wKp3r.balanceOf(keep3rEscrow.address);
+      previousEscrowBalance = await wKP3R.balanceOf(keep3rEscrow.address);
 
-      await keep3r.connect(kp3rWhale).unbond(wKp3r.address, BONDS);
+      await keep3r.connect(kp3rWhale).unbond(wKP3R.address, BONDS);
       await evm.advanceTimeAndBlock(14 * DAY);
-      await keep3r.connect(kp3rWhale).withdraw(wKp3r.address);
+      await keep3r.connect(kp3rWhale).withdraw(wKP3R.address);
 
-      expect(await wKp3r.balanceOf(keep3rEscrow.address)).to.be.eq(previousEscrowBalance.sub(BONDS));
+      expect(await wKP3R.balanceOf(keep3rEscrow.address)).to.be.eq(previousEscrowBalance.sub(BONDS));
     });
   });
 
@@ -205,14 +206,12 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     });
 
     it('should earn bonds for working a job quoted in USD', async () => {
-      const ONE = bn.toUnit(1);
-
       const twapPeriod = await keep3rHelper.quoteTwapTime();
       const tx = await job.connect(keeper).workHard(30);
       const gasUsed = (await tx.wait()).gasUsed;
       const usdPerGasUnit = await job.usdPerGasUnit();
 
-      const reward = await keep3r.bonds(keeper.address, wKp3r.address);
+      const reward = await keep3r.bonds(keeper.address, wKP3R.address);
 
       const kp3rTicks = (await kp3rWethPool.observe([twapPeriod, 0]))[0];
       const isKP3RToken0 = (await kp3rWethPool.token0()) == kp3rV1.address;
@@ -242,18 +241,68 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
       const expectedWETHReward = ONE.mul(expectedUSDReward).div(wethQuote);
       const expectedKP3RReward = ONE.mul(expectedWETHReward).div(kp3rQuote);
 
-      expect(reward).to.be.gt(expectedKP3RReward); // expected +10-20% bonus
+      expect(reward).to.be.closeTo(expectedKP3RReward.mul(110).div(100), DELTA); // expected +10%
+    });
+
+    it('should earn more bonds when having bonded wKP3R', async () => {
+      const initialBonds = bn.toUnit(200);
+      await kp3rV1.connect(kp3rWhale).approve(wKP3R.address, initialBonds);
+      await wKP3R.connect(kp3rWhale).bridge(initialBonds);
+      await wKP3R.connect(kp3rWhale).transfer(keeper.address, initialBonds);
+      await wKP3R.connect(keeper).approve(keep3r.address, initialBonds);
+      await keep3r.connect(keeper).bond(wKP3R.address, initialBonds);
+      await evm.advanceTimeAndBlock(3 * DAY);
+      await keep3r.connect(keeper).activate(wKP3R.address);
+
+      const twapPeriod = await keep3rHelper.quoteTwapTime();
+      const tx = await job.connect(keeper).workHard(30);
+      const gasUsed = (await tx.wait()).gasUsed;
+      const usdPerGasUnit = await job.usdPerGasUnit();
+
+      const reward = (await keep3r.bonds(keeper.address, wKP3R.address)).sub(initialBonds);
+
+      const kp3rTicks = (await kp3rWethPool.observe([twapPeriod, 0]))[0];
+      const isKP3RToken0 = (await kp3rWethPool.token0()) == kp3rV1.address;
+      let kp3rQuote: BigNumber;
+      if (isKP3RToken0) {
+        kp3rQuote = await keep3rHelper.getQuoteAtTick(ONE, kp3rTicks[0].sub(kp3rTicks[1]), twapPeriod);
+      } else {
+        kp3rQuote = await keep3rHelper.getQuoteAtTick(ONE, kp3rTicks[1].sub(kp3rTicks[0]), twapPeriod);
+      }
+
+      expect(kp3rQuote).to.be.closeTo(oneKP3RinETH, DELTA);
+
+      const wethTicks = (await wethDaiPool.observe([twapPeriod, 0]))[0];
+      const isWETHToken0 = (await wethDaiPool.token0()) == weth.address;
+      let wethQuote: BigNumber;
+      if (isWETHToken0) {
+        wethQuote = await keep3rHelper.getQuoteAtTick(ONE, wethTicks[0].sub(wethTicks[1]), twapPeriod);
+      } else {
+        wethQuote = await keep3rHelper.getQuoteAtTick(ONE, wethTicks[1].sub(wethTicks[0]), twapPeriod);
+      }
+
+      // closeTo doesn't take BigNumbers
+      expect(wethQuote).to.be.gt(oneETHinDAI.sub(ONE));
+      expect(wethQuote).to.be.lt(oneETHinDAI.add(ONE));
+
+      const expectedUSDReward = usdPerGasUnit.mul(gasUsed);
+      const expectedWETHReward = ONE.mul(expectedUSDReward).div(wethQuote);
+      const expectedKP3RReward = ONE.mul(expectedWETHReward).div(kp3rQuote);
+
+      expect(reward).to.be.closeTo(expectedKP3RReward.mul(120).div(100), DELTA); // expected +20%
     });
 
     it('should be able to withdraw bonds', async () => {
       await job.connect(keeper).work();
 
-      const bonds = await keep3r.bonds(keeper.address, wKp3r.address);
-      await keep3r.connect(keeper).unbond(wKp3r.address, bonds);
-      await evm.advanceTimeAndBlock(14 * DAY);
-      await keep3r.connect(keeper).withdraw(wKp3r.address);
+      const bonds = await keep3r.bonds(keeper.address, wKP3R.address);
+      expect(await keep3rHelper.bonds(keeper.address)).to.be.eq(bonds);
 
-      expect(await wKp3r.balanceOf(keeper.address)).to.be.eq(bonds);
+      await keep3r.connect(keeper).unbond(wKP3R.address, bonds);
+      await evm.advanceTimeAndBlock(14 * DAY);
+      await keep3r.connect(keeper).withdraw(wKP3R.address);
+
+      expect(await wKP3R.balanceOf(keeper.address)).to.be.eq(bonds);
     });
   });
 });

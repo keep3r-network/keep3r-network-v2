@@ -8,7 +8,7 @@ contract JobRatedForTest {
   error InvalidKeeper();
   address public keep3r;
   uint256 public nonce;
-  uint256 public usdPerGasUnit = 1;
+  uint256 public usdPerGasUnit = 1_000e9;
 
   constructor(address _keep3r) {
     keep3r = _keep3r;
