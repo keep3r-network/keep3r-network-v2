@@ -35,6 +35,12 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
   uint32 public override quoteTwapTime = 10 minutes;
 
   /// @inheritdoc IKeep3rHelperParameters
+  uint256 public override minBaseFee = 15e9;
+
+  /// @inheritdoc IKeep3rHelperParameters
+  uint256 public override minPriorityFee = 2e9;
+
+  /// @inheritdoc IKeep3rHelperParameters
   address public override keep3rV2;
 
   /// @inheritdoc IKeep3rHelperParameters
@@ -94,6 +100,20 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
     emit QuoteTwapTimeChange(quoteTwapTime);
   }
 
+  /// @inheritdoc IKeep3rHelperParameters
+  function setMinBaseFee(uint256 _minBaseFee) external override onlyGovernance {
+    minBaseFee = _minBaseFee;
+    emit MinBaseFeeChange(minBaseFee);
+  }
+
+  /// @inheritdoc IKeep3rHelperParameters
+  function setMinPriorityFee(uint256 _minPriorityFee) external override onlyGovernance {
+    minPriorityFee = _minPriorityFee;
+    emit MinPriorityFeeChange(minPriorityFee);
+  }
+
+  /// @notice Sets KP3R-WETH pool
+  /// @param _poolAddress The address of the KP3R-WETH pool
   function _setKp3rWethPool(address _poolAddress) internal {
     kp3rWethPool = _validateOraclePool(_poolAddress, KP3R);
     emit Kp3rWethPoolChange(kp3rWethPool.poolAddress, kp3rWethPool.isTKNToken0);

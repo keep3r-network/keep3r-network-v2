@@ -93,6 +93,8 @@ describe('Keep3rHelper', () => {
     beforeEach(async () => {
       expectedQuoteAmount = gasUsed.mul(baseFee).div(10);
       await helper.setVariable('basefee', baseFee);
+      await helper.setVariable('minBaseFee', 0);
+      await helper.setVariable('minPriorityFee', 0);
     });
 
     it('should call bonds with the correct arguments', async () => {
@@ -101,6 +103,29 @@ describe('Keep3rHelper', () => {
     });
 
     it('should return at least 110% of the quote', async () => {
+      expect(await helper.callStatic.getRewardAmountFor(randomKeeper.address, gasUsed)).to.closeTo(
+        expectedQuoteAmount.mul(11).div(10),
+        toUnit(0.0001).toNumber()
+      );
+    });
+
+    it('should reward a minimum gas fee if block baseFee is too low', async () => {
+      await helper.setVariable('basefee', 0);
+      const minBaseFee = toGwei(100);
+      await helper.setVariable('minBaseFee', minBaseFee);
+      expectedQuoteAmount = gasUsed.mul(minBaseFee).div(10);
+
+      expect(await helper.callStatic.getRewardAmountFor(randomKeeper.address, gasUsed)).to.closeTo(
+        expectedQuoteAmount.mul(11).div(10),
+        toUnit(0.0001).toNumber()
+      );
+    });
+
+    it('should reward a minimum priority fee to the keeper', async () => {
+      const minPriorityFee = toGwei(10);
+      await helper.setVariable('minPriorityFee', minPriorityFee);
+      expectedQuoteAmount = gasUsed.mul(baseFee.add(minPriorityFee)).div(10);
+
       expect(await helper.callStatic.getRewardAmountFor(randomKeeper.address, gasUsed)).to.closeTo(
         expectedQuoteAmount.mul(11).div(10),
         toUnit(0.0001).toNumber()
@@ -118,6 +143,19 @@ describe('Keep3rHelper', () => {
 
     it('should return at most 120% of the quote', async () => {
       keep3r.bonds.whenCalledWith(randomKeeper.address, keep3rV1.address).returns(targetBond.mul(10));
+
+      expect(await helper.callStatic.getRewardAmountFor(randomKeeper.address, gasUsed)).to.closeTo(
+        expectedQuoteAmount.mul(12).div(10),
+        toUnit(0.0001).toNumber()
+      );
+    });
+
+    it('should use a minimum gas fee if baseFee is too low', async () => {
+      keep3r.bonds.whenCalledWith(randomKeeper.address, keep3rV1.address).returns(targetBond.mul(10));
+
+      const minBaseFee = await helper.minBaseFee();
+      expectedQuoteAmount = gasUsed.mul(minBaseFee).div(10);
+      await helper.setVariable('basefee', 0);
 
       expect(await helper.callStatic.getRewardAmountFor(randomKeeper.address, gasUsed)).to.closeTo(
         expectedQuoteAmount.mul(12).div(10),

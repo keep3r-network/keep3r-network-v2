@@ -49,6 +49,14 @@ interface IKeep3rHelperParameters {
   /// @param _quoteTwapTime The twap time for quoting
   event QuoteTwapTimeChange(uint32 _quoteTwapTime);
 
+  /// @notice Emitted when minimum rewarded gas fee is changed
+  /// @param _minBaseFee The minimum rewarded gas fee
+  event MinBaseFeeChange(uint256 _minBaseFee);
+
+  /// @notice Emitted when minimum rewarded priority fee is changed
+  /// @param _minPriorityFee The minimum expected fee that the keeper should pay
+  event MinPriorityFeeChange(uint256 _minPriorityFee);
+
   // Variables
 
   /// @notice Address of KP3R token
@@ -89,6 +97,14 @@ interface IKeep3rHelperParameters {
   /// @return _quoteTwapTime The twap time
   function quoteTwapTime() external view returns (uint32 _quoteTwapTime);
 
+  /// @notice The minimum base fee that is used to calculate keeper rewards
+  /// @return _minBaseFee The minimum rewarded gas fee
+  function minBaseFee() external view returns (uint256 _minBaseFee);
+
+  /// @notice The minimum priority fee that is also rewarded for keepers
+  /// @return _minPriorityFee The minimum rewarded priority fee
+  function minPriorityFee() external view returns (uint256 _minPriorityFee);
+
   /// @notice Address of Keep3r V2
   /// @return _keep3rV2 Address of Keep3r V2
   function keep3rV2() external view returns (address _keep3rV2);
@@ -122,4 +138,12 @@ interface IKeep3rHelperParameters {
   /// @notice Sets the quote twap time
   /// @param _quoteTwapTime The twap time for quoting
   function setQuoteTwapTime(uint32 _quoteTwapTime) external;
+
+  /// @notice Sets the minimum rewarded gas fee
+  /// @param _minBaseFee The minimum rewarded gas fee
+  function setMinBaseFee(uint256 _minBaseFee) external;
+
+  /// @notice Sets the minimum rewarded gas priority fee
+  /// @param _minPriorityFee The minimum rewarded priority fee
+  function setMinPriorityFee(uint256 _minPriorityFee) external;
 }

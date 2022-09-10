@@ -17,6 +17,7 @@ const config: HardhatUserConfig = {
   networks: process.env.TEST
     ? {
         hardhat: {
+          hardfork: 'london',
           allowUnlimitedContractSize: true,
         },
       }
