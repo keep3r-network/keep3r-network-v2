@@ -1,6 +1,13 @@
 ## `IKeep3rHelperSidechain`
 
+Contains all the helper functions for sidechain keep3r implementations
 
+
+
+
+### `WETH() → address _weth` (external)
+
+Ethereum mainnet WETH address used for quoting references
 
 
 

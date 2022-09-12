@@ -3,6 +3,7 @@
 This contract acts as an escrow contract for wKP3R tokens on sidechains and L2s
 
 
+Can be used as a replacement for keep3rV1Proxy in keep3r sidechain implementations
 
 
 ### `wKP3R() → address _wKP3RAddress` (external)
