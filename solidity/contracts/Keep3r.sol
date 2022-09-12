@@ -29,7 +29,6 @@ contract Keep3r is DustCollector, Keep3rJobs, Keep3rKeepers {
     address _governance,
     address _keep3rHelper,
     address _keep3rV1,
-    address _keep3rV1Proxy,
-    address _kp3rWethPool
-  ) Keep3rParameters(_keep3rHelper, _keep3rV1, _keep3rV1Proxy, _kp3rWethPool) Keep3rRoles(_governance) DustCollector() {}
+    address _keep3rV1Proxy
+  ) Keep3rParameters(_keep3rHelper, _keep3rV1, _keep3rV1Proxy) Keep3rRoles(_governance) DustCollector() {}
 }

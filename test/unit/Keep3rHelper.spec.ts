@@ -1,6 +1,6 @@
 import IUniswapV3PoolArtifact from '@artifacts/@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
-import { KP3R_V1_ADDRESS, KP3R_WETH_V3_POOL_ADDRESS } from '@e2e/common';
+import { KP3R_V1_ADDRESS } from '@e2e/common';
 import { BigNumber } from '@ethersproject/bignumber';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
@@ -39,9 +39,9 @@ describe('Keep3rHelper', () => {
 
     helperFactory = await smock.mock<Keep3rHelperForTest__factory>('Keep3rHelperForTest');
     keep3r = await smock.fake(IKeep3rArtifact);
-    oraclePool = await smock.fake(IUniswapV3PoolArtifact, { address: KP3R_WETH_V3_POOL_ADDRESS });
+    oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     oraclePool.token1.returns(KP3R_V1_ADDRESS);
-    helper = await helperFactory.deploy(keep3r.address, governance.address);
+    helper = await helperFactory.deploy(keep3r.address, governance.address, oraclePool.address);
 
     kp3rV1Address = await helper.callStatic.KP3R();
     targetBond = await helper.callStatic.targetBond();

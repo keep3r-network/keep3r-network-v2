@@ -15,6 +15,6 @@ abstract contract Keep3rJobManager is IKeep3rJobManager, Keep3rJobOwnership, Kee
     if (hasBonded[_job]) revert AlreadyAKeeper();
     _jobs.add(_job);
     jobOwner[_job] = msg.sender;
-    emit JobAddition(msg.sender, _job);
+    emit JobAddition(_job, msg.sender);
   }
 }

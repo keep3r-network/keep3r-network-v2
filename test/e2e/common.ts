@@ -31,6 +31,7 @@ export const RICH_KP3R_ADDRESS = '0xf977814e90da44bfa03b6295a0616a897441acec';
 export const RICH_KP3R_WETH_POOL_ADDRESS = '0x2269522ad48aeb971b25042471a44acc8c1b5eca';
 export const KP3R_WETH_POOL_ADDRESS = '0xaf988afF99d3d0cb870812C325C588D8D8CB7De8';
 export const KP3R_WETH_V3_POOL_ADDRESS = '0x11B7a6bc0259ed6Cf9DB8F499988F9eCc7167bf5';
+export const WETH_DAI_V3_POOL_ADDRESS = '0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8';
 export const UNISWAP_V2_ROUTER_02_ADDRESS = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D';
 export const UNISWAP_V2_FACTORY_ADDRESS = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f';
 export const KP3R_V1_ADDRESS = '0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44';
@@ -40,6 +41,7 @@ export const KP3R_V1_GOVERNANCE_ADDRESS = '0xFC48aC750959d5d5aE9A4bb38f548A7CA87
 export const KASPAROV_JOB = '0x54A8265ADC50fD66FD0F961cfCc8B62DE0f2B57f';
 export const CHAINLINK_KP3R_ETH_PRICE_FEED = '0xe7015ccb7e5f788b8c1010fc22343473eaac3741';
 export const HELPER_FOR_TEST_BASE_FEE = utils.parseUnits('100', 'gwei');
+export const PAIR_MANAGER_ADDRESS = '0x3f6740b5898c5D3650ec6eAce9a649Ac791e44D7';
 
 export async function setupKeep3r(): Promise<{
   keep3r: Keep3r;
@@ -64,10 +66,8 @@ export async function setupKeep3r(): Promise<{
   const keeperV2Address = ethers.utils.getContractAddress({ from: governance._address, nonce: currentNonce + 1 });
 
   // deploy Keep3rHelperForTest and Keep3r contract
-  const helper = await helperFactory.connect(governance).deploy(keeperV2Address, governance._address);
-  const keep3r = await keep3rFactory
-    .connect(governance)
-    .deploy(governance._address, helper.address, keep3rV1.address, keep3rV1Proxy.address, KP3R_WETH_V3_POOL_ADDRESS);
+  const helper = await helperFactory.connect(governance).deploy(keeperV2Address, governance._address, KP3R_WETH_V3_POOL_ADDRESS);
+  const keep3r = await keep3rFactory.connect(governance).deploy(governance._address, helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
   await helper.setBaseFee(HELPER_FOR_TEST_BASE_FEE);
 

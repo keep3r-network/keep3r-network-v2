@@ -47,7 +47,7 @@ describe('Keep3rKeeperDisputable', () => {
     oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     oraclePool.token0.returns(keep3rV1.address);
 
-    keeperDisputable = await keeperDisputableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    keeperDisputable = await keeperDisputableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
     await keeperDisputable.setVariable('slashers', { [slasher.address]: true });
     await keeperDisputable.setVariable('disputers', { [disputer.address]: true });
   });

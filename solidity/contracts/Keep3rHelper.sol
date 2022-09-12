@@ -27,7 +27,11 @@ import '@openzeppelin/contracts/utils/math/Math.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
 contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
-  constructor(address _keep3rV2, address _governance) Keep3rHelperParameters(_keep3rV2, _governance) {}
+  constructor(
+    address _keep3rV2,
+    address _governance,
+    address _kp3rWethPool
+  ) Keep3rHelperParameters(_keep3rV2, _governance, _kp3rWethPool) {}
 
   /// @inheritdoc IKeep3rHelper
   function quote(uint256 _eth) public view override returns (uint256 _amountOut) {
@@ -36,11 +40,11 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
 
     (int56[] memory _tickCumulatives, ) = IUniswapV3Pool(kp3rWethPool.poolAddress).observe(_secondsAgos);
     int56 _difference = _tickCumulatives[0] - _tickCumulatives[1];
-    _amountOut = getQuoteAtTick(uint128(_eth), kp3rWethPool.isKP3RToken0 ? _difference : -_difference, quoteTwapTime);
+    _amountOut = getQuoteAtTick(uint128(_eth), kp3rWethPool.isTKNToken0 ? _difference : -_difference, quoteTwapTime);
   }
 
   /// @inheritdoc IKeep3rHelper
-  function bonds(address _keeper) public view override returns (uint256 _amountBonded) {
+  function bonds(address _keeper) public view virtual override returns (uint256 _amountBonded) {
     return IKeep3r(keep3rV2).bonds(_keeper, KP3R);
   }
 

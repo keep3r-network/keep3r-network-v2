@@ -30,7 +30,7 @@ describe('Keep3rJobManager', () => {
     oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     oraclePool.token0.returns(keep3rV1.address);
 
-    jobManager = await jobManagerFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    jobManager = await jobManagerFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
   });
 
   describe('addJob', () => {
@@ -54,7 +54,7 @@ describe('Keep3rJobManager', () => {
     });
 
     it('should emit event', async () => {
-      await expect(jobManager.connect(randomUser).addJob(randomJob)).to.emit(jobManager, 'JobAddition').withArgs(randomUser.address, randomJob);
+      await expect(jobManager.connect(randomUser).addJob(randomJob)).to.emit(jobManager, 'JobAddition').withArgs(randomJob, randomUser.address);
     });
   });
 });

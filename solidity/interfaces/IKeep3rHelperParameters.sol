@@ -8,15 +8,15 @@ interface IKeep3rHelperParameters {
 
   /// @dev KP3R-WETH Pool address and isKP3RToken0
   /// @dev Created in order to save gas by avoiding calls to pool's token0 method
-  struct Kp3rWethPool {
+  struct TokenOraclePool {
     address poolAddress;
-    bool isKP3RToken0;
+    bool isTKNToken0;
   }
 
   // Errors
 
   /// @notice Throws when pool does not have KP3R as token0 nor token1
-  error InvalidKp3rPool();
+  error InvalidOraclePool();
 
   // Events
 
@@ -70,8 +70,8 @@ interface IKeep3rHelperParameters {
 
   /// @notice KP3R-WETH pool that is being used as oracle
   /// @return poolAddress Address of the pool
-  /// @return isKP3RToken0 True if calling the token0 method of the pool returns the KP3R token address
-  function kp3rWethPool() external view returns (address poolAddress, bool isKP3RToken0);
+  /// @return isTKNToken0 True if calling the token0 method of the pool returns the KP3R token address
+  function kp3rWethPool() external view returns (address poolAddress, bool isTKNToken0);
 
   /// @notice The minimum multiplier used to calculate the amount of gas paid to the Keeper for the gas used to perform a job
   ///         For example: if the quoted gas used is 1000, then the minimum amount to be paid will be 1000 * minBoost / BOOST_BASE

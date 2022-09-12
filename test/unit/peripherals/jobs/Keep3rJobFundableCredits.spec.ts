@@ -50,7 +50,7 @@ describe('Keep3rJobFundableCredits', () => {
     oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     oraclePool.token0.returns(keep3rV1.address);
 
-    jobFundable = await jobFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    jobFundable = await jobFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
     await jobFundable.setJob(approvedJob, jobOwner.address);
   });

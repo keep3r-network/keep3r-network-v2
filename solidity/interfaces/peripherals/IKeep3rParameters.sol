@@ -21,10 +21,6 @@ interface IKeep3rParameters is IBaseErrors {
   /// @param _keep3rV1Proxy The address of Keep3rV1Proxy's contract
   event Keep3rV1ProxyChange(address _keep3rV1Proxy);
 
-  /// @notice Emitted when the KP3R-WETH pool address is changed
-  /// @param _kp3rWethPool The address of the KP3R-WETH pool
-  event Kp3rWethPoolChange(address _kp3rWethPool);
-
   /// @notice Emitted when bondTime is changed
   /// @param _bondTime The new bondTime
   event BondTimeChange(uint256 _bondTime);
@@ -62,10 +58,6 @@ interface IKeep3rParameters is IBaseErrors {
   /// @notice Address of Keep3rV1Proxy's contract
   /// @return _keep3rV1Proxy The address of Keep3rV1Proxy's contract
   function keep3rV1Proxy() external view returns (address _keep3rV1Proxy);
-
-  /// @notice Address of the KP3R-WETH pool
-  /// @return _kp3rWethPool The address of KP3R-WETH pool
-  function kp3rWethPool() external view returns (address _kp3rWethPool);
 
   /// @notice The amount of time required to pass after a keeper has bonded assets for it to be able to activate
   /// @return _days The required bondTime in days
@@ -124,10 +116,6 @@ interface IKeep3rParameters is IBaseErrors {
   /// @notice Sets the Keep3rV1Proxy address
   /// @param _keep3rV1Proxy The Keep3rV1Proxy address
   function setKeep3rV1Proxy(address _keep3rV1Proxy) external;
-
-  /// @notice Sets the KP3R-WETH pool address
-  /// @param _kp3rWethPool The KP3R-WETH pool address
-  function setKp3rWethPool(address _kp3rWethPool) external;
 
   /// @notice Sets the bond time required to activate as a keeper
   /// @param _bond The new bond time

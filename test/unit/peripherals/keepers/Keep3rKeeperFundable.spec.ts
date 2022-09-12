@@ -44,7 +44,7 @@ describe('Keep3rKeeperFundable', () => {
     oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     oraclePool.token0.returns(keep3rV1.address);
 
-    keeperFundable = await keeperFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    keeperFundable = await keeperFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
   });
 
   describe('bond', () => {

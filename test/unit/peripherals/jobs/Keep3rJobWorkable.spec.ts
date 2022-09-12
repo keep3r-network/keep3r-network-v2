@@ -59,7 +59,7 @@ describe('Keep3rJobWorkable', () => {
 
     helper.isKP3RToken0.returns(true);
 
-    jobWorkable = await jobWorkableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, kp3rWethPool.address);
+    jobWorkable = await jobWorkableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
     await jobWorkable.setJob(approvedJob.address);
 
@@ -204,35 +204,11 @@ describe('Keep3rJobWorkable', () => {
         const gasUsed = (await tx.wait()).gasUsed;
         const gasRecord = await readArgFromEvent(tx, 'KeeperWork', '_gasLeft');
 
-        expect(eventArgs.slice(0, -1)).to.be.deep.eq([keep3rV1.address, approvedJob.address, randomKeeper.address, BigNumber.from(0)]);
+        expect(eventArgs[0]).to.eq(keep3rV1.address);
+        expect(eventArgs[1]).to.eq(approvedJob.address);
+        expect(eventArgs[2]).to.eq(randomKeeper.address);
+        expect(eventArgs[3]).to.eq(BigNumber.from(0));
         expect(gasRecord).to.be.closeTo(gasLimit.sub(gasUsed), 50000);
-      });
-
-      it('should update KP3R/WETH quote if needed', async () => {
-        // let a period pass to outdate the current quote
-        await evm.advanceTimeAndBlock(moment.duration(10, 'days').as('seconds'));
-        // set oracle response
-        const currentTick = oneTick;
-        const previousTick = 0;
-        const tickDifference = currentTick - previousTick;
-        kp3rWethPool.observe.returns([[currentTick, previousTick], []]);
-
-        // job awards no credits to keeper
-        helper.getRewardBoostFor.returns(0);
-
-        await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit: 1_000_000 });
-        blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
-
-        expect(helper.observe).to.have.been.calledWith(kp3rWethPool.address, [
-          blockTimestamp - mathUtils.calcPeriod(blockTimestamp),
-          blockTimestamp - mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime),
-        ]);
-
-        expect(await jobWorkable.viewTickCache(kp3rWethPool.address)).to.deep.equal([
-          BigNumber.from(currentTick),
-          BigNumber.from(tickDifference),
-          BigNumber.from(mathUtils.calcPeriod(blockTimestamp)),
-        ]);
       });
 
       it('should update job credits if needed', async () => {

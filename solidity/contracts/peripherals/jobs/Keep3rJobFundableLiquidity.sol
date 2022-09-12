@@ -105,7 +105,7 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   }
 
   /// @inheritdoc IKeep3rJobFundableLiquidity
-  function observeLiquidity(address _liquidity) public view override returns (TickCache memory _tickCache) {
+  function observeLiquidity(address _liquidity) public view virtual override returns (TickCache memory _tickCache) {
     if (_tick[_liquidity].period == _period(block.timestamp)) {
       // Will return cached twaps if liquidity is updated
       _tickCache = _tick[_liquidity];
@@ -154,7 +154,7 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   }
 
   /// @inheritdoc IKeep3rJobFundableLiquidity
-  function approveLiquidity(address _liquidity) external override onlyGovernance {
+  function approveLiquidity(address _liquidity) external virtual override onlyGovernance {
     if (!_approvedLiquidities.add(_liquidity)) revert LiquidityPairApproved();
     _liquidityPool[_liquidity] = IPairManager(_liquidity).pool();
     _isKP3RToken0[_liquidity] = IKeep3rHelper(keep3rHelper).isKP3RToken0(_liquidityPool[_liquidity]);
@@ -271,11 +271,6 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   /// @notice Quotes the outdated job liquidities and calculates _periodCredits
   /// @dev This function is also responsible for keeping the KP3R/WETH quote updated
   function _calculateJobPeriodCredits(address _job) internal returns (uint256 _periodCredits) {
-    if (_tick[kp3rWethPool].period != _period(block.timestamp)) {
-      // Updates KP3R/WETH quote if needed
-      _tick[kp3rWethPool] = observeLiquidity(kp3rWethPool);
-    }
-
     for (uint256 i; i < _jobLiquidities[_job].length(); i++) {
       address _liquidity = _jobLiquidities[_job].at(i);
       if (_approvedLiquidities.contains(_liquidity)) {
