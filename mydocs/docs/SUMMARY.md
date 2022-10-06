@@ -1,3 +1,6 @@
+---
+sidebar_position: 100
+---
 # Table of contents
 
 * [Introduction](README.md)

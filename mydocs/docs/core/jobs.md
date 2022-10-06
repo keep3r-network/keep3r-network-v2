@@ -218,7 +218,7 @@ There are some considerations the job wishing to migrate must take into account 
 
 Here's a graphic representation to visualize the resulting changes in the credits of a job that goes through a successful migration.
 
-![](../.gitbook/assets/jobmigration.png)
+![](./img/jobmigration.png)
 
 
 
