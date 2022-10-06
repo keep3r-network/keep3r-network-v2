@@ -2,9 +2,9 @@
 
 ### Job Credits
 
-A Job can generate new credits with time, by bonding Keep3r Liquidity Pool tokens `kLP` to it. Liquidities will be handled by the [Keep3r Liquidity Pools](../keep3r-liquidity-pools.md).
+A Job can generate new credits with time, by bonding Keep3r Liquidity Pool tokens `kLP` to it. Liquidities will be handled by the [Keep3r Liquidity Pools](/keep3r-liquidity-pools.md).
 
-Once `kLPs` are added to a job with [`addLiquidityToJob`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#addliquiditytojob-address-_job-address-_liquidity-uint256-_amount-external), the job starts immediately to mine new KP3R credits, that can be collectable only by the keepers, in reward for working the job. The credit mining system requires no further action from the `jobOwner`.
+Once `kLPs` are added to a job with [`addLiquidityToJob`](/technical/peripherals/ikeep3rjobfundableliquidity.md#addliquiditytojob-address-_job-address-_liquidity-uint256-_amount-external), the job starts immediately to mine new KP3R credits, that can be collectable only by the keepers, in reward for working the job. The credit mining system requires no further action from the `jobOwner`.
 
 {% hint style="info" %}
 KP3R Credits can only be rewarded within the protocol, requiring an unbonding period that gives time to disputers to detect keepers and jobs that act in bad faith
@@ -14,7 +14,7 @@ KP3R Credits can only be rewarded within the protocol, requiring an unbonding pe
 
 To handle KP3R credits minting and quoting, **Keep3r introduces reward periods, in which KP3R quote remains stable for each pair, and gas-efficiently processed**. These quotes are used within the protocol to mint credits and reward keepers.
 
-The underlying KP3R of the liquidity provided, should generate the same amount of KP3R every [`inflationPeriod`](../../technical/peripherals/ikeep3rparameters.md#inflationperiod-uint256-_period-external), thereby minting the proportional amount each [`rewardPeriod`](../../technical/peripherals/ikeep3rparameters.md#rewardperiodtime-uint256-_days-external) as KP3R credits for the job. These credits are only to be earned by keepers when working the job, and by the end of each `rewardPeriod`, unused credits older than previous `rewardPeriodStart` are meant to expire.
+The underlying KP3R of the liquidity provided, should generate the same amount of KP3R every [`inflationPeriod`](/technical/peripherals/ikeep3rparameters.md#inflationperiod-uint256-_period-external), thereby minting the proportional amount each [`rewardPeriod`](/technical/peripherals/ikeep3rparameters.md#rewardperiodtime-uint256-_days-external) as KP3R credits for the job. These credits are only to be earned by keepers when working the job, and by the end of each `rewardPeriod`, unused credits older than previous `rewardPeriodStart` are meant to expire.
 
 ![Credit mining without work](./img/image-4.png)
 
@@ -37,13 +37,13 @@ A `worked()` transaction that has to update quotes and reward the job is more ga
 
 To determine the value of a certain liquidity, Keep3r uses a TWAP calculation to get the average quote of a pair in the last completed period. The same calculation is applied to quote rewards for keepers \(that spend gas in ETH and receive KP3R rewards\), using a predefined KP3R/WETH pool as an oracle.
 
-* A job will mint the result of [`quoteLiquidity`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#quoteliquidity-address-_liquidity-uint256-_amount-uint256-_periodcredits-external) every `rewardPeriodTime` 
+* A job will mint the result of [`quoteLiquidity`](/technical/peripherals/ikeep3rjobfundableliquidity.md#quoteliquidity-address-_liquidity-uint256-_amount-uint256-_periodcredits-external) every `rewardPeriodTime` 
 * `quoteLiquidity` will use the average quote for the last `epoch`for the given liquidity
 * Remaining credits will be updated to current quotes each time a `rewardPeriod` starts
 
 #### Job Credit accountance
 
-At every time, a job will have its **current credits** \(already rewarded and stored as [`jobLiquidityCredits`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#jobperiodcredits-address-_job-uint256-_amount-external)\) and **pending mined credits** to be rewarded \(aggregated with current credits in [`totalJobCredits`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#totaljobcredits-address-_job-uint256-_amount-external)\). 
+At every time, a job will have its **current credits** \(already rewarded and stored as [`jobLiquidityCredits`](/technical/peripherals/ikeep3rjobfundableliquidity.md#jobperiodcredits-address-_job-uint256-_amount-external)\) and **pending mined credits** to be rewarded \(aggregated with current credits in [`totalJobCredits`](/technical/peripherals/ikeep3rjobfundableliquidity.md#totaljobcredits-address-_job-uint256-_amount-external)\). 
 
 A keeper will be able to run the job, as long as `totalJobCredits` is greater than the payment. If `jobLiquidityCredits` are not enough to pay the keeper, then the keeper will have to reward the job by rewarding the job with its mined credits.
 
@@ -67,7 +67,7 @@ At particular times, a job can make a payment of up to 2 times its `jobPeriodCre
 
 **Updating Credits**
 
-Since quotes can change every epoch, Keep3r recalculates every period how many KP3R a job should be mined each period, aggregated by [`jobPeriodCredits`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#jobperiodcredits-address-_job-uint256-_amount-external).
+Since quotes can change every epoch, Keep3r recalculates every period how many KP3R a job should be mined each period, aggregated by [`jobPeriodCredits`](/technical/peripherals/ikeep3rjobfundableliquidity.md#jobperiodcredits-address-_job-uint256-_amount-external).
 
 ![Credit mining with quote change](./img/image-5.png)
 

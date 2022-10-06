@@ -153,7 +153,7 @@ function revokeLiquidity(address _liquidity) external;
 
 ## Force Liquidity Credits
 
-Governance can temporarily give liquidity credits to jobs. These liquidity credits will expire after the current [reward period](../tokenomics/job-payment-mechanisms/credit-mining.md#reward-periods) has ended.
+Governance can temporarily give liquidity credits to jobs. These liquidity credits will expire after the current [reward period](/tokenomics/job-payment-mechanisms/credit-mining.md#reward-periods) has ended.
 
 ```text
 /// @notice Gifts liquidity credits to the specified job
