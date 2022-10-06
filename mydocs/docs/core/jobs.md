@@ -36,11 +36,11 @@ Jobs can be created directly via [`addJob()`](https://github.com/defi-wonderland
 
 ## Managing Credits
 
-Jobs need credit to be able to pay keepers, this credit can either be paid for directly \(see [Token Payments](/tokenomics/job-payment-mechanisms/token-payments.md)\), or by being a liquidity provider \(see [Credit Mining](/tokenomics/job-payment-mechanisms/credit-mining.md)\) in the system. If you pay directly, this is a direct expense, if you are a liquidity provider, you get all your liquidity back after you are done being a provider.
+Jobs need credit to be able to pay keepers, this credit can either be paid for directly \(see [Token Payments](../tokenomics/job-payment-mechanisms/token-payments.md)\), or by being a liquidity provider \(see [Credit Mining](../tokenomics/job-payment-mechanisms/credit-mining.md)\) in the system. If you pay directly, this is a direct expense, if you are a liquidity provider, you get all your liquidity back after you are done being a provider.
 
 ### Start mining credits for your job via Liquidity
 
-To start mining credits, you will need to provide [LP tokens](/tokenomics/keep3r-liquidity-pools.md) as liquidity by calling [`addLiquidityToJob()`](https://github.com/defi-wonderland/keep3r-v2-public/blob/public/contracts/interfaces/peripherals/IKeep3rJobs.sol). You receive all your LP tokens back when you no longer need to provide credit for a contract.
+To start mining credits, you will need to provide [LP tokens](../tokenomics/keep3r-liquidity-pools.md) as liquidity by calling [`addLiquidityToJob()`](https://github.com/defi-wonderland/keep3r-v2-public/blob/public/contracts/interfaces/peripherals/IKeep3rJobs.sol). You receive all your LP tokens back when you no longer need to provide credit for a contract.
 
 ```text
   /// @notice Allows anyone to fund a job with liquidity
