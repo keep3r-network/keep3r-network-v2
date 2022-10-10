@@ -1,7 +1,5 @@
 ---
-sidebar_custom_props: {
-	display: none;
-}
+sidebar_position: 1
 ---
 # Introduction
 
