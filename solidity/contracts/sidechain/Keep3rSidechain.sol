@@ -75,7 +75,7 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated {
   /// @param _usdPerGasUnit Units of USD (in wei) per gas unit that should be rewarded to the keeper
   function worked(address _keeper, uint256 _usdPerGasUnit) external override {
     // Gas used for quote calculations & payment is not rewarded
-    uint256 _gasRecord = gasleft();
+    uint256 _gasRecord = _getGasLeft();
 
     address _job = msg.sender;
     if (disputes[_job]) revert JobDisputed();

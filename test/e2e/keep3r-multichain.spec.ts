@@ -208,7 +208,13 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     it('should earn bonds for working a job quoted in USD', async () => {
       const twapPeriod = await keep3rHelper.quoteTwapTime();
       const tx = await job.connect(keeper).workHard(30);
-      const gasUsed = (await tx.wait()).gasUsed;
+
+      const validationEvent = (await keep3r.queryFilter(keep3r.filters.KeeperValidation(), tx.blockNumber, tx.blockNumber))[0];
+      const workEvent = (await keep3r.queryFilter(keep3r.filters.KeeperWork(), tx.blockNumber, tx.blockNumber))[0];
+      const initialGas = BigNumber.from(validationEvent.args._gasLeft);
+      const finalGas = BigNumber.from(workEvent.args._gasLeft);
+      const gasUsed = initialGas.sub(finalGas);
+
       const usdPerGasUnit = await job.usdPerGasUnit();
 
       const reward = await keep3r.bonds(keeper.address, wKP3R.address);
@@ -256,7 +262,13 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
 
       const twapPeriod = await keep3rHelper.quoteTwapTime();
       const tx = await job.connect(keeper).workHard(30);
-      const gasUsed = (await tx.wait()).gasUsed;
+
+      const validationEvent = (await keep3r.queryFilter(keep3r.filters.KeeperValidation(), tx.blockNumber, tx.blockNumber))[0];
+      const workEvent = (await keep3r.queryFilter(keep3r.filters.KeeperWork(), tx.blockNumber, tx.blockNumber))[0];
+      const initialGas = BigNumber.from(validationEvent.args._gasLeft);
+      const finalGas = BigNumber.from(workEvent.args._gasLeft);
+      const gasUsed = initialGas.sub(finalGas);
+
       const usdPerGasUnit = await job.usdPerGasUnit();
 
       const reward = (await keep3r.bonds(keeper.address, wKP3R.address)).sub(initialBonds);
