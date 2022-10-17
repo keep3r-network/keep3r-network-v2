@@ -31,18 +31,18 @@ describe('Keep3rHelperParameters', () => {
     const randomKeep3rV2Address = generateRandomAddress();
 
     it('should assign keep3rV2 to given parameter', async () => {
-      parameters = await parametersFactory.deploy(randomKeep3rV2Address, governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governance.address, pool.address);
       expect(await parameters.callStatic.keep3rV2()).to.equal(randomKeep3rV2Address);
     });
 
     it('should assign kp3rWethPool address', async () => {
-      parameters = await parametersFactory.deploy(randomKeep3rV2Address, governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governance.address, pool.address);
       const assignedAddress = (await parameters.callStatic.kp3rWethPool()).poolAddress;
       expect(assignedAddress).to.equal(pool.address);
     });
 
     it('should set kp3rWethPool isTKNToken0 to true if KP3R is token0', async () => {
-      parameters = await parametersFactory.deploy(randomKeep3rV2Address, governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governance.address, pool.address);
       const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
       expect(isTKNToken0).to.be.true;
     });
@@ -50,7 +50,7 @@ describe('Keep3rHelperParameters', () => {
     it('should set kp3rWethPool isTKNToken0 to false if KP3R is not token0', async () => {
       pool.token0.returns(generateRandomAddress());
       pool.token1.returns(KP3R_V1_ADDRESS);
-      parameters = await parametersFactory.deploy(randomKeep3rV2Address, governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governance.address, pool.address);
       const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
       expect(isTKNToken0).to.be.false;
     });
@@ -64,7 +64,7 @@ describe('Keep3rHelperParameters', () => {
     });
 
     beforeEach(async () => {
-      parameters = await parametersFactory.deploy(generateRandomAddress(), governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, generateRandomAddress(), governance.address, pool.address);
       otherPool.token0.returns(KP3R_V1_ADDRESS);
     });
 
@@ -108,7 +108,7 @@ describe('Keep3rHelperParameters', () => {
     const randomKeep3rV2Address = generateRandomAddress();
 
     beforeEach(async () => {
-      parameters = await parametersFactory.deploy(generateRandomAddress(), governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, generateRandomAddress(), governance.address, pool.address);
     });
 
     [

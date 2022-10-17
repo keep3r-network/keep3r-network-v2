@@ -14,7 +14,7 @@ import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
 contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
   /// @inheritdoc IKeep3rHelperParameters
-  address public constant override KP3R = 0x1cEB5cB57C4D4E2b2433641b95Dd330A33185A44;
+  address public immutable override KP3R;
 
   /// @inheritdoc IKeep3rHelperParameters
   uint256 public constant override BOOST_BASE = 10_000;
@@ -47,12 +47,14 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
   IKeep3rHelperParameters.TokenOraclePool public override kp3rWethPool;
 
   constructor(
+    address _kp3r,
     address _keep3rV2,
     address _governance,
     address _kp3rWethPool
   ) Governable(_governance) {
+    KP3R = _kp3r;
     keep3rV2 = _keep3rV2;
-    _setKp3rWethPool(_kp3rWethPool);
+    kp3rWethPool = _validateOraclePool(_kp3rWethPool, _kp3r);
   }
 
   /// @inheritdoc IKeep3rHelperParameters

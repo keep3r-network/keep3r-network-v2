@@ -66,7 +66,9 @@ export async function setupKeep3r(): Promise<{
   const keeperV2Address = ethers.utils.getContractAddress({ from: governance._address, nonce: currentNonce + 1 });
 
   // deploy Keep3rHelperForTest and Keep3r contract
-  const helper = await helperFactory.connect(governance).deploy(keeperV2Address, governance._address, KP3R_WETH_V3_POOL_ADDRESS);
+  const helper = await helperFactory
+    .connect(governance)
+    .deploy(keep3rV1.address, keeperV2Address, governance._address, KP3R_WETH_V3_POOL_ADDRESS);
   const keep3r = await keep3rFactory.connect(governance).deploy(governance._address, helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
   await helper.setBaseFee(HELPER_FOR_TEST_BASE_FEE);

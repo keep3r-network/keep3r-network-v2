@@ -90,6 +90,8 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     keep3rHelper = await keep3rHelperFactory.deploy(
       precalculatedAddress,
       governance.address,
+      KP3R_V1_ADDRESS,
+      WETH_ADDRESS,
       KP3R_WETH_V3_POOL_ADDRESS, // uses KP3R-WETH pool as oracle
       WETH_DAI_V3_POOL_ADDRESS // uses WETH-DAI pool as oracle
     );

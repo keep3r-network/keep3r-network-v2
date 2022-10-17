@@ -41,7 +41,7 @@ describe('Keep3rHelper', () => {
     keep3r = await smock.fake(IKeep3rArtifact);
     oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     oraclePool.token1.returns(KP3R_V1_ADDRESS);
-    helper = await helperFactory.deploy(keep3r.address, governance.address, oraclePool.address);
+    helper = await helperFactory.deploy(KP3R_V1_ADDRESS, keep3r.address, governance.address, oraclePool.address);
 
     kp3rV1Address = await helper.callStatic.KP3R();
     targetBond = await helper.callStatic.targetBond();

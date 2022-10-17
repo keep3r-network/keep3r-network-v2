@@ -37,7 +37,14 @@ describe('Keep3rHelperSidechain', () => {
     wethUsdOracle.token1.returns(WETH_ADDRESS);
 
     keep3rHelperSidechainFactory = await smock.mock<Keep3rHelperSidechain__factory>('Keep3rHelperSidechain');
-    helper = await keep3rHelperSidechainFactory.deploy(keep3r.address, governance.address, kp3rWethOracle.address, wethUsdOracle.address);
+    helper = await keep3rHelperSidechainFactory.deploy(
+      keep3r.address,
+      governance.address,
+      KP3R_V1_ADDRESS,
+      WETH_ADDRESS,
+      kp3rWethOracle.address,
+      wethUsdOracle.address
+    );
 
     snapshotId = await evm.snapshot.take();
   });
@@ -67,6 +74,8 @@ describe('Keep3rHelperSidechain', () => {
       const deployed = await keep3rHelperSidechainFactory.deploy(
         keep3r.address,
         governance.address,
+        KP3R_V1_ADDRESS,
+        WETH_ADDRESS,
         kp3rWethOracle.address,
         wethUsdOracle.address
       );
@@ -87,6 +96,8 @@ describe('Keep3rHelperSidechain', () => {
       const deployed = await keep3rHelperSidechainFactory.deploy(
         keep3r.address,
         governance.address,
+        KP3R_V1_ADDRESS,
+        WETH_ADDRESS,
         kp3rWethOracle.address,
         wethUsdOracle.address
       );
