@@ -126,9 +126,8 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, IBaseErrors, Governa
 
   function _validateOraclePool(address _poolAddress, address _token) internal view returns (TokenOraclePool memory _oraclePool) {
     bool _isTKNToken0 = IUniswapV3Pool(_poolAddress).token0() == _token;
-    bool _isTKNToken1 = IUniswapV3Pool(_poolAddress).token1() == _token;
 
-    if (!_isTKNToken0 && !_isTKNToken1) revert InvalidOraclePool();
+    if (!_isTKNToken0 && (IUniswapV3Pool(_poolAddress).token1() != _token)) revert InvalidOraclePool();
 
     return TokenOraclePool(_poolAddress, _isTKNToken0);
   }
