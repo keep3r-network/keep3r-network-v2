@@ -34,6 +34,7 @@ contract Keep3rEscrow is Mintable, DustCollector, IKeep3rEscrow {
 
   /// @inheritdoc IKeep3rEscrow
   function setWKP3R(address _wKP3R) external override onlyGovernance {
+    if (_wKP3R == address(0)) revert ZeroAddress();
     wKP3R = _wKP3R;
     emit wKP3RSet(wKP3R);
   }

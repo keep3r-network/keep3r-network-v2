@@ -16,6 +16,7 @@ contract Keep3rRoles is IKeep3rRoles, Governable {
 
   /// @inheritdoc IKeep3rRoles
   function addSlasher(address _slasher) external override onlyGovernance {
+    if (_slasher == address(0)) revert ZeroAddress();
     if (slashers[_slasher]) revert SlasherExistent();
     slashers[_slasher] = true;
     emit SlasherAdded(_slasher);
@@ -30,6 +31,7 @@ contract Keep3rRoles is IKeep3rRoles, Governable {
 
   /// @inheritdoc IKeep3rRoles
   function addDisputer(address _disputer) external override onlyGovernance {
+    if (_disputer == address(0)) revert ZeroAddress();
     if (disputers[_disputer]) revert DisputerExistent();
     disputers[_disputer] = true;
     emit DisputerAdded(_disputer);

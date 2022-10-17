@@ -41,6 +41,7 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
 
   /// @inheritdoc IKeep3rHelperSidechain
   function setOracle(address _liquidity, address _oracle) external override onlyGovernance {
+    if ((_liquidity == address(0)) || (_oracle == address(0))) revert ZeroAddress();
     oracle[_liquidity] = _oracle;
     emit OracleSet(_liquidity, _oracle);
   }
@@ -58,6 +59,7 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
 
   /// @inheritdoc IKeep3rHelperSidechain
   function setWethUsdPool(address _poolAddress) external override onlyGovernance {
+    if (_poolAddress == address(0)) revert ZeroAddress();
     _setWethUsdPool(_poolAddress);
   }
 

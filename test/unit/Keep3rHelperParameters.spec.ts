@@ -4,6 +4,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { IUniswapV3Pool, Keep3rHelperParameters, Keep3rHelperParameters__factory } from '@types';
 import { behaviours } from '@utils';
 import { toUnit } from '@utils/bn';
+import { ZERO_ADDRESS } from '@utils/constants';
 import { generateRandomAddress } from '@utils/wallet';
 import { expect } from 'chai';
 import { Contract } from 'ethers';
@@ -74,6 +75,10 @@ describe('Keep3rHelperParameters', () => {
       governance,
       () => [otherPool.address]
     );
+
+    it('should revert if pool address is 0', async () => {
+      await expect(parameters.connect(governance).setKp3rWethPool(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+    });
 
     it('should set kp3rWethPool isTKNToken0 to true if KP3R is token0', async () => {
       await parameters.connect(governance).setKp3rWethPool(otherPool.address);

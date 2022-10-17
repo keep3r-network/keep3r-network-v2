@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import './IBaseErrors.sol';
-
 /// @title Keep3rParameters contract
 /// @notice Handles and sets all the required parameters for Keep3r
 
-interface IKeep3rParameters is IBaseErrors {
+interface IKeep3rParameters {
   // Events
 
   /// @notice Emitted when the Keep3rHelper address is changed

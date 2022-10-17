@@ -3,6 +3,7 @@ pragma solidity >=0.8.7 <0.9.0;
 
 import './libraries/FullMath.sol';
 import './libraries/TickMath.sol';
+import '../interfaces/peripherals/IBaseErrors.sol';
 import '../interfaces/IKeep3r.sol';
 import '../interfaces/external/IKeep3rV1.sol';
 import '../interfaces/IKeep3rHelperParameters.sol';
@@ -12,7 +13,7 @@ import './Keep3rHelperParameters.sol';
 import '@openzeppelin/contracts/utils/math/Math.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
-contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
+contract Keep3rHelperParameters is IKeep3rHelperParameters, IBaseErrors, Governable {
   /// @inheritdoc IKeep3rHelperParameters
   address public immutable override KP3R;
 
@@ -59,6 +60,7 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
 
   /// @inheritdoc IKeep3rHelperParameters
   function setKp3rWethPool(address _poolAddress) external override onlyGovernance {
+    if (_poolAddress == address(0)) revert ZeroAddress();
     _setKp3rWethPool(_poolAddress);
   }
 
@@ -82,6 +84,7 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, Governable {
 
   /// @inheritdoc IKeep3rHelperParameters
   function setKeep3rV2(address _keep3rV2) external override onlyGovernance {
+    if (_keep3rV2 == address(0)) revert ZeroAddress();
     keep3rV2 = _keep3rV2;
     emit Keep3rV2Change(keep3rV2);
   }

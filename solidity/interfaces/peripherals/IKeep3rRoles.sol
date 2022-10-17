@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
+import './IBaseErrors.sol';
+
 /// @title Keep3rRoles contract
 /// @notice Manages the Keep3r specific roles
-interface IKeep3rRoles {
+interface IKeep3rRoles is IBaseErrors {
   // Events
 
   /// @notice Emitted when a slasher is added

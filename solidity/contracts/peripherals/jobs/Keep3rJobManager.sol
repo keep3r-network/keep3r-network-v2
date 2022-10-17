@@ -6,7 +6,7 @@ import '../Keep3rRoles.sol';
 import '../Keep3rParameters.sol';
 import '../../../interfaces/peripherals/IKeep3rJobs.sol';
 
-abstract contract Keep3rJobManager is IKeep3rJobManager, Keep3rJobOwnership, Keep3rRoles, Keep3rParameters {
+abstract contract Keep3rJobManager is IKeep3rJobManager, Keep3rJobOwnership, Keep3rParameters {
   using EnumerableSet for EnumerableSet.AddressSet;
 
   /// @inheritdoc IKeep3rJobManager

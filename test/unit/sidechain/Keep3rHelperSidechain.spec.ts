@@ -4,6 +4,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { IKeep3r, IUniswapV3Pool, Keep3rHelperSidechain, Keep3rHelperSidechain__factory } from '@types';
 import { bn, evm, wallet } from '@utils';
 import { onlyGovernance } from '@utils/behaviours';
+import { ZERO_ADDRESS } from '@utils/constants';
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
 
@@ -148,6 +149,14 @@ describe('Keep3rHelperSidechain', () => {
       [wallet.generateRandomAddress(), wallet.generateRandomAddress()]
     );
 
+    it('should revert if any address is 0', async () => {
+      const randomAddress = wallet.generateRandomAddress();
+
+      await expect(helper.connect(governance).setOracle(randomAddress, ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+      await expect(helper.connect(governance).setOracle(ZERO_ADDRESS, randomAddress)).to.be.revertedWith('ZeroAddress()');
+      await expect(helper.connect(governance).setOracle(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+    });
+
     it('should store oracle address for given liquidity', async () => {
       const liquidity = wallet.generateRandomAddress();
       const oracle = wallet.generateRandomAddress();
@@ -181,6 +190,10 @@ describe('Keep3rHelperSidechain', () => {
       governance,
       () => [otherPool.address]
     );
+
+    it('should revert if pool address is 0', async () => {
+      await expect(helper.connect(governance).setWethUsdPool(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+    });
 
     it('should set wethUSDPool isTKNToken0 to true if WETH is token0', async () => {
       otherPool.token0.returns(WETH_ADDRESS);
