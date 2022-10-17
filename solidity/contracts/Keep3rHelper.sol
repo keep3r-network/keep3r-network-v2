@@ -64,7 +64,7 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
   /// @inheritdoc IKeep3rHelper
   function getRewardBoostFor(uint256 _bonds) public view override returns (uint256 _rewardBoost) {
     _bonds = Math.min(_bonds, targetBond);
-    uint256 _cap = Math.max(minBoost, minBoost + ((maxBoost - minBoost) * _bonds) / targetBond);
+    uint256 _cap = minBoost + ((maxBoost - minBoost) * _bonds) / targetBond;
     _rewardBoost = _cap * _getBasefee();
   }
 
