@@ -6,6 +6,15 @@
 
 /* You can override the default Infima variables here. */
 
+
+.hero--primary {
+  background-color: #000000;
+}
+
+.theme-doc-sidebar-menu.menu__list > li:not(:first-child) {
+  margin-top: 1rem;
+}
+/*
 html[data-theme='dark'] {
   --ifm-color-primary: #FFFFFF;
 
@@ -33,7 +42,7 @@ html[data-theme='dark'] {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 .gap {
-  gap: 4rem/* 32px */;
+  gap: 4rem;
 }
 @media (min-width: 768px) {
   .md\:grid-cols-2 {
@@ -48,10 +57,10 @@ html[data-theme='dark'] {
   font-weight: 700;
 }
 .mt-4 {
-  margin-top: 1rem/* 16px */;
+  margin-top: 1rem;
 }
 .mb-8 {
-  margin-bottom: 2rem/* 32px */;
+  margin-bottom: 2rem;
 }
 .space-y-6 > :not([hidden]) ~ :not([hidden]) {
   --tw-space-y-reverse: 0;
@@ -85,3 +94,4 @@ html[data-theme='dark'] {
   flex-direction: column;
   padding-bottom: 2rem;
 }
+*/

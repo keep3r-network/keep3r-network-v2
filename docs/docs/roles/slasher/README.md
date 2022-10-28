@@ -1,18 +1,14 @@
-# Slasher
-
+# Slashers 
 Slashers are governance-approved addresses with permission to exercise last resort punishments over keepers and jobs that act in bad faith. These permissions allow slashers to:
-
-* Slash bonded assets from keepers
-* Slash tokens and liquidities from jobs
-* Blacklist keepers altogether, effectively rendering them unable to keep participating in the network.
+- Slash bonded assets from keepers
+- Slash tokens and liquidities from jobs
+- Blacklist keepers altogether, effectively rendering them unable to keep participating in the network.
 
 > For a keeper or a job to be subjected to a possible slashing or blacklist, they have first to have been disputed by either governance or a disputer.
 
 ## Slashing Keepers
-
 Slash the bonded asset of a keeper.
-
-```text
+```js
 /// @notice Allows governance to slash a keeper based on a dispute
 /// @param _keeper The address being slashed
 /// @param _bonded The asset being slashed
@@ -25,10 +21,8 @@ function slash(
 ```
 
 ## Slashing Jobs
-
 Slash an array of tokens from a job.
-
-```text
+```js
 /// @notice Allows governance or slasher to slash a job specific token
 /// @param _job The address of the job from which the token will be slashed
 /// @param _tokens An array containing the token addresses that will be slashed
@@ -41,8 +35,7 @@ function slashTokenFromJob(
 ```
 
 Slash an array of liquidities from a job.
-
-```text
+```js
 /// @notice Allows governance or a slasher to slash liquidity from a job
 /// @param _job The address being slashed
 /// @param _liquidities An array containing the liquidity addresses that will be slashed
@@ -55,14 +48,9 @@ function slashLiquidityFromJob(
 ```
 
 ## Blacklisting Keepers
-
 Blacklists a keeper from the network.
-
-```text
+```js
 /// @notice Blacklists a keeper from participating in the network
 /// @param _keeper The address being slashed
 function revoke(address _keeper) external;
 ```
-
-
-

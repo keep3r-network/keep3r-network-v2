@@ -24,7 +24,7 @@ function HomepageHeader() {
 				</div>
 			</header>
 			<div style={{background: 'white'}}>
-				<div className="container" style={{marginTop: '6rem', color: 'black'}}>
+				<div className="container" style={{paddingTop: '6rem', color: 'black'}}>
 					<section aria-label={'UNDERSTAND SETUP'}>
 						<div className={'grid w-full grid-cols-1 gap md:grid-cols-2'} style={{textAlign: 'left'}}>
 							<div>

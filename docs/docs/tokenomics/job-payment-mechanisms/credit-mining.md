@@ -1,14 +1,17 @@
+---
+sidebar_position: 2
+---
 # Credit Mining
 
 ### Job Credits
 
-A Job can generate new credits with time, by bonding Keep3r Liquidity Pool tokens `kLP` to it. Liquidities will be handled by the [Keep3r Liquidity Pools](../keep3r-liquidity-pools.md).
+A Job can generate new credits with time, by bonding Keep3r Liquidity Pool tokens `kLP` to it. Liquidities will be handled by the [Keep3r Liquidity Pools](../keep3r-liquidity-pools/README.md).
 
 Once `kLPs` are added to a job with [`addLiquidityToJob`](../../technical/peripherals/IKeep3rJobFundableLiquidity.md#addliquiditytojob-address-_job-address-_liquidity-uint256-_amount-external), the job starts immediately to mine new KP3R credits, that can be collectable only by the keepers, in reward for working the job. The credit mining system requires no further action from the `jobOwner`.
 
-{% hint style="info" %}
+:::info
 KP3R Credits can only be rewarded within the protocol, requiring an unbonding period that gives time to disputers to detect keepers and jobs that act in bad faith
-{% endhint %}
+:::
 
 #### Reward Periods
 
@@ -29,9 +32,9 @@ Following keepers of different jobs, will have to update each job accountance \(
 
 Updating jobs accountance requires no other action from the keeper than working the job.
 
-{% hint style="info" %}
+:::info
 A `worked()` transaction that has to update quotes and reward the job is more gas-consuming, therefore has a higher keeper reward
-{% endhint %}
+:::
 
 #### Quoting the Liquidity
 
