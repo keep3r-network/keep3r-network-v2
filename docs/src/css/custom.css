@@ -1,0 +1,97 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+
+
+.hero--primary {
+  background-color: #000000;
+}
+
+.theme-doc-sidebar-menu.menu__list > li:not(:first-child) {
+  margin-top: 1rem;
+}
+/*
+html[data-theme='dark'] {
+  --ifm-color-primary: #FFFFFF;
+
+  --ifm-background-color: #000000;
+  --ifm-background-surface-color: #000000;
+}
+
+.sidebarspace {
+  margin-top: auto !important;
+}
+.hero {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  background: black;
+}
+
+.grid {
+  display: grid;
+}
+.w-full {
+  width: 100%;
+}
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+.gap {
+  gap: 4rem;
+}
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.text-xl {
+  font-size: 24px;
+  line-height: 32px;
+}
+.font-bold {
+  font-weight: 700;
+}
+.mt-4 {
+  margin-top: 1rem;
+}
+.mb-8 {
+  margin-bottom: 2rem;
+}
+.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
+}
+.inline {
+  display: inline;
+}
+.text-grey-2 {
+  --tw-text-opacity: 1;
+  color: rgb(130 130 130 / var(--tw-text-opacity));
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+.bg-white {
+  background: white;
+}
+.theme-doc-sidebar-menu {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 2rem;
+}
+*/

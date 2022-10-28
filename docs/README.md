@@ -16,3 +16,11 @@ A Job is the term used to refer to a smart contract that wishes an external enti
 
 Credits are used to pay keepers for their work. A job can either top up your credits [with tokens](tokenomics/job-payment-mechanisms/token-payments.md), or by mining credits with time by [staking liquidity](tokenomics/job-payment-mechanisms/credit-mining.md).
 
+### Local Development
+
+```
+yarn
+yarn start
+```
+
+This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
