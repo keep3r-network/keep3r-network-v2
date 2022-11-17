@@ -16,7 +16,7 @@ abstract contract Keep3rKeeperDisputable is IKeep3rKeeperDisputable, Keep3rDispu
     address _bonded,
     uint256 _bondAmount,
     uint256 _unbondAmount
-  ) public override onlySlasher {
+  ) external override onlySlasher {
     if (!disputes[_keeper]) revert NotDisputed();
     _slash(_keeper, _bonded, _bondAmount, _unbondAmount);
     emit KeeperSlash(_keeper, msg.sender, _bondAmount + _unbondAmount);

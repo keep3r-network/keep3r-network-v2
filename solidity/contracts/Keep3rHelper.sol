@@ -74,7 +74,7 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
   }
 
   /// @inheritdoc IKeep3rHelper
-  function isKP3RToken0(address _pool) public view override returns (bool _isKP3RToken0) {
+  function isKP3RToken0(address _pool) external view override returns (bool _isKP3RToken0) {
     address _token0;
     address _token1;
     (_token0, _token1) = getPoolTokens(_pool);
@@ -87,7 +87,7 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
 
   /// @inheritdoc IKeep3rHelper
   function observe(address _pool, uint32[] memory _secondsAgo)
-    public
+    external
     view
     override
     returns (
@@ -126,7 +126,7 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
     uint256 _liquidityAmount,
     int56 _tickDifference,
     uint256 _timeInterval
-  ) public pure override returns (uint256 _kp3rAmount) {
+  ) external pure override returns (uint256 _kp3rAmount) {
     uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(int24(_tickDifference / int256(_timeInterval)));
     _kp3rAmount = FullMath.mulDiv(1 << 96, _liquidityAmount, sqrtRatioX96);
   }

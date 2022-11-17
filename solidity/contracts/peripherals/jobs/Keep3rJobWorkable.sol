@@ -30,7 +30,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     uint256 _minBond,
     uint256 _earned,
     uint256 _age
-  ) public override returns (bool _isBondedKeeper) {
+  ) external override returns (bool _isBondedKeeper) {
     _initialGas = _getGasLeft();
     if (
       _keepers.contains(_keeper) &&
@@ -73,7 +73,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
   }
 
   /// @inheritdoc IKeep3rJobWorkable
-  function bondedPayment(address _keeper, uint256 _payment) public override {
+  function bondedPayment(address _keeper, uint256 _payment) external override {
     address _job = msg.sender;
 
     if (disputes[_job]) revert JobDisputed();
