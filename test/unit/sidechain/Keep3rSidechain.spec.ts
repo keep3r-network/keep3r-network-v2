@@ -417,6 +417,7 @@ describe('Keep3rSidechain', () => {
           const gasUsed1 = (await tx1.wait()).gasUsed;
 
           // second job shouldn't reward the job and earn less KP3R
+          await keep3r.setVariable('_initialGas', 1_500_000); // _initialGas is deleted after worked
           const tx2 = await keep3r.connect(approvedJob.wallet)['worked(address,uint256)'](keeper, 1_000_000, { gasLimit: 1_000_000 });
           const bondsAcc2 = await keep3r.bonds(keeper, wKP3R.address);
           const gasUsed2 = (await tx2.wait()).gasUsed;

@@ -348,6 +348,7 @@ describe('Keep3rJobWorkable', () => {
           const bondsAcc1 = await jobWorkable.bonds(randomKeeper.address, keep3rV1.address);
 
           // second job shouldn't reward the job and earn less KP3R
+          await jobWorkable.setVariable('_initialGas', 1_500_000); // _initialGas is deleted after worked
           await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit: 1_000_000 });
           const bondsAcc2 = await jobWorkable.bonds(randomKeeper.address, keep3rV1.address);
 
