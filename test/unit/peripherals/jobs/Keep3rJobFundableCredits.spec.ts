@@ -37,21 +37,25 @@ describe('Keep3rJobFundableCredits', () => {
   let oraclePool: FakeContract<IUniswapV3Pool>;
   let jobFundableFactory: MockContractFactory<Keep3rJobFundableCreditsForTest__factory>;
 
+  let snapshotId: string;
+
   before(async () => {
     [governance, provider, jobOwner] = await ethers.getSigners();
 
     jobFundableFactory = await smock.mock<Keep3rJobFundableCreditsForTest__factory>('Keep3rJobFundableCreditsForTest');
-  });
-
-  beforeEach(async () => {
     helper = await smock.fake(IKeep3rHelperArtifact);
     keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
     oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     oraclePool.token0.returns(keep3rV1.address);
 
-    jobFundable = await jobFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
+    snapshotId = await evm.snapshot.take();
+  });
 
+  beforeEach(async () => {
+    await evm.snapshot.revert(snapshotId);
+
+    jobFundable = await jobFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
     await jobFundable.setJob(approvedJob, jobOwner.address);
   });
 

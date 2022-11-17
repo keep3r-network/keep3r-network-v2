@@ -1,7 +1,7 @@
 import { MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Keep3rJobOwnershipForTest, Keep3rJobOwnershipForTest__factory } from '@types';
-import { wallet } from '@utils';
+import { evm, wallet } from '@utils';
 import { onlyJobOwner } from '@utils/behaviours';
 import { ZERO_ADDRESS } from '@utils/constants';
 import { expect } from 'chai';
@@ -13,12 +13,18 @@ describe('Keep3rJobOwnership', () => {
   let owner: SignerWithAddress;
   let jobOwnershipFactory: MockContractFactory<Keep3rJobOwnershipForTest__factory>;
 
+  let snapshotId: string;
+
   before(async () => {
     [owner] = await ethers.getSigners();
     jobOwnershipFactory = await smock.mock<Keep3rJobOwnershipForTest__factory>('Keep3rJobOwnershipForTest');
+
+    snapshotId = await evm.snapshot.take();
   });
 
   beforeEach(async () => {
+    await evm.snapshot.revert(snapshotId);
+
     jobOwnership = await jobOwnershipFactory.deploy();
     await jobOwnership.setVariable('jobOwner', {
       [jobAddress]: owner.address,

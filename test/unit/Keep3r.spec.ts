@@ -5,6 +5,7 @@ import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep
 import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
 import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import { IKeep3rV1, IKeep3rV1Proxy, IUniswapV3Pool, Keep3rForTest, Keep3rForTest__factory, Keep3rHelper } from '@types';
+import { evm } from '@utils';
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
 
@@ -19,21 +20,24 @@ describe('Keep3r', () => {
   let kp3rWethPool: FakeContract<IUniswapV3Pool>;
   let keep3rFactory: MockContractFactory<Keep3rForTest__factory>;
 
+  let snapshotId: string;
+
   before(async () => {
     [governance] = await ethers.getSigners();
     keep3rFactory = await smock.mock('Keep3rForTest');
-  });
 
-  beforeEach(async () => {
     helper = await smock.fake(IKeep3rHelperArtifact);
     keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
     kp3rWethPool = await smock.fake(IUniswapV3PoolArtifact);
+
+    snapshotId = await evm.snapshot.take();
   });
 
   beforeEach(async () => {
-    helper.isKP3RToken0.whenCalledWith(kp3rWethPool.address).returns(true);
+    await evm.snapshot.revert(snapshotId);
 
+    helper.isKP3RToken0.whenCalledWith(kp3rWethPool.address).returns(true);
     keep3r = await keep3rFactory.deploy(governance.address, helper.address, keep3rV1.address, keep3rV1Proxy.address);
   });
 

@@ -42,14 +42,12 @@ describe('Keep3rJobWorkable', () => {
   let inflationPeriodTime: number;
 
   let mathUtils: MathUtils;
+  let snapshotId: string;
 
   before(async () => {
     [, randomKeeper, approvedJob] = await ethers.getSigners();
 
     jobWorkableFactory = await smock.mock('Keep3rJobWorkableForTest');
-  });
-
-  beforeEach(async () => {
     helper = await smock.fake(IKeep3rHelperArtifact);
     keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
@@ -58,6 +56,12 @@ describe('Keep3rJobWorkable', () => {
     kp3rWethPool = await smock.fake(IUniswapV3PoolForTestArtifact);
 
     helper.isKP3RToken0.returns(true);
+
+    snapshotId = await evm.snapshot.take();
+  });
+
+  beforeEach(async () => {
+    await evm.snapshot.revert(snapshotId);
 
     jobWorkable = await jobWorkableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 

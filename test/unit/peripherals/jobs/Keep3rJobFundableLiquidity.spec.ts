@@ -45,14 +45,12 @@ describe('Keep3rJobFundableLiquidity', () => {
 
   let mathUtils: MathUtils;
   let oneTick: number;
+  let snapshotId: string;
 
   before(async () => {
     [governance, jobOwner, provider] = await ethers.getSigners();
 
     jobFundableFactory = await smock.mock<Keep3rJobFundableLiquidityForTest__factory>('Keep3rJobFundableLiquidityForTest');
-  });
-
-  beforeEach(async () => {
     helper = await smock.fake(IKeep3rHelperArtifact);
     keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
@@ -62,6 +60,12 @@ describe('Keep3rJobFundableLiquidity', () => {
     helper.isKP3RToken0.returns(true);
     approvedLiquidity.transfer.returns(true);
     approvedLiquidity.transferFrom.returns(true);
+
+    snapshotId = await evm.snapshot.take();
+  });
+
+  beforeEach(async () => {
+    await evm.snapshot.revert(snapshotId);
 
     jobFundable = await jobFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
@@ -344,6 +348,7 @@ describe('Keep3rJobFundableLiquidity', () => {
 
       context('when job was rewarded this period', () => {
         beforeEach(async () => {
+          helper.observe.reset();
           await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: liquidityAdded } });
           await jobFundable.setVariable('rewardedAt', { [randomJob]: mathUtils.calcPeriod(blockTimestamp) });
           // if job accountance is updated, then it's liquidity must updated be as well
@@ -495,6 +500,10 @@ describe('Keep3rJobFundableLiquidity', () => {
   });
 
   describe('quoteLiquidity', () => {
+    beforeEach(async () => {
+      helper.observe.reset();
+    });
+
     it('should return 0 if liquidity is not approved', async () => {
       expect(await jobFundable.quoteLiquidity(randomLiquidity.address, toUnit(1))).to.be.eq(0);
     });
@@ -798,6 +807,8 @@ describe('Keep3rJobFundableLiquidity', () => {
     context('when liquidity pair and job are accepted', async () => {
       beforeEach(async () => {
         await jobFundable.setJob(randomJob);
+        approvedLiquidity.transferFrom.reset();
+        approvedLiquidity.transferFrom.returns(true);
       });
 
       it('should revert when transfer reverts', async () => {

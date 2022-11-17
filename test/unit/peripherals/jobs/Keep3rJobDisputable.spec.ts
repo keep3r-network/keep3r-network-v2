@@ -13,7 +13,7 @@ import {
   Keep3rJobDisputableForTest__factory,
   UniV3PairManager,
 } from '@types';
-import { wallet } from '@utils';
+import { evm, wallet } from '@utils';
 import { toUnit } from '@utils/bn';
 import { MathUtils, mathUtilsFactory } from '@utils/math';
 import chai, { expect } from 'chai';
@@ -40,19 +40,25 @@ describe('Keep3rJobDisputable', () => {
   let inflationPeriodTime: number;
 
   let mathUtils: MathUtils;
+  let snapshotId: string;
 
   before(async () => {
     [governance, slasher, disputer] = await ethers.getSigners();
 
     jobDisputableFactory = await smock.mock('Keep3rJobDisputableForTest');
-  });
-
-  beforeEach(async () => {
     helper = await smock.fake(IKeep3rHelperArtifact);
     keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    helper.isKP3RToken0.returns(true);
 
+    helper.isKP3RToken0.returns(true);
+    helper.observe.returns([0, 0, true]);
+    helper.getKP3RsAtTick.returns(([amount]: [BigNumber]) => amount);
+
+    snapshotId = await evm.snapshot.take();
+  });
+
+  beforeEach(async () => {
+    await evm.snapshot.revert(snapshotId);
     jobDisputable = await jobDisputableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
     await jobDisputable.setVariable('slashers', { [slasher.address]: true });
@@ -66,10 +72,6 @@ describe('Keep3rJobDisputable', () => {
     await jobDisputable.setVariable('disputes', {
       [job]: true,
     });
-
-    helper.observe.returns([0, 0, true]);
-
-    helper.getKP3RsAtTick.returns(([amount]: [BigNumber]) => amount);
   });
 
   describe('slashTokenFromJob', () => {

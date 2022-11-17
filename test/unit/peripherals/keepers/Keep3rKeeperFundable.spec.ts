@@ -14,6 +14,7 @@ import {
   Keep3rKeeperFundableForTest,
   Keep3rKeeperFundableForTest__factory,
 } from '@types';
+import { evm } from '@utils';
 import { toUnit } from '@utils/bn';
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
@@ -30,19 +31,24 @@ describe('Keep3rKeeperFundable', () => {
   let erc20: FakeContract<ERC20>;
   let oraclePool: FakeContract<IUniswapV3Pool>;
 
+  let snapshotId: string;
+
   before(async () => {
     [, randomKeeper] = await ethers.getSigners();
 
     keeperFundableFactory = await smock.mock<Keep3rKeeperFundableForTest__factory>('Keep3rKeeperFundableForTest');
-  });
-
-  beforeEach(async () => {
     helper = await smock.fake(IKeep3rHelperArtifact);
     erc20 = await smock.fake(ERC20Artifact);
     keep3rV1 = await smock.fake(IKeep3rV1Artifact);
     keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
     oraclePool = await smock.fake(IUniswapV3PoolArtifact);
     oraclePool.token0.returns(keep3rV1.address);
+
+    snapshotId = await evm.snapshot.take();
+  });
+
+  beforeEach(async () => {
+    await evm.snapshot.revert(snapshotId);
 
     keeperFundable = await keeperFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
   });
