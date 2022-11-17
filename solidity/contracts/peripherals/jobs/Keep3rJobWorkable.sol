@@ -67,6 +67,8 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     }
 
     _bondedPayment(_job, _keeper, _payment);
+    delete _initialGas;
+
     emit KeeperWork(keep3rV1, _job, _keeper, _payment, _gasLeft);
   }
 

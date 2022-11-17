@@ -97,6 +97,7 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated {
     }
 
     _bondedPayment(_job, _keeper, _kp3rPayment);
+    delete _initialGas;
 
     emit KeeperWork(keep3rV1, _job, _keeper, _kp3rPayment, _gasRecord);
   }
