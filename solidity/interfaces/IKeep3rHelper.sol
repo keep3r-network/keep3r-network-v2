@@ -31,6 +31,7 @@ interface IKeep3rHelper {
   function getRewardAmountFor(address _keeper, uint256 _gasUsed) external view returns (uint256 _kp3r);
 
   /// @notice Calculates the boost in the reward given to a keeper based on the amount of KP3R that keeper has bonded
+  /// @dev If the keeper has no bonds, boost should be +10% of gas cost, if keeper has max bonds, +20%
   /// @param _bonds The amount of KP3R tokens bonded by the keeper
   /// @return _rewardBoost The reward boost that corresponds to the keeper
   function getRewardBoostFor(uint256 _bonds) external view returns (uint256 _rewardBoost);
