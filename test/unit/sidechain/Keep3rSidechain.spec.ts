@@ -198,6 +198,11 @@ describe('Keep3rSidechain', () => {
       await keep3r.setVariable('_initialGas', 30e6);
     });
 
+    it('should revert if _initialGas is 0', async () => {
+      await keep3r.setVariable('_initialGas', 0);
+      await expect(keep3r['worked(address,uint256)'](randomKeeper.address, 1)).to.be.revertedWith('GasNotInitialized()');
+    });
+
     it('should revert if called only with an address', async () => {
       await expect(keep3r.connect(approvedJob.wallet)['worked(address)'](keeper)).to.be.revertedWith('Deprecated()');
     });

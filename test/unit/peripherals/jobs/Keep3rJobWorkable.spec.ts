@@ -157,14 +157,19 @@ describe('Keep3rJobWorkable', () => {
   });
 
   describe('worked', () => {
+    it('should revert if _initialGas is 0', async () => {
+      await jobWorkable.setVariable('_initialGas', 0);
+      await expect(jobWorkable.worked(randomKeeper.address)).to.be.revertedWith('GasNotInitialized()');
+    });
+
     it('should revert when called with unallowed job', async () => {
+      await jobWorkable.setVariable('_initialGas', 1);
       await expect(jobWorkable.worked(randomKeeper.address)).to.be.revertedWith('JobUnapproved()');
     });
 
     it('should revert if job is disputed', async () => {
-      await jobWorkable.setVariable('disputes', {
-        [approvedJob.address]: true,
-      });
+      await jobWorkable.setVariable('_initialGas', 1);
+      await jobWorkable.setVariable('disputes', { [approvedJob.address]: true });
 
       await expect(jobWorkable.connect(approvedJob).worked(randomKeeper.address)).to.be.revertedWith('JobDisputed()');
     });

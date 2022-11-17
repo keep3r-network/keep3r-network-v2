@@ -45,6 +45,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
 
   /// @inheritdoc IKeep3rJobWorkable
   function worked(address _keeper) external virtual override {
+    if (_initialGas == 0) revert GasNotInitialized();
     address _job = msg.sender;
     if (disputes[_job]) revert JobDisputed();
     if (!_jobs.contains(_job)) revert JobUnapproved();

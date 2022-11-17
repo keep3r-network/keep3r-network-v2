@@ -273,6 +273,9 @@ interface IKeep3rJobWorkable {
 
   // Errors
 
+  /// @notice Throws if work method was called without calling isKeeper or isBondedKeeper
+  error GasNotInitialized();
+
   /// @notice Throws if the address claiming to be a job is not in the list of approved jobs
   error JobUnapproved();
 
