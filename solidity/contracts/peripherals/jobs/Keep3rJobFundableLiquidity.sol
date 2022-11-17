@@ -165,6 +165,10 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   /// @inheritdoc IKeep3rJobFundableLiquidity
   function revokeLiquidity(address _liquidity) external override onlyGovernance {
     if (!_approvedLiquidities.remove(_liquidity)) revert LiquidityPairUnexistent();
+    delete _liquidityPool[_liquidity];
+    delete _isKP3RToken0[_liquidity];
+    delete _tick[_liquidity];
+
     emit LiquidityRevocation(_liquidity);
   }
 
