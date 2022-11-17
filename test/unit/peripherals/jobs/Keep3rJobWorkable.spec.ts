@@ -1,10 +1,6 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
-import IUniswapV3PoolForTestArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20,
   IKeep3rV1,
@@ -48,12 +44,12 @@ describe('Keep3rJobWorkable', () => {
     [, randomKeeper, approvedJob] = await ethers.getSigners();
 
     jobWorkableFactory = await smock.mock('Keep3rJobWorkableForTest');
-    helper = await smock.fake(IKeep3rHelperArtifact);
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    randomLiquidity = await smock.fake(IUniswapV3PoolForTestArtifact);
-    oraclePool = await smock.fake(IUniswapV3PoolForTestArtifact);
-    kp3rWethPool = await smock.fake(IUniswapV3PoolForTestArtifact);
+    helper = await smock.fake('IKeep3rHelper');
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
+    randomLiquidity = await smock.fake('IUniswapV3Pool');
+    oraclePool = await smock.fake('IUniswapV3Pool');
+    kp3rWethPool = await smock.fake('IUniswapV3Pool');
 
     helper.isKP3RToken0.returns(true);
 

@@ -1,9 +1,6 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import { IKeep3rHelper, IKeep3rV1, IKeep3rV1Proxy, Keep3rJobMigrationForTest, Keep3rJobMigrationForTest__factory } from '@types';
 import { evm, wallet } from '@utils';
 import { onlyJobOwner } from '@utils/behaviours';
@@ -30,9 +27,9 @@ describe('Keep3rJobMigration', () => {
     [, fromJobOwner, toJobOwner] = await ethers.getSigners();
 
     jobMigrationFactory = await smock.mock<Keep3rJobMigrationForTest__factory>('Keep3rJobMigrationForTest');
-    helper = await smock.fake(IKeep3rHelperArtifact);
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
+    helper = await smock.fake('IKeep3rHelper');
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
     helper.observe.returns([0, 0, true]);
 
     snapshotId = await evm.snapshot.take();

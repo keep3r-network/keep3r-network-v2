@@ -9,7 +9,6 @@ import { generateRandomAddress } from '@utils/wallet';
 import { expect } from 'chai';
 import { Contract } from 'ethers';
 import { ethers } from 'hardhat';
-import IUniswapV3PoolArtifact from 'node_modules/@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json';
 
 describe('Keep3rHelperParameters', () => {
   let governance: SignerWithAddress;
@@ -21,10 +20,10 @@ describe('Keep3rHelperParameters', () => {
     [, governance] = await ethers.getSigners();
 
     parametersFactory = (await ethers.getContractFactory('Keep3rHelperParameters')) as Keep3rHelperParameters__factory;
-    pool = await smock.fake(IUniswapV3PoolArtifact);
+    pool = await smock.fake('IUniswapV3Pool');
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     pool.token0.returns(KP3R_V1_ADDRESS);
   });
 
@@ -61,7 +60,7 @@ describe('Keep3rHelperParameters', () => {
     let otherPool: FakeContract<IUniswapV3Pool>;
 
     before(async () => {
-      otherPool = await smock.fake(IUniswapV3PoolArtifact);
+      otherPool = await smock.fake('IUniswapV3Pool');
     });
 
     beforeEach(async () => {

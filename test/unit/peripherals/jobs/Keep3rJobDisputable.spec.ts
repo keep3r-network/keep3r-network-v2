@@ -1,9 +1,6 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20,
   IKeep3rV1,
@@ -46,9 +43,9 @@ describe('Keep3rJobDisputable', () => {
     [governance, slasher, disputer] = await ethers.getSigners();
 
     jobDisputableFactory = await smock.mock('Keep3rJobDisputableForTest');
-    helper = await smock.fake(IKeep3rHelperArtifact);
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
+    helper = await smock.fake('IKeep3rHelper');
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
 
     helper.isKP3RToken0.returns(true);
     helper.observe.returns([0, 0, true]);
@@ -63,15 +60,12 @@ describe('Keep3rJobDisputable', () => {
 
     await jobDisputable.setVariable('slashers', { [slasher.address]: true });
     await jobDisputable.setVariable('disputers', { [disputer.address]: true });
+    await jobDisputable.setVariable('disputes', { [job]: true });
 
     rewardPeriodTime = (await jobDisputable.rewardPeriodTime()).toNumber();
     inflationPeriodTime = (await jobDisputable.inflationPeriod()).toNumber();
 
     mathUtils = mathUtilsFactory(rewardPeriodTime, inflationPeriodTime);
-
-    await jobDisputable.setVariable('disputes', {
-      [job]: true,
-    });
   });
 
   describe('slashTokenFromJob', () => {

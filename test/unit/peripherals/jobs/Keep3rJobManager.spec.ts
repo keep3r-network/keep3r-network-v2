@@ -1,9 +1,5 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import { IKeep3rHelper, IKeep3rV1, IKeep3rV1Proxy, IUniswapV3Pool, Keep3rJobManagerForTest, Keep3rJobManagerForTest__factory } from '@types';
 import { evm, wallet } from '@utils';
 import chai, { expect } from 'chai';
@@ -26,10 +22,10 @@ describe('Keep3rJobManager', () => {
   before(async () => {
     [, randomUser] = await ethers.getSigners();
     jobManagerFactory = await smock.mock<Keep3rJobManagerForTest__factory>('Keep3rJobManagerForTest');
-    helper = await smock.fake(IKeep3rHelperArtifact);
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    oraclePool = await smock.fake(IUniswapV3PoolArtifact);
+    helper = await smock.fake('IKeep3rHelper');
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
+    oraclePool = await smock.fake('IUniswapV3Pool');
     oraclePool.token0.returns(keep3rV1.address);
 
     snapshotId = await evm.snapshot.take();

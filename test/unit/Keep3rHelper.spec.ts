@@ -1,10 +1,7 @@
-import IUniswapV3PoolArtifact from '@artifacts/@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { KP3R_V1_ADDRESS } from '@e2e/common';
 import { BigNumber } from '@ethersproject/bignumber';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rArtifact from '@solidity/interfaces/IKeep3r.sol/IKeep3r.json';
 import { IKeep3r, IKeep3rV1, IUniswapV3Pool, Keep3rHelperForTest, Keep3rHelperForTest__factory, ProxyForTest__factory } from '@types';
 import { behaviours, wallet } from '@utils';
 import { toGwei, toUnit } from '@utils/bn';
@@ -38,8 +35,8 @@ describe('Keep3rHelper', () => {
     [, governance, randomKeeper] = await ethers.getSigners();
 
     helperFactory = await smock.mock<Keep3rHelperForTest__factory>('Keep3rHelperForTest');
-    keep3r = await smock.fake(IKeep3rArtifact);
-    oraclePool = await smock.fake(IUniswapV3PoolArtifact);
+    keep3r = await smock.fake('IKeep3r');
+    oraclePool = await smock.fake('IUniswapV3Pool');
     oraclePool.token1.returns(KP3R_V1_ADDRESS);
     helper = await helperFactory.deploy(KP3R_V1_ADDRESS, keep3r.address, governance.address, oraclePool.address);
 
@@ -52,7 +49,7 @@ describe('Keep3rHelper', () => {
     oneTenthTick0 = BigNumber.from(-23027).mul(quoteTwapTime);
     oneTenthTick1 = BigNumber.from(0);
 
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact, { address: kp3rV1Address });
+    keep3rV1 = await smock.fake('IKeep3rV1', { address: kp3rV1Address });
     mathUtils = mathUtilsFactory(0, 0);
 
     oraclePool.observe.returns([[oneTenthTick0, oneTenthTick1], []]);
