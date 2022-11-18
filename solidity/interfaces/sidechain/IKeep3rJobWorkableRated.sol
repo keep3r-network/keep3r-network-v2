@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
+import '../peripherals/IKeep3rJobs.sol';
+
 /// @title Keep3rJobWorkableRated contract
 /// @notice Implements a quoting in USD per gas unit for Keep3r jobs
-interface IKeep3rJobWorkableRated {
+interface IKeep3rJobWorkableRated is IKeep3rJobs {
   /// @notice Throws when job contract calls deprecated worked(address) function
   error Deprecated();
 

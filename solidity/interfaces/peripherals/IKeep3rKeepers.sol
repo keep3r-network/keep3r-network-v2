@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
+import './IKeep3rDisputable.sol';
+
 /// @title Keep3rKeeperFundable contract
 /// @notice Handles the actions required to become a keeper
 interface IKeep3rKeeperFundable {
@@ -46,7 +48,7 @@ interface IKeep3rKeeperFundable {
 
 /// @title Keep3rKeeperDisputable contract
 /// @notice Handles the actions that can be taken on a disputed keeper
-interface IKeep3rKeeperDisputable {
+interface IKeep3rKeeperDisputable is IKeep3rDisputable, IKeep3rKeeperFundable {
   // Events
 
   /// @notice Emitted when Keep3rKeeperDisputable#slash is called

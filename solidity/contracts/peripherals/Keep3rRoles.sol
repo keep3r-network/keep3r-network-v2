@@ -3,16 +3,17 @@ pragma solidity >=0.8.4 <0.9.0;
 
 import '../../interfaces/peripherals/IKeep3rRoles.sol';
 import '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+import './DustCollector.sol';
 import './Governable.sol';
 
-contract Keep3rRoles is IKeep3rRoles, Governable {
+contract Keep3rRoles is IKeep3rRoles, Governable, DustCollector {
   /// @inheritdoc IKeep3rRoles
   mapping(address => bool) public override slashers;
 
   /// @inheritdoc IKeep3rRoles
   mapping(address => bool) public override disputers;
 
-  constructor(address _governance) Governable(_governance) {}
+  constructor(address _governance) Governable(_governance) DustCollector() {}
 
   /// @inheritdoc IKeep3rRoles
   function addSlasher(address _slasher) external override onlyGovernance {

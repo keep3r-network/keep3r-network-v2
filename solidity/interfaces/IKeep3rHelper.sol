@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
+import './IKeep3rHelperParameters.sol';
+
 /// @title Keep3rHelper contract
 /// @notice Contains all the helper functions used throughout the different files.
-
-interface IKeep3rHelper {
+interface IKeep3rHelper is IKeep3rHelperParameters {
   // Errors
 
   /// @notice Throws when none of the tokens in the liquidity pair is KP3R

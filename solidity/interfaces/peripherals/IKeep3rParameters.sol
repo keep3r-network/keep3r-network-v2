@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
+import './IKeep3rAccountance.sol';
+
 /// @title Keep3rParameters contract
 /// @notice Handles and sets all the required parameters for Keep3r
-
-interface IKeep3rParameters {
+interface IKeep3rParameters is IKeep3rAccountance {
   // Events
 
   /// @notice Emitted when the Keep3rHelper address is changed
