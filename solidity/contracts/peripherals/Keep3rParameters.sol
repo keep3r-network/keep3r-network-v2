@@ -4,9 +4,8 @@ pragma solidity >=0.8.4 <0.9.0;
 import '../../interfaces/IKeep3rHelper.sol';
 import '../../interfaces/peripherals/IKeep3rParameters.sol';
 import './Keep3rAccountance.sol';
-import './Keep3rRoles.sol';
 
-abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance, Keep3rRoles {
+abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance {
   /// @inheritdoc IKeep3rParameters
   address public override keep3rV1;
 

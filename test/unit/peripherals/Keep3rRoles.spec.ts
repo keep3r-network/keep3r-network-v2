@@ -2,6 +2,7 @@ import { MockContract, MockContractFactory, smock } from '@defi-wonderland/smock
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { Keep3rRoles, Keep3rRoles__factory } from '@types';
 import { behaviours, wallet } from '@utils';
+import { ZERO_ADDRESS } from '@utils/constants';
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
 
@@ -25,6 +26,10 @@ describe('Keep3rRoles', () => {
 
   describe('addSlasher', () => {
     behaviours.onlyGovernance(() => roles, 'addSlasher', governance, [randomAddress]);
+
+    it('should revert if slasher is address 0', async () => {
+      await expect(roles.connect(governance).addSlasher(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+    });
 
     it('should revert if slasher already added', async () => {
       await roles.setVariable('slashers', { [randomAddress]: true });
@@ -64,6 +69,10 @@ describe('Keep3rRoles', () => {
 
   describe('addDisputer', () => {
     behaviours.onlyGovernance(() => roles, 'addDisputer', governance, [randomAddress]);
+
+    it('should revert if disputer is address 0', async () => {
+      await expect(roles.connect(governance).addDisputer(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+    });
 
     it('should revert if disputer already added', async () => {
       await roles.setVariable('disputers', { [randomAddress]: true });

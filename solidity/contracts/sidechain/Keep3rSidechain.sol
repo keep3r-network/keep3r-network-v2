@@ -74,8 +74,9 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated {
   /// @param _keeper Address of the keeper that performed the work
   /// @param _usdPerGasUnit Units of USD (in wei) per gas unit that should be rewarded to the keeper
   function worked(address _keeper, uint256 _usdPerGasUnit) external override {
+    if (_initialGas == 0) revert GasNotInitialized();
     // Gas used for quote calculations & payment is not rewarded
-    uint256 _gasRecord = gasleft();
+    uint256 _gasRecord = _getGasLeft();
 
     address _job = msg.sender;
     if (disputes[_job]) revert JobDisputed();
@@ -97,6 +98,7 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated {
     }
 
     _bondedPayment(_job, _keeper, _kp3rPayment);
+    delete _initialGas;
 
     emit KeeperWork(keep3rV1, _job, _keeper, _kp3rPayment, _gasRecord);
   }

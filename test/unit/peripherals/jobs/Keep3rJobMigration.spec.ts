@@ -1,10 +1,7 @@
-import { MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
+import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { ContractTransaction } from '@ethersproject/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
-import { Keep3rJobMigrationForTest, Keep3rJobMigrationForTest__factory } from '@types';
+import { IKeep3rHelper, IKeep3rV1, IKeep3rV1Proxy, Keep3rJobMigrationForTest, Keep3rJobMigrationForTest__factory } from '@types';
 import { evm, wallet } from '@utils';
 import { onlyJobOwner } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
@@ -20,27 +17,31 @@ describe('Keep3rJobMigration', () => {
   let toJobOwner: SignerWithAddress;
   let jobMigration: MockContract<Keep3rJobMigrationForTest>;
   let jobMigrationFactory: MockContractFactory<Keep3rJobMigrationForTest__factory>;
+  let helper: FakeContract<IKeep3rHelper>;
+  let keep3rV1: FakeContract<IKeep3rV1>;
+  let keep3rV1Proxy: FakeContract<IKeep3rV1Proxy>;
+
+  let snapshotId: string;
 
   before(async () => {
     [, fromJobOwner, toJobOwner] = await ethers.getSigners();
 
     jobMigrationFactory = await smock.mock<Keep3rJobMigrationForTest__factory>('Keep3rJobMigrationForTest');
+    helper = await smock.fake('IKeep3rHelper');
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
+    helper.observe.returns([0, 0, true]);
+
+    snapshotId = await evm.snapshot.take();
   });
 
   beforeEach(async () => {
-    const helper = await smock.fake(IKeep3rHelperArtifact);
-    const keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    const keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    helper.observe.returns([0, 0, true]);
+    await evm.snapshot.revert(snapshotId);
 
     jobMigration = await jobMigrationFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
-    await jobMigration.setVariable('jobOwner', {
-      [fromJob]: fromJobOwner.address,
-    });
 
-    await jobMigration.setVariable('jobOwner', {
-      [toJob]: toJobOwner.address,
-    });
+    await jobMigration.setVariable('jobOwner', { [fromJob]: fromJobOwner.address });
+    await jobMigration.setVariable('jobOwner', { [toJob]: toJobOwner.address });
   });
 
   describe('migrateJob', () => {

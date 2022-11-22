@@ -2,10 +2,11 @@
 pragma solidity >=0.8.4 <0.9.0;
 
 import './IGovernable.sol';
+import './IBaseErrors.sol';
 
 /// @title Mintable contract
 /// @notice Manages the minter role
-interface IMintable is IGovernable {
+interface IMintable is IBaseErrors, IGovernable {
   // Events
 
   /// @notice Emitted when governance sets a new minter

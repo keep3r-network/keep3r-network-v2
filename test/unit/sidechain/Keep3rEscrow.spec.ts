@@ -4,6 +4,7 @@ import { IERC20, Keep3rEscrow, Keep3rEscrow__factory } from '@types';
 import { wallet } from '@utils';
 import { onlyGovernance, onlyMinter } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
+import { ZERO_ADDRESS } from '@utils/constants';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
@@ -16,6 +17,7 @@ describe('Keep3rEscrow', () => {
   let wKP3R: FakeContract<IERC20>;
 
   const oneToken = toUnit(1);
+  const randomAddress = wallet.generateRandomAddress();
 
   before(async () => {
     [, governance, minter, randomUser] = await ethers.getSigners();
@@ -35,6 +37,24 @@ describe('Keep3rEscrow', () => {
 
     it('should set wKP3R to the right address', async () => {
       expect(await escrow.wKP3R()).to.equal(wKP3R.address);
+    });
+  });
+
+  describe('setMinter', () => {
+    onlyGovernance(() => escrow, 'setMinter', governance, [randomAddress]);
+
+    it('should revert if minter is address 0', async () => {
+      await expect(escrow.connect(governance).setMinter(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+    });
+
+    it('should set the minter address', async () => {
+      await escrow.connect(governance).setMinter(randomAddress);
+      expect(await escrow.minter()).to.eq(randomAddress);
+    });
+
+    it('should emit event', async () => {
+      const tx = await escrow.connect(governance).setMinter(randomAddress);
+      await expect(tx).to.emit(escrow, 'MinterSet').withArgs(randomAddress);
     });
   });
 
@@ -90,6 +110,10 @@ describe('Keep3rEscrow', () => {
       governance,
       () => [randomAddress]
     );
+
+    it('should revert if wkp3r address is 0', async () => {
+      await expect(escrow.connect(governance).setWKP3R(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+    });
 
     it('should set wKP3R to a new address', async () => {
       await escrow.connect(governance).setWKP3R(randomAddress);

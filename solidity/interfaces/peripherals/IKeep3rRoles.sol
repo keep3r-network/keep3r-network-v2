@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
+import './IBaseErrors.sol';
+import './IGovernable.sol';
+import './IDustCollector.sol';
+
 /// @title Keep3rRoles contract
 /// @notice Manages the Keep3r specific roles
-interface IKeep3rRoles {
+interface IKeep3rRoles is IBaseErrors, IDustCollector, IGovernable {
   // Events
 
   /// @notice Emitted when a slasher is added

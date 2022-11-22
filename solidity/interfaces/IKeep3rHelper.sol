@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
+import './IKeep3rHelperParameters.sol';
+
 /// @title Keep3rHelper contract
 /// @notice Contains all the helper functions used throughout the different files.
-
-interface IKeep3rHelper {
+interface IKeep3rHelper is IKeep3rHelperParameters {
   // Errors
 
   /// @notice Throws when none of the tokens in the liquidity pair is KP3R
@@ -31,6 +32,7 @@ interface IKeep3rHelper {
   function getRewardAmountFor(address _keeper, uint256 _gasUsed) external view returns (uint256 _kp3r);
 
   /// @notice Calculates the boost in the reward given to a keeper based on the amount of KP3R that keeper has bonded
+  /// @dev If the keeper has no bonds, boost should be +10% of gas cost, if keeper has max bonds, +20%
   /// @param _bonds The amount of KP3R tokens bonded by the keeper
   /// @return _rewardBoost The reward boost that corresponds to the keeper
   function getRewardBoostFor(uint256 _bonds) external view returns (uint256 _rewardBoost);

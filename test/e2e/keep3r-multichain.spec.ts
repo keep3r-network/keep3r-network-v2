@@ -90,6 +90,8 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     keep3rHelper = await keep3rHelperFactory.deploy(
       precalculatedAddress,
       governance.address,
+      KP3R_V1_ADDRESS,
+      WETH_ADDRESS,
       KP3R_WETH_V3_POOL_ADDRESS, // uses KP3R-WETH pool as oracle
       WETH_DAI_V3_POOL_ADDRESS // uses WETH-DAI pool as oracle
     );
@@ -208,7 +210,13 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     it('should earn bonds for working a job quoted in USD', async () => {
       const twapPeriod = await keep3rHelper.quoteTwapTime();
       const tx = await job.connect(keeper).workHard(30);
-      const gasUsed = (await tx.wait()).gasUsed;
+
+      const validationEvent = (await keep3r.queryFilter(keep3r.filters.KeeperValidation(), tx.blockNumber, tx.blockNumber))[0];
+      const workEvent = (await keep3r.queryFilter(keep3r.filters.KeeperWork(), tx.blockNumber, tx.blockNumber))[0];
+      const initialGas = BigNumber.from(validationEvent.args._gasLeft);
+      const finalGas = BigNumber.from(workEvent.args._gasLeft);
+      const gasUsed = initialGas.sub(finalGas);
+
       const usdPerGasUnit = await job.usdPerGasUnit();
 
       const reward = await keep3r.bonds(keeper.address, wKP3R.address);
@@ -256,7 +264,13 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
 
       const twapPeriod = await keep3rHelper.quoteTwapTime();
       const tx = await job.connect(keeper).workHard(30);
-      const gasUsed = (await tx.wait()).gasUsed;
+
+      const validationEvent = (await keep3r.queryFilter(keep3r.filters.KeeperValidation(), tx.blockNumber, tx.blockNumber))[0];
+      const workEvent = (await keep3r.queryFilter(keep3r.filters.KeeperWork(), tx.blockNumber, tx.blockNumber))[0];
+      const initialGas = BigNumber.from(validationEvent.args._gasLeft);
+      const finalGas = BigNumber.from(workEvent.args._gasLeft);
+      const gasUsed = initialGas.sub(finalGas);
+
       const usdPerGasUnit = await job.usdPerGasUnit();
 
       const reward = (await keep3r.bonds(keeper.address, wKP3R.address)).sub(initialBonds);

@@ -2,10 +2,9 @@
 pragma solidity >=0.8.4 <0.9.0;
 
 import './Keep3rParameters.sol';
-import './Keep3rRoles.sol';
 import '../../interfaces/peripherals/IKeep3rDisputable.sol';
 
-abstract contract Keep3rDisputable is IKeep3rDisputable, Keep3rAccountance, Keep3rRoles {
+abstract contract Keep3rDisputable is IKeep3rDisputable, Keep3rParameters {
   /// @inheritdoc IKeep3rDisputable
   function dispute(address _jobOrKeeper) external override onlyDisputer {
     if (disputes[_jobOrKeeper]) revert AlreadyDisputed();

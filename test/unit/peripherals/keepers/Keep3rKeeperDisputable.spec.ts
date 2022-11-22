@@ -1,9 +1,5 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20ForTest,
   ERC20ForTest__factory,
@@ -14,7 +10,7 @@ import {
   Keep3rKeeperDisputableForTest,
   Keep3rKeeperDisputableForTest__factory,
 } from '@types';
-import { wallet } from '@utils';
+import { evm, wallet } from '@utils';
 import { onlySlasher } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
 import chai, { expect } from 'chai';
@@ -34,18 +30,23 @@ describe('Keep3rKeeperDisputable', () => {
   let oraclePool: FakeContract<IUniswapV3Pool>;
   let keeperDisputableFactory: MockContractFactory<Keep3rKeeperDisputableForTest__factory>;
 
+  let snapshotId: string;
+
   before(async () => {
     [governance, slasher, disputer] = await ethers.getSigners();
 
     keeperDisputableFactory = await smock.mock<Keep3rKeeperDisputableForTest__factory>('Keep3rKeeperDisputableForTest');
+    helper = await smock.fake('IKeep3rHelper');
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
+    oraclePool = await smock.fake('IUniswapV3Pool');
+    oraclePool.token0.returns(keep3rV1.address);
+
+    snapshotId = await evm.snapshot.take();
   });
 
   beforeEach(async () => {
-    helper = await smock.fake(IKeep3rHelperArtifact);
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    oraclePool = await smock.fake(IUniswapV3PoolArtifact);
-    oraclePool.token0.returns(keep3rV1.address);
+    await evm.snapshot.revert(snapshotId);
 
     keeperDisputable = await keeperDisputableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
     await keeperDisputable.setVariable('slashers', { [slasher.address]: true });

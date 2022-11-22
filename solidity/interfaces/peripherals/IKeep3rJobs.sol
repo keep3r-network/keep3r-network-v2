@@ -1,9 +1,85 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
+import './IKeep3rDisputable.sol';
+
+/// @title Keep3rJobOwnership contract
+/// @notice Handles the ownership of the jobs
+interface IKeep3rJobOwnership {
+  // Events
+
+  /// @notice Emitted when Keep3rJobOwnership#changeJobOwnership is called
+  /// @param _job The address of the job proposed to have a change of owner
+  /// @param _owner The current owner of the job
+  /// @param _pendingOwner The new address proposed to be the owner of the job
+  event JobOwnershipChange(address indexed _job, address indexed _owner, address indexed _pendingOwner);
+
+  /// @notice Emitted when Keep3rJobOwnership#JobOwnershipAssent is called
+  /// @param _job The address of the job which the proposed owner will now own
+  /// @param _previousOwner The previous owner of the job
+  /// @param _newOwner The new owner of the job
+  event JobOwnershipAssent(address indexed _job, address indexed _previousOwner, address indexed _newOwner);
+
+  // Errors
+
+  /// @notice Throws when the caller of the function is not the job owner
+  error OnlyJobOwner();
+
+  /// @notice Throws when the caller of the function is not the pending job owner
+  error OnlyPendingJobOwner();
+
+  // Variables
+
+  /// @notice Maps the job to the owner of the job
+  /// @param _job The address of the job
+  /// @return _owner The address of the owner of the job
+  function jobOwner(address _job) external view returns (address _owner);
+
+  /// @notice Maps the job to its pending owner
+  /// @param _job The address of the job
+  /// @return _pendingOwner The address of the pending owner of the job
+  function jobPendingOwner(address _job) external view returns (address _pendingOwner);
+
+  // Methods
+
+  /// @notice Proposes a new address to be the owner of the job
+  /// @param _job The address of the job
+  /// @param _newOwner The address of the proposed new owner
+  function changeJobOwnership(address _job, address _newOwner) external;
+
+  /// @notice The proposed address accepts to be the owner of the job
+  /// @param _job The address of the job
+  function acceptJobOwnership(address _job) external;
+}
+
+/// @title Keep3rJobManager contract
+/// @notice Handles the addition and withdrawal of credits from a job
+interface IKeep3rJobManager is IKeep3rJobOwnership {
+  // Events
+
+  /// @notice Emitted when Keep3rJobManager#addJob is called
+  /// @param _job The address of the job to add
+  /// @param _jobOwner The job's owner
+  event JobAddition(address indexed _job, address indexed _jobOwner);
+
+  // Errors
+
+  /// @notice Throws when trying to add a job that has already been added
+  error JobAlreadyAdded();
+
+  /// @notice Throws when the address that is trying to register as a keeper is already a keeper
+  error AlreadyAKeeper();
+
+  // Methods
+
+  /// @notice Allows any caller to add a new job
+  /// @param _job Address of the contract for which work should be performed
+  function addJob(address _job) external;
+}
+
 /// @title Keep3rJobFundableCredits contract
 /// @notice Handles the addition and withdrawal of credits from a job
-interface IKeep3rJobFundableCredits {
+interface IKeep3rJobFundableCredits is IKeep3rJobOwnership {
   // Events
 
   /// @notice Emitted when Keep3rJobFundableCredits#addTokenCreditsToJob is called
@@ -66,7 +142,7 @@ interface IKeep3rJobFundableCredits {
 
 /// @title  Keep3rJobFundableLiquidity contract
 /// @notice Handles the funding of jobs through specific liquidity pairs
-interface IKeep3rJobFundableLiquidity {
+interface IKeep3rJobFundableLiquidity is IKeep3rJobOwnership {
   // Events
 
   /// @notice Emitted when Keep3rJobFundableLiquidity#approveLiquidity function is called
@@ -229,34 +305,55 @@ interface IKeep3rJobFundableLiquidity {
   ) external;
 }
 
-/// @title Keep3rJobManager contract
-/// @notice Handles the addition and withdrawal of credits from a job
-interface IKeep3rJobManager {
+/// @title Keep3rJobMigration contract
+/// @notice Handles the migration process of jobs to different addresses
+interface IKeep3rJobMigration is IKeep3rJobFundableCredits, IKeep3rJobFundableLiquidity {
   // Events
 
-  /// @notice Emitted when Keep3rJobManager#addJob is called
-  /// @param _job The address of the job to add
-  /// @param _jobOwner The job's owner
-  event JobAddition(address indexed _job, address indexed _jobOwner);
+  /// @notice Emitted when Keep3rJobMigration#migrateJob function is called
+  /// @param _fromJob The address of the job that requests to migrate
+  /// @param _toJob The address at which the job requests to migrate
+  event JobMigrationRequested(address indexed _fromJob, address _toJob);
+
+  /// @notice Emitted when Keep3rJobMigration#acceptJobMigration function is called
+  /// @param _fromJob The address of the job that requested to migrate
+  /// @param _toJob The address at which the job had requested to migrate
+  event JobMigrationSuccessful(address _fromJob, address indexed _toJob);
 
   // Errors
 
-  /// @notice Throws when trying to add a job that has already been added
-  error JobAlreadyAdded();
+  /// @notice Throws when the address of the job that requests to migrate wants to migrate to its same address
+  error JobMigrationImpossible();
 
-  /// @notice Throws when the address that is trying to register as a keeper is already a keeper
-  error AlreadyAKeeper();
+  /// @notice Throws when the _toJob address differs from the address being tracked in the pendingJobMigrations mapping
+  error JobMigrationUnavailable();
+
+  /// @notice Throws when cooldown between migrations has not yet passed
+  error JobMigrationLocked();
+
+  // Variables
+
+  /// @notice Maps the jobs that have requested a migration to the address they have requested to migrate to
+  /// @return _toJob The address to which the job has requested to migrate to
+  function pendingJobMigrations(address _fromJob) external view returns (address _toJob);
 
   // Methods
 
-  /// @notice Allows any caller to add a new job
-  /// @param _job Address of the contract for which work should be performed
-  function addJob(address _job) external;
+  /// @notice Initializes the migration process for a job by adding the request to the pendingJobMigrations mapping
+  /// @param _fromJob The address of the job that is requesting to migrate
+  /// @param _toJob The address at which the job is requesting to migrate
+  function migrateJob(address _fromJob, address _toJob) external;
+
+  /// @notice Completes the migration process for a job
+  /// @dev Unbond/withdraw process doesn't get migrated
+  /// @param _fromJob The address of the job that requested to migrate
+  /// @param _toJob The address to which the job wants to migrate to
+  function acceptJobMigration(address _fromJob, address _toJob) external;
 }
 
 /// @title Keep3rJobWorkable contract
 /// @notice Handles the mechanisms jobs can pay keepers with along with the restrictions jobs can put on keepers before they can work on jobs
-interface IKeep3rJobWorkable {
+interface IKeep3rJobWorkable is IKeep3rJobMigration {
   // Events
 
   /// @notice Emitted when a keeper is validated before a job
@@ -272,6 +369,9 @@ interface IKeep3rJobWorkable {
   event KeeperWork(address indexed _credit, address indexed _job, address indexed _keeper, uint256 _payment, uint256 _gasLeft);
 
   // Errors
+
+  /// @notice Throws if work method was called without calling isKeeper or isBondedKeeper
+  error GasNotInitialized();
 
   /// @notice Throws if the address claiming to be a job is not in the list of approved jobs
   error JobUnapproved();
@@ -326,104 +426,9 @@ interface IKeep3rJobWorkable {
   ) external;
 }
 
-/// @title Keep3rJobOwnership contract
-/// @notice Handles the ownership of the jobs
-interface IKeep3rJobOwnership {
-  // Events
-
-  /// @notice Emitted when Keep3rJobOwnership#changeJobOwnership is called
-  /// @param _job The address of the job proposed to have a change of owner
-  /// @param _owner The current owner of the job
-  /// @param _pendingOwner The new address proposed to be the owner of the job
-  event JobOwnershipChange(address indexed _job, address indexed _owner, address indexed _pendingOwner);
-
-  /// @notice Emitted when Keep3rJobOwnership#JobOwnershipAssent is called
-  /// @param _job The address of the job which the proposed owner will now own
-  /// @param _previousOwner The previous owner of the job
-  /// @param _newOwner The new owner of the job
-  event JobOwnershipAssent(address indexed _job, address indexed _previousOwner, address indexed _newOwner);
-
-  // Errors
-
-  /// @notice Throws when the caller of the function is not the job owner
-  error OnlyJobOwner();
-
-  /// @notice Throws when the caller of the function is not the pending job owner
-  error OnlyPendingJobOwner();
-
-  // Variables
-
-  /// @notice Maps the job to the owner of the job
-  /// @param _job The address of the job
-  /// @return _owner The address of the owner of the job
-  function jobOwner(address _job) external view returns (address _owner);
-
-  /// @notice Maps the job to its pending owner
-  /// @param _job The address of the job
-  /// @return _pendingOwner The address of the pending owner of the job
-  function jobPendingOwner(address _job) external view returns (address _pendingOwner);
-
-  // Methods
-
-  /// @notice Proposes a new address to be the owner of the job
-  /// @param _job The address of the job
-  /// @param _newOwner The address of the proposed new owner
-  function changeJobOwnership(address _job, address _newOwner) external;
-
-  /// @notice The proposed address accepts to be the owner of the job
-  /// @param _job The address of the job
-  function acceptJobOwnership(address _job) external;
-}
-
-/// @title Keep3rJobMigration contract
-/// @notice Handles the migration process of jobs to different addresses
-interface IKeep3rJobMigration {
-  // Events
-
-  /// @notice Emitted when Keep3rJobMigration#migrateJob function is called
-  /// @param _fromJob The address of the job that requests to migrate
-  /// @param _toJob The address at which the job requests to migrate
-  event JobMigrationRequested(address indexed _fromJob, address _toJob);
-
-  /// @notice Emitted when Keep3rJobMigration#acceptJobMigration function is called
-  /// @param _fromJob The address of the job that requested to migrate
-  /// @param _toJob The address at which the job had requested to migrate
-  event JobMigrationSuccessful(address _fromJob, address indexed _toJob);
-
-  // Errors
-
-  /// @notice Throws when the address of the job that requests to migrate wants to migrate to its same address
-  error JobMigrationImpossible();
-
-  /// @notice Throws when the _toJob address differs from the address being tracked in the pendingJobMigrations mapping
-  error JobMigrationUnavailable();
-
-  /// @notice Throws when cooldown between migrations has not yet passed
-  error JobMigrationLocked();
-
-  // Variables
-
-  /// @notice Maps the jobs that have requested a migration to the address they have requested to migrate to
-  /// @return _toJob The address to which the job has requested to migrate to
-  function pendingJobMigrations(address _fromJob) external view returns (address _toJob);
-
-  // Methods
-
-  /// @notice Initializes the migration process for a job by adding the request to the pendingJobMigrations mapping
-  /// @param _fromJob The address of the job that is requesting to migrate
-  /// @param _toJob The address at which the job is requesting to migrate
-  function migrateJob(address _fromJob, address _toJob) external;
-
-  /// @notice Completes the migration process for a job
-  /// @dev Unbond/withdraw process doesn't get migrated
-  /// @param _fromJob The address of the job that requested to migrate
-  /// @param _toJob The address to which the job wants to migrate to
-  function acceptJobMigration(address _fromJob, address _toJob) external;
-}
-
 /// @title Keep3rJobDisputable contract
 /// @notice Handles the actions that can be taken on a disputed job
-interface IKeep3rJobDisputable is IKeep3rJobFundableCredits, IKeep3rJobFundableLiquidity {
+interface IKeep3rJobDisputable is IKeep3rDisputable, IKeep3rJobFundableCredits, IKeep3rJobFundableLiquidity {
   // Events
 
   /// @notice Emitted when Keep3rJobDisputable#slashTokenFromJob is called
@@ -472,6 +477,6 @@ interface IKeep3rJobDisputable is IKeep3rJobFundableCredits, IKeep3rJobFundableL
 }
 
 // solhint-disable-next-line no-empty-blocks
-interface IKeep3rJobs is IKeep3rJobOwnership, IKeep3rJobDisputable, IKeep3rJobMigration, IKeep3rJobManager, IKeep3rJobWorkable {
+interface IKeep3rJobs is IKeep3rJobWorkable, IKeep3rJobManager, IKeep3rJobDisputable {
 
 }

@@ -12,6 +12,7 @@ abstract contract Mintable is Governable, IMintable {
 
   /// @inheritdoc IMintable
   function setMinter(address _minter) external override onlyGovernance {
+    if (_minter == address(0)) revert ZeroAddress();
     minter = _minter;
     emit MinterSet(_minter);
   }

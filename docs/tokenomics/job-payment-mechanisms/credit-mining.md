@@ -25,7 +25,7 @@ When a new `rewardPeriod` starts, the first keeper to work the first job will:
   * Update the quote of the KP3R/WETH pool
   * Update the quotes of each of the job liquidities
 
-Following keepers of different jobs, will have to update each job accountance \(when worked for the first time in the period\), but won't have to update the quotes of KP3R/WETH and the liquidities the first job had, since they will be already updated. 
+Following keepers of different jobs, will have to update each job accountance \(when worked for the first time in the period\), but won't have to update the quotes of KP3R/WETH and the liquidities the first job had, since they will be already updated.
 
 Updating jobs accountance requires no other action from the keeper than working the job.
 
@@ -37,23 +37,27 @@ A `worked()` transaction that has to update quotes and reward the job is more ga
 
 To determine the value of a certain liquidity, Keep3r uses a TWAP calculation to get the average quote of a pair in the last completed period. The same calculation is applied to quote rewards for keepers \(that spend gas in ETH and receive KP3R rewards\), using a predefined KP3R/WETH pool as an oracle.
 
-* A job will mint the result of [`quoteLiquidity`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#quoteliquidity-address-_liquidity-uint256-_amount-uint256-_periodcredits-external) every `rewardPeriodTime` 
+* A job will mint the result of [`quoteLiquidity`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#quoteliquidity-address-_liquidity-uint256-_amount-uint256-_periodcredits-external) every `rewardPeriodTime`
 * `quoteLiquidity` will use the average quote for the last `epoch`for the given liquidity
 * Remaining credits will be updated to current quotes each time a `rewardPeriod` starts
 
 #### Job Credit accountance
 
-At every time, a job will have its **current credits** \(already rewarded and stored as [`jobLiquidityCredits`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#jobperiodcredits-address-_job-uint256-_amount-external)\) and **pending mined credits** to be rewarded \(aggregated with current credits in [`totalJobCredits`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#totaljobcredits-address-_job-uint256-_amount-external)\). 
+At every time, a job will have its **current credits** \(already rewarded and stored as [`jobLiquidityCredits`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#jobperiodcredits-address-_job-uint256-_amount-external)\) and **pending mined credits** to be rewarded \(aggregated with current credits in [`totalJobCredits`](../../technical/peripherals/ikeep3rjobfundableliquidity.md#totaljobcredits-address-_job-uint256-_amount-external)\).
 
 A keeper will be able to run the job, as long as `totalJobCredits` is greater than the payment. If `jobLiquidityCredits` are not enough to pay the keeper, then the keeper will have to reward the job by rewarding the job with its mined credits.
 
-In a normal case scenario, a job should be rewarded once every reward period starts, and burn all remaining credits from the expired period \(the one previous to the last full period\). 
+In a normal case scenario, a job should be rewarded once every reward period starts, and burn all remaining credits from the expired period \(the one previous to the last full period\).
 
 ![Normal case scenario](../../.gitbook/assets/image%20%289%29.png)
+
+> `LiquidityCreditsReward` marks are positioned responding to the event timestamp parameter, and not the timestamp of the event emission
 
 In a deficitary job scenario, when the job is spending more KP3R in a period than it should be rewarded, the job will be able to keep on paying keepers, but the minting period will start to shrink, having to mint more frequently.
 
 ![Deficitary job scenario](../../.gitbook/assets/image%20%287%29.png)
+
+> `KeeperWork` marks have been hidden not to overlap `LiquidityCreditsReward` (since they are simultaneous)
 
 Each time, the reward period will be shorter, as the job is not being rewarded the full amount for a period, but only the proportional relation of the time that passed since the last reward, and the `rewardPeriod`.
 
@@ -61,7 +65,7 @@ Ultimately, when the job has not enough `totalJobCredits` to reward the keeper f
 
 #### Credits maximum spending
 
-At particular times, a job can make a payment of up to 2 times its `jobPeriodCredits`, as long as all the credits minted have not yet expired. 
+At particular times, a job can make a payment of up to 2 times its `jobPeriodCredits`, as long as all the credits minted have not yet expired.
 
 ![Credits spending greater than jobPeriodCredits](../../.gitbook/assets/image%20%282%29.png)
 
@@ -77,7 +81,6 @@ Since KP3R/WETH is also stored and **stable inside periods**, keeper payments ar
 
 #### Removing Liquidity
 
-At any time, the `jobOwner` can withdraw the liquidity bonded to the job, provided he either removes the total of it, or that he remains a minimum allowed amount. 
+At any time, the `jobOwner` can withdraw the liquidity bonded to the job, provided he either removes the total of it, or that he remains a minimum allowed amount.
 
 To withdraw a liquidity, first has to unbond the liquidity from the job with `unbondLiquidityFromJob`, instantly diminishing the job KP3R credits proportional to the impact of removing such liquidity. After an `unbondPeriod` passes, the `jobOwner` can withdraw the liquidity tokens from the protocol with `withdrawLiquidityFromJob`.
-

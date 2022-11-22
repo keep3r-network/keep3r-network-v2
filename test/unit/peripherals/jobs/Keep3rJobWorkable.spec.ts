@@ -1,10 +1,6 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
-import IUniswapV3PoolForTestArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20,
   IKeep3rV1,
@@ -42,22 +38,26 @@ describe('Keep3rJobWorkable', () => {
   let inflationPeriodTime: number;
 
   let mathUtils: MathUtils;
+  let snapshotId: string;
 
   before(async () => {
     [, randomKeeper, approvedJob] = await ethers.getSigners();
 
     jobWorkableFactory = await smock.mock('Keep3rJobWorkableForTest');
+    helper = await smock.fake('IKeep3rHelper');
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
+    randomLiquidity = await smock.fake('IUniswapV3Pool');
+    oraclePool = await smock.fake('IUniswapV3Pool');
+    kp3rWethPool = await smock.fake('IUniswapV3Pool');
+
+    helper.isKP3RToken0.returns(true);
+
+    snapshotId = await evm.snapshot.take();
   });
 
   beforeEach(async () => {
-    helper = await smock.fake(IKeep3rHelperArtifact);
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    randomLiquidity = await smock.fake(IUniswapV3PoolForTestArtifact);
-    oraclePool = await smock.fake(IUniswapV3PoolForTestArtifact);
-    kp3rWethPool = await smock.fake(IUniswapV3PoolForTestArtifact);
-
-    helper.isKP3RToken0.returns(true);
+    await evm.snapshot.revert(snapshotId);
 
     jobWorkable = await jobWorkableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
@@ -157,14 +157,19 @@ describe('Keep3rJobWorkable', () => {
   });
 
   describe('worked', () => {
+    it('should revert if _initialGas is 0', async () => {
+      await jobWorkable.setVariable('_initialGas', 0);
+      await expect(jobWorkable.worked(randomKeeper.address)).to.be.revertedWith('GasNotInitialized()');
+    });
+
     it('should revert when called with unallowed job', async () => {
+      await jobWorkable.setVariable('_initialGas', 1);
       await expect(jobWorkable.worked(randomKeeper.address)).to.be.revertedWith('JobUnapproved()');
     });
 
     it('should revert if job is disputed', async () => {
-      await jobWorkable.setVariable('disputes', {
-        [approvedJob.address]: true,
-      });
+      await jobWorkable.setVariable('_initialGas', 1);
+      await jobWorkable.setVariable('disputes', { [approvedJob.address]: true });
 
       await expect(jobWorkable.connect(approvedJob).worked(randomKeeper.address)).to.be.revertedWith('JobDisputed()');
     });
@@ -344,6 +349,7 @@ describe('Keep3rJobWorkable', () => {
           const bondsAcc1 = await jobWorkable.bonds(randomKeeper.address, keep3rV1.address);
 
           // second job shouldn't reward the job and earn less KP3R
+          await jobWorkable.setVariable('_initialGas', 1_500_000); // _initialGas is deleted after worked
           await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit: 1_000_000 });
           const bondsAcc2 = await jobWorkable.bonds(randomKeeper.address, keep3rV1.address);
 
