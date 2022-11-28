@@ -1,12 +1,29 @@
 // SPDX-License-Identifier: MIT
+
+/*
+
+Coded for The Keep3r Network with ♥ by
+
+██████╗░███████╗███████╗██╗  ░██╗░░░░░░░██╗░█████╗░███╗░░██╗██████╗░███████╗██████╗░██╗░░░░░░█████╗░███╗░░██╗██████╗░
+██╔══██╗██╔════╝██╔════╝██║  ░██║░░██╗░░██║██╔══██╗████╗░██║██╔══██╗██╔════╝██╔══██╗██║░░░░░██╔══██╗████╗░██║██╔══██╗
+██║░░██║█████╗░░█████╗░░██║  ░╚██╗████╗██╔╝██║░░██║██╔██╗██║██║░░██║█████╗░░██████╔╝██║░░░░░███████║██╔██╗██║██║░░██║
+██║░░██║██╔══╝░░██╔══╝░░██║  ░░████╔═████║░██║░░██║██║╚████║██║░░██║██╔══╝░░██╔══██╗██║░░░░░██╔══██║██║╚████║██║░░██║
+██████╔╝███████╗██║░░░░░██║  ░░╚██╔╝░╚██╔╝░╚█████╔╝██║░╚███║██████╔╝███████╗██║░░██║███████╗██║░░██║██║░╚███║██████╔╝
+╚═════╝░╚══════╝╚═╝░░░░░╚═╝  ░░░╚═╝░░░╚═╝░░░╚════╝░╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░
+
+https://defi.sucks
+
+*/
+
 pragma solidity >=0.8.4 <0.9.0;
 
 import '../Keep3r.sol';
 import '../../interfaces/sidechain/IKeep3rEscrow.sol';
 import '../../interfaces/sidechain/IKeep3rHelperSidechain.sol';
 import '../../interfaces/sidechain/IKeep3rJobWorkableRated.sol';
+import '../../interfaces/sidechain/IKeep3rSidechainAccountance.sol';
 
-contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated {
+contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAccountance {
   using EnumerableSet for EnumerableSet.AddressSet;
 
   /// @param _governance Address of governance
@@ -19,6 +36,17 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated {
     address _wrappedKP3R, // keep3rV1
     address _keep3rEscrow // keep3rV1Proxy
   ) Keep3r(_governance, _keep3rHelperSidechain, _wrappedKP3R, _keep3rEscrow) {}
+
+  // Keep3rSidechainAccountance
+
+  /// @inheritdoc IKeep3rSidechainAccountance
+  uint256 public override totalBonds;
+
+  /// @inheritdoc IKeep3rSidechainAccountance
+  function virtualReserves() external view override returns (uint256 _virtualReserves) {
+    // Queries wKP3R balanceOf escrow contract minus the totalBonds
+    return IERC20(keep3rV1).balanceOf(keep3rV1Proxy) - totalBonds;
+  }
 
   // Keep3rJobFundableLiquidity
 
@@ -97,6 +125,7 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated {
       emit LiquidityCreditsReward(_job, rewardedAt[_job], _jobLiquidityCredits[_job], _jobPeriodCredits[_job]);
     }
 
+    totalBonds += _kp3rPayment;
     _bondedPayment(_job, _keeper, _kp3rPayment);
     delete _initialGas;
 
@@ -114,8 +143,14 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated {
     // bond provided tokens
     bonds[_keeper][_bonding] += _amount;
     if (_bonding == keep3rV1) {
+      totalBonds += _amount;
       IKeep3rV1(keep3rV1).approve(keep3rV1Proxy, _amount);
       IKeep3rEscrow(keep3rV1Proxy).deposit(_amount);
     }
+  }
+
+  function _mint(uint256 _amount) internal virtual override {
+    totalBonds -= _amount;
+    super._mint(_amount);
   }
 }

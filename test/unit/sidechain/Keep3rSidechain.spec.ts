@@ -490,4 +490,24 @@ describe('Keep3rSidechain', () => {
       });
     });
   });
+
+  describe('virtualReserves', () => {
+    const ESCROW_AMOUNT = bn.toUnit(100);
+    const BONDS_AMOUNT = bn.toUnit(10);
+
+    beforeEach(async () => {
+      wKP3R.balanceOf.reset();
+      wKP3R.balanceOf.whenCalledWith(escrow.address).returns(ESCROW_AMOUNT);
+      keep3r.setVariable('totalBonds', BONDS_AMOUNT);
+    });
+
+    it('should query wKP3R balance of escrow contract', async () => {
+      await keep3r.virtualReserves();
+      expect(wKP3R.balanceOf).to.have.been.calledWith(escrow.address);
+    });
+
+    it('should return the substraction result', async () => {
+      expect(await keep3r.virtualReserves()).to.eq(ESCROW_AMOUNT.sub(BONDS_AMOUNT));
+    });
+  });
 });

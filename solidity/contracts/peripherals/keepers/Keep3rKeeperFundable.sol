@@ -69,16 +69,17 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
 
     uint256 _amount = pendingUnbonds[msg.sender][_bonding];
 
-    if (_bonding == keep3rV1) {
-      IKeep3rV1Proxy(keep3rV1Proxy).mint(_amount);
-    }
-
     delete pendingUnbonds[msg.sender][_bonding];
     delete canWithdrawAfter[msg.sender][_bonding];
 
+    if (_bonding == keep3rV1) _mint(_amount);
     IERC20(_bonding).safeTransfer(msg.sender, _amount);
 
     emit Withdrawal(msg.sender, _bonding, _amount);
+  }
+
+  function _mint(uint256 _amount) internal virtual {
+    IKeep3rV1Proxy(keep3rV1Proxy).mint(_amount);
   }
 
   function _activate(

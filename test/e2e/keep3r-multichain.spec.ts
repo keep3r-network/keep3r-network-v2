@@ -30,6 +30,7 @@ chai.use(solidity);
 const DAY = 86400;
 const ONE = bn.toUnit(1);
 const BONDS = bn.toUnit(10);
+const ESCROW_AMOUNT = bn.toUnit(100);
 const DELTA = bn.toUnit(0.001).toNumber();
 
 describe('Keep3r Sidechain @skip-on-coverage', () => {
@@ -117,15 +118,15 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     await pairManager.connect(kp3rWhale).mint(bn.toUnit(100), bn.toUnit(100), 1, 0, kp3rWhaleAddress);
 
     // bridge tokens
-    await kp3rV1.connect(kp3rWhale).approve(wKP3R.address, BONDS);
-    await wKP3R.connect(kp3rWhale).bridge(BONDS);
+    await kp3rV1.connect(kp3rWhale).approve(wKP3R.address, ESCROW_AMOUNT);
+    await wKP3R.connect(kp3rWhale).bridge(ESCROW_AMOUNT);
 
     await pairManager.connect(kp3rWhale).approve(wKLP.address, BONDS);
     await wKLP.connect(kp3rWhale).bridge(BONDS);
 
     // fund escrow
-    await wKP3R.connect(kp3rWhale).approve(keep3rEscrow.address, BONDS);
-    await keep3rEscrow.connect(kp3rWhale).deposit(BONDS);
+    await wKP3R.connect(kp3rWhale).approve(keep3rEscrow.address, ESCROW_AMOUNT);
+    await keep3rEscrow.connect(kp3rWhale).deposit(ESCROW_AMOUNT);
     await keep3rEscrow.connect(governance).setMinter(keep3r.address);
 
     // deploy job
@@ -163,6 +164,11 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
       // activate
       await evm.advanceTimeAndBlock(3 * DAY);
       await keep3r.connect(kp3rWhale).activate(wKP3R.address);
+    });
+
+    it('should not increase the virtualReserves when bonding', async () => {
+      expect(await keep3r.totalBonds()).to.eq(BONDS);
+      expect(await keep3r.virtualReserves()).to.eq(ESCROW_AMOUNT);
     });
 
     it('should deposit tokens on escrow contract when bonding', async () => {
@@ -304,6 +310,12 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
       const expectedKP3RReward = ONE.mul(expectedWETHReward).div(kp3rQuote);
 
       expect(reward).to.be.closeTo(expectedKP3RReward.mul(120).div(100), DELTA); // expected +20%
+    });
+
+    it('should reduce the virtualReserves', async () => {
+      const prevVirtualSupply = await keep3r.virtualReserves();
+      await job.connect(keeper).work();
+      expect(await keep3r.virtualReserves()).to.be.lt(prevVirtualSupply);
     });
 
     it('should be able to withdraw bonds', async () => {
