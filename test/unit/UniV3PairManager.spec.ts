@@ -2,7 +2,6 @@ import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wo
 import { BigNumber } from '@ethersproject/bignumber';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
-import IUniswapV3PoolForTestArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
 import {
   ERC20ForTest,
   ERC20ForTest__factory,
@@ -65,7 +64,7 @@ describe('UniV3PairManager', () => {
   });
 
   beforeEach(async () => {
-    uniswapPool = await smock.fake(IUniswapV3PoolForTestArtifact);
+    uniswapPool = await smock.fake('IUniswapV3Pool');
     token0 = await smock.fake(ERC20Artifact);
     token1 = await smock.fake(ERC20Artifact);
 

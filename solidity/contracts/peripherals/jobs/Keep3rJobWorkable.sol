@@ -30,7 +30,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     uint256 _minBond,
     uint256 _earned,
     uint256 _age
-  ) public override returns (bool _isBondedKeeper) {
+  ) external override returns (bool _isBondedKeeper) {
     _initialGas = _getGasLeft();
     if (
       _keepers.contains(_keeper) &&
@@ -44,7 +44,8 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
   }
 
   /// @inheritdoc IKeep3rJobWorkable
-  function worked(address _keeper) external override {
+  function worked(address _keeper) external virtual override {
+    if (_initialGas == 0) revert GasNotInitialized();
     address _job = msg.sender;
     if (disputes[_job]) revert JobDisputed();
     if (!_jobs.contains(_job)) revert JobUnapproved();
@@ -67,11 +68,13 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     }
 
     _bondedPayment(_job, _keeper, _payment);
+    delete _initialGas;
+
     emit KeeperWork(keep3rV1, _job, _keeper, _payment, _gasLeft);
   }
 
   /// @inheritdoc IKeep3rJobWorkable
-  function bondedPayment(address _keeper, uint256 _payment) public override {
+  function bondedPayment(address _keeper, uint256 _payment) external override {
     address _job = msg.sender;
 
     if (disputes[_job]) revert JobDisputed();

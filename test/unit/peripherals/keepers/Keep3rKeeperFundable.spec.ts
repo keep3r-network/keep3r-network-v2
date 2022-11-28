@@ -1,10 +1,6 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
-import IUniswapV3PoolArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20,
   IKeep3rV1,
@@ -14,6 +10,7 @@ import {
   Keep3rKeeperFundableForTest,
   Keep3rKeeperFundableForTest__factory,
 } from '@types';
+import { evm } from '@utils';
 import { toUnit } from '@utils/bn';
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
@@ -30,21 +27,26 @@ describe('Keep3rKeeperFundable', () => {
   let erc20: FakeContract<ERC20>;
   let oraclePool: FakeContract<IUniswapV3Pool>;
 
+  let snapshotId: string;
+
   before(async () => {
     [, randomKeeper] = await ethers.getSigners();
 
     keeperFundableFactory = await smock.mock<Keep3rKeeperFundableForTest__factory>('Keep3rKeeperFundableForTest');
+    helper = await smock.fake('IKeep3rHelper');
+    erc20 = await smock.fake(ERC20Artifact);
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
+    oraclePool = await smock.fake('IUniswapV3Pool');
+    oraclePool.token0.returns(keep3rV1.address);
+
+    snapshotId = await evm.snapshot.take();
   });
 
   beforeEach(async () => {
-    helper = await smock.fake(IKeep3rHelperArtifact);
-    erc20 = await smock.fake(ERC20Artifact);
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    oraclePool = await smock.fake(IUniswapV3PoolArtifact);
-    oraclePool.token0.returns(keep3rV1.address);
+    await evm.snapshot.revert(snapshotId);
 
-    keeperFundable = await keeperFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    keeperFundable = await keeperFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
   });
 
   describe('bond', () => {

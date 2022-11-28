@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
+import './IKeep3rRoles.sol';
+
 /// @title Keep3rDisputable contract
 /// @notice Disputes keepers, or if they're already disputed, it can resolve the case
 /// @dev Argument `bonding` can be the address of either a token or a liquidity
-interface IKeep3rAccountance {
+interface IKeep3rAccountance is IKeep3rRoles {
   // Events
 
   /// @notice Emitted when the bonding process of a new keeper begins

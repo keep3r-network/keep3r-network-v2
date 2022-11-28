@@ -11,9 +11,8 @@ contract Keep3rJobMigrationForTest is Keep3rJobMigration {
   constructor(
     address _kph,
     address _keep3rV1,
-    address _keep3rV1Proxy,
-    address _kp3rWethPool
-  ) Keep3rParameters(_kph, _keep3rV1, _keep3rV1Proxy, _kp3rWethPool) Keep3rRoles(msg.sender) {}
+    address _keep3rV1Proxy
+  ) Keep3rParameters(_kph, _keep3rV1, _keep3rV1Proxy) Keep3rRoles(msg.sender) {}
 
   function setJobToken(address _job, address _token) external {
     _jobTokens[_job].add(_token);

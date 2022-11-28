@@ -13,8 +13,6 @@ describe('Keep3rParameters', () => {
   let governance: SignerWithAddress;
   let parametersFactory: Keep3rParametersForTest__factory;
   let keep3rHelper: FakeContract<Keep3rHelper>;
-  const newOraclePool = wallet.generateRandomAddress();
-  const oraclePool = wallet.generateRandomAddress();
   const keep3rV1 = wallet.generateRandomAddress();
   const keep3rV1Proxy = wallet.generateRandomAddress();
   const randomAddress = wallet.generateRandomAddress();
@@ -28,14 +26,13 @@ describe('Keep3rParameters', () => {
   beforeEach(async () => {
     keep3rHelper = await smock.fake('Keep3rHelper');
 
-    parameters = await parametersFactory.deploy(keep3rHelper.address, keep3rV1, keep3rV1Proxy, oraclePool);
+    parameters = await parametersFactory.deploy(keep3rHelper.address, keep3rV1, keep3rV1Proxy);
   });
 
   [
     { name: 'setKeep3rHelper', zero: true, parameter: 'keep3rHelper', args: () => [randomAddress], event: 'Keep3rHelperChange' },
     { name: 'setKeep3rV1', zero: true, parameter: 'keep3rV1', args: () => [randomAddress], event: 'Keep3rV1Change' },
     { name: 'setKeep3rV1Proxy', zero: true, parameter: 'keep3rV1Proxy', args: () => [randomAddress], event: 'Keep3rV1ProxyChange' },
-    { name: 'setKp3rWethPool', zero: true, parameter: 'kp3rWethPool', args: () => [newOraclePool], event: 'Kp3rWethPoolChange' },
     { name: 'setBondTime', parameter: 'bondTime', args: () => [toUnit(1)], event: 'BondTimeChange' },
     { name: 'setUnbondTime', parameter: 'unbondTime', args: () => [toUnit(1)], event: 'UnbondTimeChange' },
     { name: 'setLiquidityMinimum', parameter: 'liquidityMinimum', args: () => [toUnit(1)], event: 'LiquidityMinimumChange' },
@@ -66,21 +63,6 @@ describe('Keep3rParameters', () => {
     });
   });
 
-  describe('setKp3rWethPool', () => {
-    it('should set the corresponding oracle pool', async () => {
-      await parameters.setKp3rWethPool(newOraclePool);
-
-      expect(await parameters.viewLiquidityPool(newOraclePool)).to.be.eq(newOraclePool);
-    });
-
-    it('should set the order of KP3R in the pool', async () => {
-      keep3rHelper.isKP3RToken0.returns(true);
-      await parameters.setKp3rWethPool(newOraclePool);
-
-      expect(await parameters.viewIsKP3RToken0(newOraclePool)).to.be.true;
-    });
-  });
-
   describe('constructor', () => {
     it('should set keep3rHelper', async () => {
       expect(await parameters.keep3rHelper()).to.be.equal(keep3rHelper.address);
@@ -92,10 +74,6 @@ describe('Keep3rParameters', () => {
 
     it('should set keep3rV1Proxy', async () => {
       expect(await parameters.keep3rV1Proxy()).to.be.equal(keep3rV1Proxy);
-    });
-
-    it('should set kp3rWethPool', async () => {
-      expect(await parameters.kp3rWethPool()).to.be.equal(oraclePool);
     });
   });
 });

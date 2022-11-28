@@ -26,13 +26,6 @@ Address of Keep3rV1Proxy's contract
 
 
 
-### `kp3rWethPool() → address _kp3rWethPool` (external)
-
-Address of the KP3R-WETH pool
-
-
-
-
 ### `bondTime() → uint256 _days` (external)
 
 The amount of time required to pass after a keeper has bonded assets for it to be able to activate
@@ -92,13 +85,6 @@ Sets the Keep3rV1 address
 ### `setKeep3rV1Proxy(address _keep3rV1Proxy)` (external)
 
 Sets the Keep3rV1Proxy address
-
-
-
-
-### `setKp3rWethPool(address _kp3rWethPool)` (external)
-
-Sets the KP3R-WETH pool address
 
 
 
@@ -163,13 +149,6 @@ Emitted when the Keep3rV1 address is changed
 ### `Keep3rV1ProxyChange(address _keep3rV1Proxy)`
 
 Emitted when the Keep3rV1Proxy address is changed
-
-
-
-
-### `Kp3rWethPoolChange(address _kp3rWethPool)`
-
-Emitted when the KP3R-WETH pool address is changed
 
 
 

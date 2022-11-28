@@ -1,9 +1,5 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import IUniswapV3PoolForTestArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   IKeep3rV1,
   IKeep3rV1Proxy,
@@ -45,25 +41,29 @@ describe('Keep3rJobFundableLiquidity', () => {
 
   let mathUtils: MathUtils;
   let oneTick: number;
+  let snapshotId: string;
 
   before(async () => {
     [governance, jobOwner, provider] = await ethers.getSigners();
 
     jobFundableFactory = await smock.mock<Keep3rJobFundableLiquidityForTest__factory>('Keep3rJobFundableLiquidityForTest');
-  });
-
-  beforeEach(async () => {
-    helper = await smock.fake(IKeep3rHelperArtifact);
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
+    helper = await smock.fake('IKeep3rHelper');
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
     randomLiquidity = await smock.fake('UniV3PairManager');
     approvedLiquidity = await smock.fake('UniV3PairManager');
-    oraclePool = await smock.fake(IUniswapV3PoolForTestArtifact);
+    oraclePool = await smock.fake('IUniswapV3Pool');
     helper.isKP3RToken0.returns(true);
     approvedLiquidity.transfer.returns(true);
     approvedLiquidity.transferFrom.returns(true);
 
-    jobFundable = await jobFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, oraclePool.address);
+    snapshotId = await evm.snapshot.take();
+  });
+
+  beforeEach(async () => {
+    await evm.snapshot.revert(snapshotId);
+
+    jobFundable = await jobFundableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
     await jobFundable.setVariable('jobOwner', {
       [randomJob]: jobOwner.address,
@@ -344,6 +344,7 @@ describe('Keep3rJobFundableLiquidity', () => {
 
       context('when job was rewarded this period', () => {
         beforeEach(async () => {
+          helper.observe.reset();
           await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [approvedLiquidity.address]: liquidityAdded } });
           await jobFundable.setVariable('rewardedAt', { [randomJob]: mathUtils.calcPeriod(blockTimestamp) });
           // if job accountance is updated, then it's liquidity must updated be as well
@@ -495,6 +496,10 @@ describe('Keep3rJobFundableLiquidity', () => {
   });
 
   describe('quoteLiquidity', () => {
+    beforeEach(async () => {
+      helper.observe.reset();
+    });
+
     it('should return 0 if liquidity is not approved', async () => {
       expect(await jobFundable.quoteLiquidity(randomLiquidity.address, toUnit(1))).to.be.eq(0);
     });
@@ -571,11 +576,11 @@ describe('Keep3rJobFundableLiquidity', () => {
       });
 
       it('should return current tick', async () => {
-        expect(await jobFundable.observeLiquidity(randomLiquidity.address)).to.deep.equal([
-          BigNumber.from(0),
-          BigNumber.from(0),
-          BigNumber.from(period),
-        ]);
+        const observation = await jobFundable.observeLiquidity(randomLiquidity.address);
+
+        expect(observation.current).to.eq(BigNumber.from(0));
+        expect(observation.difference).to.eq(BigNumber.from(0));
+        expect(observation.period).to.eq(period);
       });
 
       it('should not call the oracle', async () => {
@@ -594,11 +599,11 @@ describe('Keep3rJobFundableLiquidity', () => {
       });
 
       it('should return oracle tick and calculate difference', async () => {
-        expect(await jobFundable.observeLiquidity(randomLiquidity.address)).to.deep.equal([
-          BigNumber.from(1),
-          BigNumber.from(1),
-          BigNumber.from(mathUtils.calcPeriod(blockTimestamp)),
-        ]);
+        const observation = await jobFundable.observeLiquidity(randomLiquidity.address);
+
+        expect(observation.current).to.eq(BigNumber.from(1));
+        expect(observation.difference).to.eq(BigNumber.from(1));
+        expect(observation.period).to.eq(mathUtils.calcPeriod(blockTimestamp));
       });
 
       it('should call the oracle', async () => {
@@ -613,12 +618,13 @@ describe('Keep3rJobFundableLiquidity', () => {
         helper.observe.returns([2, 1, true]);
       });
       it('should return oracle tick and difference', async () => {
-        expect(await jobFundable.observeLiquidity(approvedLiquidity.address)).to.deep.equal([
-          BigNumber.from(2),
-          BigNumber.from(1),
-          BigNumber.from(mathUtils.calcPeriod(blockTimestamp)),
-        ]);
+        const observation = await jobFundable.observeLiquidity(approvedLiquidity.address);
+
+        expect(observation.current).to.eq(BigNumber.from(2));
+        expect(observation.difference).to.eq(BigNumber.from(1));
+        expect(observation.period).to.eq(mathUtils.calcPeriod(blockTimestamp));
       });
+
       it('should call the oracle', async () => {
         await jobFundable.observeLiquidity(approvedLiquidity.address);
         blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
@@ -797,6 +803,8 @@ describe('Keep3rJobFundableLiquidity', () => {
     context('when liquidity pair and job are accepted', async () => {
       beforeEach(async () => {
         await jobFundable.setJob(randomJob);
+        approvedLiquidity.transferFrom.reset();
+        approvedLiquidity.transferFrom.returns(true);
       });
 
       it('should revert when transfer reverts', async () => {

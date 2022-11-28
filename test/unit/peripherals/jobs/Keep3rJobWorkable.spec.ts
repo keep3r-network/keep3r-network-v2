@@ -1,10 +1,6 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import ERC20Artifact from '@openzeppelin/contracts/build/contracts/ERC20.json';
-import IUniswapV3PoolForTestArtifact from '@solidity/for-test/IUniswapV3PoolForTest.sol/IUniswapV3PoolForTest.json';
-import IKeep3rV1Artifact from '@solidity/interfaces/external/IKeep3rV1.sol/IKeep3rV1.json';
-import IKeep3rV1ProxyArtifact from '@solidity/interfaces/external/IKeep3rV1Proxy.sol/IKeep3rV1Proxy.json';
-import IKeep3rHelperArtifact from '@solidity/interfaces/IKeep3rHelper.sol/IKeep3rHelper.json';
 import {
   ERC20,
   IKeep3rV1,
@@ -42,24 +38,28 @@ describe('Keep3rJobWorkable', () => {
   let inflationPeriodTime: number;
 
   let mathUtils: MathUtils;
+  let snapshotId: string;
 
   before(async () => {
     [, randomKeeper, approvedJob] = await ethers.getSigners();
 
     jobWorkableFactory = await smock.mock('Keep3rJobWorkableForTest');
-  });
-
-  beforeEach(async () => {
-    helper = await smock.fake(IKeep3rHelperArtifact);
-    keep3rV1 = await smock.fake(IKeep3rV1Artifact);
-    keep3rV1Proxy = await smock.fake(IKeep3rV1ProxyArtifact);
-    randomLiquidity = await smock.fake(IUniswapV3PoolForTestArtifact);
-    oraclePool = await smock.fake(IUniswapV3PoolForTestArtifact);
-    kp3rWethPool = await smock.fake(IUniswapV3PoolForTestArtifact);
+    helper = await smock.fake('IKeep3rHelper');
+    keep3rV1 = await smock.fake('IKeep3rV1');
+    keep3rV1Proxy = await smock.fake('IKeep3rV1Proxy');
+    randomLiquidity = await smock.fake('IUniswapV3Pool');
+    oraclePool = await smock.fake('IUniswapV3Pool');
+    kp3rWethPool = await smock.fake('IUniswapV3Pool');
 
     helper.isKP3RToken0.returns(true);
 
-    jobWorkable = await jobWorkableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address, kp3rWethPool.address);
+    snapshotId = await evm.snapshot.take();
+  });
+
+  beforeEach(async () => {
+    await evm.snapshot.revert(snapshotId);
+
+    jobWorkable = await jobWorkableFactory.deploy(helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
     await jobWorkable.setJob(approvedJob.address);
 
@@ -157,14 +157,19 @@ describe('Keep3rJobWorkable', () => {
   });
 
   describe('worked', () => {
+    it('should revert if _initialGas is 0', async () => {
+      await jobWorkable.setVariable('_initialGas', 0);
+      await expect(jobWorkable.worked(randomKeeper.address)).to.be.revertedWith('GasNotInitialized()');
+    });
+
     it('should revert when called with unallowed job', async () => {
+      await jobWorkable.setVariable('_initialGas', 1);
       await expect(jobWorkable.worked(randomKeeper.address)).to.be.revertedWith('JobUnapproved()');
     });
 
     it('should revert if job is disputed', async () => {
-      await jobWorkable.setVariable('disputes', {
-        [approvedJob.address]: true,
-      });
+      await jobWorkable.setVariable('_initialGas', 1);
+      await jobWorkable.setVariable('disputes', { [approvedJob.address]: true });
 
       await expect(jobWorkable.connect(approvedJob).worked(randomKeeper.address)).to.be.revertedWith('JobDisputed()');
     });
@@ -204,35 +209,11 @@ describe('Keep3rJobWorkable', () => {
         const gasUsed = (await tx.wait()).gasUsed;
         const gasRecord = await readArgFromEvent(tx, 'KeeperWork', '_gasLeft');
 
-        expect(eventArgs.slice(0, -1)).to.be.deep.eq([keep3rV1.address, approvedJob.address, randomKeeper.address, BigNumber.from(0)]);
+        expect(eventArgs[0]).to.eq(keep3rV1.address);
+        expect(eventArgs[1]).to.eq(approvedJob.address);
+        expect(eventArgs[2]).to.eq(randomKeeper.address);
+        expect(eventArgs[3]).to.eq(BigNumber.from(0));
         expect(gasRecord).to.be.closeTo(gasLimit.sub(gasUsed), 50000);
-      });
-
-      it('should update KP3R/WETH quote if needed', async () => {
-        // let a period pass to outdate the current quote
-        await evm.advanceTimeAndBlock(moment.duration(10, 'days').as('seconds'));
-        // set oracle response
-        const currentTick = oneTick;
-        const previousTick = 0;
-        const tickDifference = currentTick - previousTick;
-        kp3rWethPool.observe.returns([[currentTick, previousTick], []]);
-
-        // job awards no credits to keeper
-        helper.getRewardBoostFor.returns(0);
-
-        await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit: 1_000_000 });
-        blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
-
-        expect(helper.observe).to.have.been.calledWith(kp3rWethPool.address, [
-          blockTimestamp - mathUtils.calcPeriod(blockTimestamp),
-          blockTimestamp - mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime),
-        ]);
-
-        expect(await jobWorkable.viewTickCache(kp3rWethPool.address)).to.deep.equal([
-          BigNumber.from(currentTick),
-          BigNumber.from(tickDifference),
-          BigNumber.from(mathUtils.calcPeriod(blockTimestamp)),
-        ]);
       });
 
       it('should update job credits if needed', async () => {
@@ -368,6 +349,7 @@ describe('Keep3rJobWorkable', () => {
           const bondsAcc1 = await jobWorkable.bonds(randomKeeper.address, keep3rV1.address);
 
           // second job shouldn't reward the job and earn less KP3R
+          await jobWorkable.setVariable('_initialGas', 1_500_000); // _initialGas is deleted after worked
           await jobWorkable.connect(approvedJob).worked(randomKeeper.address, { gasLimit: 1_000_000 });
           const bondsAcc2 = await jobWorkable.bonds(randomKeeper.address, keep3rV1.address);
 

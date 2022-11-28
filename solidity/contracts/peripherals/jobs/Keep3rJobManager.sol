@@ -2,11 +2,10 @@
 pragma solidity >=0.8.4 <0.9.0;
 
 import './Keep3rJobOwnership.sol';
-import '../Keep3rRoles.sol';
-import '../Keep3rParameters.sol';
+import '../Keep3rAccountance.sol';
 import '../../../interfaces/peripherals/IKeep3rJobs.sol';
 
-abstract contract Keep3rJobManager is IKeep3rJobManager, Keep3rJobOwnership, Keep3rRoles, Keep3rParameters {
+abstract contract Keep3rJobManager is IKeep3rJobManager, Keep3rJobOwnership, Keep3rAccountance {
   using EnumerableSet for EnumerableSet.AddressSet;
 
   /// @inheritdoc IKeep3rJobManager
@@ -15,6 +14,6 @@ abstract contract Keep3rJobManager is IKeep3rJobManager, Keep3rJobOwnership, Kee
     if (hasBonded[_job]) revert AlreadyAKeeper();
     _jobs.add(_job);
     jobOwner[_job] = msg.sender;
-    emit JobAddition(msg.sender, _job);
+    emit JobAddition(_job, msg.sender);
   }
 }

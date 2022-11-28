@@ -34,14 +34,22 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
 
   /// @inheritdoc IKeep3rKeeperFundable
   function activate(address _bonding) external override {
-    if (disputes[msg.sender]) revert Disputed();
-    if (canActivateAfter[msg.sender][_bonding] == 0) revert BondsUnexistent();
-    if (canActivateAfter[msg.sender][_bonding] >= block.timestamp) revert BondsLocked();
+    address _keeper = msg.sender;
+    if (disputes[_keeper]) revert Disputed();
+    uint256 _canActivateAfter = canActivateAfter[_keeper][_bonding];
+    if (_canActivateAfter == 0) revert BondsUnexistent();
+    if (_canActivateAfter >= block.timestamp) revert BondsLocked();
 
-    delete canActivateAfter[msg.sender][_bonding];
+    if (firstSeen[_keeper] == 0) {
+      firstSeen[_keeper] = block.timestamp;
+    }
+    _keepers.add(_keeper);
 
-    uint256 _amount = _activate(msg.sender, _bonding);
-    emit Activation(msg.sender, _bonding, _amount);
+    uint256 _amount = pendingBonds[_keeper][_bonding];
+    delete pendingBonds[_keeper][_bonding];
+
+    _activate(_keeper, _bonding, _amount);
+    emit Activation(_keeper, _bonding, _amount);
   }
 
   /// @inheritdoc IKeep3rKeeperFundable
@@ -61,26 +69,24 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
 
     uint256 _amount = pendingUnbonds[msg.sender][_bonding];
 
-    if (_bonding == keep3rV1) {
-      IKeep3rV1Proxy(keep3rV1Proxy).mint(_amount);
-    }
-
     delete pendingUnbonds[msg.sender][_bonding];
     delete canWithdrawAfter[msg.sender][_bonding];
 
+    if (_bonding == keep3rV1) _mint(_amount);
     IERC20(_bonding).safeTransfer(msg.sender, _amount);
 
     emit Withdrawal(msg.sender, _bonding, _amount);
   }
 
-  function _activate(address _keeper, address _bonding) internal returns (uint256 _amount) {
-    if (firstSeen[_keeper] == 0) {
-      firstSeen[_keeper] = block.timestamp;
-    }
-    _keepers.add(_keeper);
-    _amount = pendingBonds[_keeper][_bonding];
-    delete pendingBonds[_keeper][_bonding];
+  function _mint(uint256 _amount) internal virtual {
+    IKeep3rV1Proxy(keep3rV1Proxy).mint(_amount);
+  }
 
+  function _activate(
+    address _keeper,
+    address _bonding,
+    uint256 _amount
+  ) internal virtual {
     // bond provided tokens
     bonds[_keeper][_bonding] += _amount;
     if (_bonding == keep3rV1) {
