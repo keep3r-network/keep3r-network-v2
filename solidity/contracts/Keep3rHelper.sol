@@ -74,7 +74,7 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
   }
 
   /// @inheritdoc IKeep3rHelper
-  function isKP3RToken0(address _pool) external view override returns (bool _isKP3RToken0) {
+  function isKP3RToken0(address _pool) external view virtual override returns (bool _isKP3RToken0) {
     address _token0;
     address _token1;
     (_token0, _token1) = getPoolTokens(_pool);

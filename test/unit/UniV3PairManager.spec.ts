@@ -80,7 +80,7 @@ describe('UniV3PairManager', () => {
     actualTickLower = await uniV3PairManager.tickLower();
     actualTickUpper = await uniV3PairManager.tickUpper();
 
-    await fakeERC20.mint(uniV3PairManager.address, toUnit(100));
+    await fakeERC20['mint(address,uint256)'](uniV3PairManager.address, toUnit(100));
   });
 
   describe('constructor', () => {

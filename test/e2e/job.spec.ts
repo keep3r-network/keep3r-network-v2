@@ -73,7 +73,7 @@ describe('@skip-on-coverage Job', () => {
       await keep3r.connect(jobOwner).addJob(job.address);
       await keep3r.connect(governance).approveLiquidity(pair.address);
 
-      const response = await common.addLiquidityToPair(richGuy, pair, liquidityAdded, jobOwner);
+      const response = await common.mintLiquidity(richGuy, pair, liquidityAdded, jobOwner._address);
       initialLiquidity = response.liquidity;
       spentKp3rs = response.spentKp3rs;
 
@@ -140,7 +140,7 @@ describe('@skip-on-coverage Job', () => {
       // wait some days in order for that liquidity to generate credits
       await evm.advanceTimeAndBlock(moment.duration(2, 'days').as('seconds'));
 
-      const { liquidity } = await common.addLiquidityToPair(richGuy, pair, toUnit(1), jobOwner);
+      const { liquidity } = await common.mintLiquidity(richGuy, pair, toUnit(1), jobOwner._address);
       await pair.connect(jobOwner).approve(keep3r.address, liquidity);
       await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, liquidity);
 

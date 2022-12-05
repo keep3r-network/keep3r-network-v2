@@ -13,8 +13,16 @@ contract ERC20ForTest is ERC20 {
     _mint(_initialAccount, _initialBalance);
   }
 
+  function mint(uint256 _amount) public {
+    _mint(msg.sender, _amount);
+  }
+
   function mint(address _account, uint256 _amount) public {
     _mint(_account, _amount);
+  }
+
+  function burn(uint256 _amount) public {
+    _burn(msg.sender, _amount);
   }
 
   function burn(address _account, uint256 _amount) public {
@@ -37,7 +45,7 @@ contract ERC20ForTest is ERC20 {
     _approve(_owner, _spender, _value);
   }
 
-  function deposit(uint256 _amount) external payable {
+  function deposit() external payable {
     // Function added for compatibility with WETH
   }
 }

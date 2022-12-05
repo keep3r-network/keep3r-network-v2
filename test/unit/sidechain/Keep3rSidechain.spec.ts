@@ -509,5 +509,11 @@ describe('Keep3rSidechain', () => {
     it('should return the substraction result', async () => {
       expect(await keep3r.virtualReserves()).to.eq(ESCROW_AMOUNT.sub(BONDS_AMOUNT));
     });
+
+    it('should support negative reserves', async () => {
+      keep3r.setVariable('totalBonds', ESCROW_AMOUNT.add(1));
+
+      expect(await keep3r.virtualReserves()).to.eq(-1);
+    });
   });
 });

@@ -21,7 +21,6 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
 import './libraries/LiquidityAmounts.sol';
-import './libraries/PoolAddress.sol';
 import './libraries/FixedPoint96.sol';
 import './libraries/FullMath.sol';
 import './libraries/TickMath.sol';
@@ -86,7 +85,7 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
   mapping(address => uint256) public override balanceOf;
 
   /// @notice Struct that contains token0, token1, and fee of the Uniswap pool
-  PoolAddress.PoolKey private _poolKey;
+  PoolKey private _poolKey;
 
   constructor(address _pool, address _governance) Governable(_governance) {
     uint24 _fee = IUniswapV3Pool(_pool).fee();
@@ -109,7 +108,7 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
 
     sqrtRatioAX96 = TickMath.getSqrtRatioAtTick(_tickLower);
     sqrtRatioBX96 = TickMath.getSqrtRatioAtTick(_tickUpper);
-    _poolKey = PoolAddress.PoolKey({token0: _token0, token1: _token1, fee: _fee});
+    _poolKey = PoolKey({token0: _token0, token1: _token1, fee: _fee});
   }
 
   // This low-level function should be called from a contract which performs important safety checks

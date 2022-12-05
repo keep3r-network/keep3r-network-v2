@@ -1,16 +1,12 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { verifyContract } from 'utils/deploy';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const uniV3PairManagerFactory = await hre.deployments.get('UniV3PairManagerFactory');
-
-  await hre.run('verify:verify', {
-    contract: 'solidity/contracts/UniV3PairManagerFactory.sol:UniV3PairManagerFactory',
-    address: uniV3PairManagerFactory.address,
-    constructorArguments: uniV3PairManagerFactory.args,
-  });
+  await verifyContract(hre, uniV3PairManagerFactory);
 };
 
-deployFunction.tags = ['verify-factory', 'mainnet'];
+deployFunction.tags = ['verify-factory'];
 
 export default deployFunction;

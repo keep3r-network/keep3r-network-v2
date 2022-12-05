@@ -12,7 +12,7 @@ At the most simple level, they simply require a keeper to be registered in the s
 
 To become a keeper, you simply need to call `bond(address,uint)`, no funds are required to become a keeper, however certain jobs might require a minimum amount of funds.
 
-```text
+```solidity
 /// @notice Beginning of the bonding process
 /// @param _bonding The asset being bound
 /// @param _amount The amount of bonding asset being bound
@@ -21,7 +21,7 @@ function bond(address _bonding, uint256 _amount) external;
 
 After waiting `bondTime` \(default 3 days\) and you can activate as a keeper;
 
-```text
+```solidity
 /// @notice End of the bonding process after bonding time has passed
 /// @param _bonding The asset being activated as bond collateral
 function activate(address _bonding) external;
@@ -31,7 +31,7 @@ function activate(address _bonding) external;
 
 If you want to withdraw your bonds, you will need first to unbond them,
 
-```text
+```solidity
 /// @notice Beginning of the unbonding process
 /// @param _bonding The asset being unbound
 /// @param _amount Allows for partial unbonding
@@ -44,7 +44,7 @@ After a keeper has unbonded an asset amount, it may stop qualifying for the Filt
 
 After waiting `unbondTime` \(default 14 days\) you can withdraw any bonded assets
 
-```text
+```solidity
 /// @notice Withdraw funds after unbonding has finished
 /// @param _bonding The asset to withdraw from the bonding pool
 function withdraw(address _bonding) external;
@@ -53,4 +53,3 @@ function withdraw(address _bonding) external;
 ## Additional Requirements
 
 Some jobs might have additional requirements such as minimum bonded protocol tokens \(for example SNX\). In such cases you would need to bond a minimum amount of SNX before you may qualify for the job.
-

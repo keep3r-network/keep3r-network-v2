@@ -54,7 +54,7 @@ describe('@skip-on-coverage Basic Keeper Job Interaction', () => {
     pair = await common.createLiquidityPair(governance);
     await keep3r.connect(governance).approveLiquidity(pair.address);
 
-    const { liquidity } = await common.addLiquidityToPair(jobOwner, pair, toUnit(1000), jobOwner);
+    const { liquidity } = await common.mintLiquidity(jobOwner, pair, toUnit(100), jobOwner._address);
 
     await pair.connect(jobOwner).approve(keep3r.address, liquidity);
 
@@ -74,7 +74,7 @@ describe('@skip-on-coverage Basic Keeper Job Interaction', () => {
     });
 
     beforeEach(async () => {
-      await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, toUnit(100));
+      await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, toUnit(10));
       await evm.advanceTimeAndBlock(DAY * 100);
     });
 
@@ -163,8 +163,8 @@ describe('@skip-on-coverage Basic Keeper Job Interaction', () => {
       const chessGovernance = await wallet.impersonate(await chessJob.governor());
 
       await keep3r.connect(jobOwner).addJob(chessJob.address);
-      await keep3r.connect(jobOwner).addLiquidityToJob(chessJob.address, pair.address, toUnit(100));
-      await evm.advanceTimeAndBlock(DAY * 10);
+      await keep3r.connect(jobOwner).addLiquidityToJob(chessJob.address, pair.address, toUnit(10));
+      await evm.advanceTimeAndBlock(DAY * 10 - 1);
 
       await chessJob.connect(chessGovernance).setKeep3r(keep3r.address);
 
@@ -195,7 +195,7 @@ describe('@skip-on-coverage Basic Keeper Job Interaction', () => {
 
     beforeEach(async () => {
       initialBondedKP3R = await keep3r.callStatic.bonds(keeper._address, keep3rV1.address);
-      await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, toUnit(100));
+      await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, toUnit(10));
       await evm.advanceTimeAndBlock(DAY);
     });
 
@@ -214,7 +214,7 @@ describe('@skip-on-coverage Basic Keeper Job Interaction', () => {
       const helperBoost = await helper.minBoost();
 
       // work
-      const workTx = await job.connect(keeper).workHard(10_000);
+      const workTx = await job.connect(keeper).workHard(1_000);
 
       // calculate reward from work
       const afterWorkBondedKP3R = await keep3r.callStatic.bonds(keeper._address, keep3rV1.address);

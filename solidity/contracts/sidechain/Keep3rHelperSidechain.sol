@@ -47,7 +47,7 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
   }
 
   /// @inheritdoc IKeep3rHelperSidechain
-  function quoteUsdToEth(uint256 _usd) public view override returns (uint256 _amountOut) {
+  function quoteUsdToEth(uint256 _usd) public view virtual override returns (uint256 _amountOut) {
     uint32[] memory _secondsAgos = new uint32[](2);
     _secondsAgos[1] = quoteTwapTime;
 

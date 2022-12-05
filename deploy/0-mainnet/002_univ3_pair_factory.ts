@@ -1,18 +1,17 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { KEEP3R_MSIG } from './constants';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployer } = await hre.getNamedAccounts();
+  const { deployer, governor } = await hre.getNamedAccounts();
 
   await hre.deployments.deploy('UniV3PairManagerFactory', {
     contract: 'solidity/contracts/UniV3PairManagerFactory.sol:UniV3PairManagerFactory',
     from: deployer,
     log: true,
-    args: [KEEP3R_MSIG],
+    args: [governor],
   });
 };
 
-deployFunction.tags = ['deploy-factory', 'uni-v3-pair-manager-factory', 'mainnet'];
+deployFunction.tags = ['pair-manager-factory'];
 
 export default deployFunction;
