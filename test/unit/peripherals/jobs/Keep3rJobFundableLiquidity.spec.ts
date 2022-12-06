@@ -800,7 +800,7 @@ describe('Keep3rJobFundableLiquidity', () => {
       );
     });
 
-    context('when liquidity pair and job are accepted', async () => {
+    context('when liquidity pair and job are accepted', () => {
       beforeEach(async () => {
         await jobFundable.setJob(randomJob);
         approvedLiquidity.transferFrom.reset();
