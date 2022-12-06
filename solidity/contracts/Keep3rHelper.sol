@@ -109,6 +109,7 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
   function getPaymentParams(uint256 _bonds)
     external
     view
+    virtual
     override
     returns (
       uint256 _boost,

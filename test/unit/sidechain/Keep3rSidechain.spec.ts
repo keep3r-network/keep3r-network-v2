@@ -247,16 +247,10 @@ describe('Keep3rSidechain', () => {
         helper.observe.returns([oneTick, 0, true]);
       });
 
-      it('should call helper for USD to ETH quote', async () => {
+      it('should call helper for payment parameters', async () => {
         await keep3r.connect(approvedJob.wallet)['worked(address,uint256)'](keeper, 0);
 
-        expect(helper.quoteUsdToEth).to.have.been.called;
-      });
-
-      it('should call helper for ETH to KP3R quote', async () => {
-        await keep3r.connect(approvedJob.wallet)['worked(address,uint256)'](keeper, 0);
-
-        expect(helper.quote).to.have.been.called;
+        expect(helper.getPaymentParams).to.have.been.called;
       });
 
       it('should emit event', async () => {
@@ -347,19 +341,12 @@ describe('Keep3rSidechain', () => {
             return amount.div(10);
           });
 
-          helper.quote.returns(([amount]: [BigNumber]) => {
-            return amount.mul(10);
-          });
-
-          helper.quoteUsdToEth.returns(([amount]: [BigNumber]) => {
-            return amount;
-          });
-
-          blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
-
           // work pays more gas than current credits
           const boost = 1.2 * 10_000;
-          helper.getRewardBoostFor.returns(boost);
+
+          helper.getPaymentParams.returns([boost, bn.toUnit(100), 0]);
+
+          blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 
           // job rewarded mid last period but less than a rewardPeriodTime ago
           const previousRewardedAt = blockTimestamp + 15 - rewardPeriodTime;
@@ -386,10 +373,8 @@ describe('Keep3rSidechain', () => {
           await keep3r.setVariable('rewardedAt', { [approvedJob.address]: mathUtils.calcPeriod(blockTimestamp - rewardPeriodTime) });
 
           const currentLiquidityCredits = await keep3r.jobLiquidityCredits(approvedJob.address);
-          helper.quote.returns(currentLiquidityCredits.add(1));
 
-          const tx = await keep3r.connect(approvedJob.wallet)['worked(address,uint256)'](keeper, 1, { gasLimit: 1_000_000 });
-
+          const tx = await keep3r.connect(approvedJob.wallet).bondedPayment(keeper, currentLiquidityCredits.add(1));
           blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
           const jobPeriodCredits = await keep3r.jobPeriodCredits(approvedJob.address);
 

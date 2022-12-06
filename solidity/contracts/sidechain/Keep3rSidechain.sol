@@ -104,7 +104,7 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
   function worked(address _keeper, uint256 _usdPerGasUnit) external override {
     if (_initialGas == 0) revert GasNotInitialized();
     // Gas used for quote calculations & payment is not rewarded
-    uint256 _gasRecord = _getGasLeft();
+    uint256 _gasLeft = _getGasLeft();
 
     address _job = msg.sender;
     if (disputes[_job]) revert JobDisputed();
@@ -114,11 +114,9 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
       emit LiquidityCreditsReward(_job, rewardedAt[_job], _jobLiquidityCredits[_job], _jobPeriodCredits[_job]);
     }
 
-    uint256 _boost = IKeep3rHelper(keep3rHelper).getRewardBoostFor(bonds[_keeper][keep3rV1]);
-    uint256 _ratedPayment = (_usdPerGasUnit * (_initialGas - _gasRecord) * _boost) / _BASE;
+    (uint256 _boost, uint256 _oneUsdQuote, uint256 _extraGas) = IKeep3rHelper(keep3rHelper).getPaymentParams(bonds[_keeper][keep3rV1]);
 
-    uint256 _ethPayment = IKeep3rHelperSidechain(keep3rHelper).quoteUsdToEth(_ratedPayment);
-    uint256 _kp3rPayment = IKeep3rHelper(keep3rHelper).quote(_ethPayment);
+    uint256 _kp3rPayment = _calculatePayment(_gasLeft, _extraGas, _oneUsdQuote * _usdPerGasUnit, _boost);
 
     if (_kp3rPayment > _jobLiquidityCredits[_job]) {
       _rewardJobCredits(_job);
@@ -129,7 +127,7 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
     _bondedPayment(_job, _keeper, _kp3rPayment);
     delete _initialGas;
 
-    emit KeeperWork(keep3rV1, _job, _keeper, _kp3rPayment, _gasRecord);
+    emit KeeperWork(keep3rV1, _job, _keeper, _kp3rPayment, _gasLeft);
   }
 
   // Keep3rKeeperFundable

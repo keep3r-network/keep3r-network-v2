@@ -30,6 +30,7 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
     WETH = _weth;
     wethUSDPool = _validateOraclePool(_wethUsdOracle, _weth);
     _setQuoteTwapTime(1 days);
+    workExtraGas = 0;
   }
 
   /// @inheritdoc IKeep3rHelper
@@ -61,6 +62,23 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
   function setWethUsdPool(address _poolAddress) external override onlyGovernance {
     if (_poolAddress == address(0)) revert ZeroAddress();
     _setWethUsdPool(_poolAddress);
+  }
+
+  /// @inheritdoc IKeep3rHelper
+  function getPaymentParams(uint256 _bonds)
+    external
+    view
+    virtual
+    override(Keep3rHelper, IKeep3rHelper)
+    returns (
+      uint256 _boost,
+      uint256 _oneUsdQuote,
+      uint256 _extraGas
+    )
+  {
+    _oneUsdQuote = quote(quoteUsdToEth(1 ether));
+    _boost = getRewardBoostFor(_bonds);
+    _extraGas = workExtraGas;
   }
 
   function _setWethUsdPool(address _poolAddress) internal {
