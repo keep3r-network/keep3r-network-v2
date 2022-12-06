@@ -30,7 +30,7 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, IBaseErrors, Governa
   uint256 public override targetBond = 200 ether;
 
   /// @inheritdoc IKeep3rHelperParameters
-  uint256 public override workExtraGas = 30_000;
+  uint256 public override workExtraGas = 34_000;
 
   /// @inheritdoc IKeep3rHelperParameters
   uint32 public override quoteTwapTime = 10 minutes;

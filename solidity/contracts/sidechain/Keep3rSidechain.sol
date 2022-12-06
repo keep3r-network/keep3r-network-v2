@@ -40,9 +40,6 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
   // Keep3rSidechainAccountance
 
   /// @inheritdoc IKeep3rSidechainAccountance
-  uint256 public override totalBonds;
-
-  /// @inheritdoc IKeep3rSidechainAccountance
   function virtualReserves() external view override returns (int256 _virtualReserves) {
     // Queries wKP3R balanceOf escrow contract minus the totalBonds
     return int256(IERC20(keep3rV1).balanceOf(keep3rV1Proxy)) - int256(totalBonds);
@@ -123,7 +120,6 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
       emit LiquidityCreditsReward(_job, rewardedAt[_job], _jobLiquidityCredits[_job], _jobPeriodCredits[_job]);
     }
 
-    totalBonds += _kp3rPayment;
     _bondedPayment(_job, _keeper, _kp3rPayment);
     delete _initialGas;
 
@@ -133,22 +129,8 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
   // Keep3rKeeperFundable
 
   /// @dev Sidechain implementation doesn't burn tokens, but deposit them in Keep3rEscrow
-  function _activate(
-    address _keeper,
-    address _bonding,
-    uint256 _amount
-  ) internal virtual override {
-    // bond provided tokens
-    bonds[_keeper][_bonding] += _amount;
-    if (_bonding == keep3rV1) {
-      totalBonds += _amount;
-      IKeep3rV1(keep3rV1).approve(keep3rV1Proxy, _amount);
-      IKeep3rEscrow(keep3rV1Proxy).deposit(_amount);
-    }
-  }
-
-  function _mint(uint256 _amount) internal virtual override {
-    totalBonds -= _amount;
-    super._mint(_amount);
+  function _depositBonds(uint256 _amount) internal virtual override {
+    IKeep3rV1(keep3rV1).approve(keep3rV1Proxy, _amount);
+    IKeep3rEscrow(keep3rV1Proxy).deposit(_amount);
   }
 }

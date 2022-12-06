@@ -6,7 +6,6 @@ import '../Keep3rParameters.sol';
 import '../../../interfaces/peripherals/IKeep3rKeepers.sol';
 
 import '../../../interfaces/external/IKeep3rV1.sol';
-import '../../../interfaces/external/IKeep3rV1Proxy.sol';
 
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -48,7 +47,13 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
     uint256 _amount = pendingBonds[_keeper][_bonding];
     delete pendingBonds[_keeper][_bonding];
 
-    _activate(_keeper, _bonding, _amount);
+    // bond provided tokens
+    bonds[_keeper][_bonding] += _amount;
+    if (_bonding == keep3rV1) {
+      totalBonds += _amount;
+      _depositBonds(_amount);
+    }
+
     emit Activation(_keeper, _bonding, _amount);
   }
 
@@ -78,19 +83,7 @@ abstract contract Keep3rKeeperFundable is IKeep3rKeeperFundable, ReentrancyGuard
     emit Withdrawal(msg.sender, _bonding, _amount);
   }
 
-  function _mint(uint256 _amount) internal virtual {
-    IKeep3rV1Proxy(keep3rV1Proxy).mint(_amount);
-  }
-
-  function _activate(
-    address _keeper,
-    address _bonding,
-    uint256 _amount
-  ) internal virtual {
-    // bond provided tokens
-    bonds[_keeper][_bonding] += _amount;
-    if (_bonding == keep3rV1) {
-      IKeep3rV1(keep3rV1).burn(_amount);
-    }
+  function _depositBonds(uint256 _amount) internal virtual {
+    IKeep3rV1(keep3rV1).burn(_amount);
   }
 }

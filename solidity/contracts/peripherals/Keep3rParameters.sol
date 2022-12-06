@@ -3,6 +3,7 @@ pragma solidity >=0.8.4 <0.9.0;
 
 import '../../interfaces/IKeep3rHelper.sol';
 import '../../interfaces/peripherals/IKeep3rParameters.sol';
+import '../../interfaces/external/IKeep3rV1Proxy.sol';
 import './Keep3rAccountance.sol';
 
 abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance {
@@ -57,8 +58,10 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance {
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setKeep3rV1(address _keep3rV1) external override onlyGovernance {
+  function setKeep3rV1(address _keep3rV1) public virtual override onlyGovernance {
     if (_keep3rV1 == address(0)) revert ZeroAddress();
+    _mint(totalBonds);
+
     keep3rV1 = _keep3rV1;
     emit Keep3rV1Change(_keep3rV1);
   }
@@ -89,7 +92,6 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance {
   }
 
   /// @inheritdoc IKeep3rParameters
-  // TODO: check what happens to credit minting when changing this. Shouldn't we update the cached ticks?
   function setRewardPeriodTime(uint256 _rewardPeriodTime) external override onlyGovernance {
     if (_rewardPeriodTime < _MIN_REWARD_PERIOD_TIME) revert MinRewardPeriod();
     rewardPeriodTime = _rewardPeriodTime;
@@ -106,5 +108,10 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance {
   function setFee(uint256 _fee) external override onlyGovernance {
     fee = _fee;
     emit FeeChange(_fee);
+  }
+
+  function _mint(uint256 _amount) internal {
+    totalBonds -= _amount;
+    IKeep3rV1Proxy(keep3rV1Proxy).mint(_amount);
   }
 }

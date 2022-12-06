@@ -83,7 +83,7 @@ describe('@skip-on-coverage Basic Keeper Job Interaction', () => {
       const tx = await job.connect(keeper).work();
       const { gasUnaccounted } = await getGasReading(tx);
 
-      expect(gasUnaccounted).to.be.closeTo(BigNumber.from(43500), GAS_DELTA);
+      expect(gasUnaccounted).to.be.closeTo(BigNumber.from(63500), GAS_DELTA);
     });
 
     // some variables for the keeper are getting initialized in storage, that gas is actually unaccounted, thus not rewarded

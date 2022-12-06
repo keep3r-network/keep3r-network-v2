@@ -11,7 +11,7 @@ contract Keep3rHelperForTestnet is Keep3rHelper {
     address _kp3rWethPool
   ) Keep3rHelper(_kp3r, _keep3rV2, _governance, _kp3rWethPool) {}
 
-  function _getBasefee() internal view override returns (uint256) {
+  function _getBasefee() internal pure override returns (uint256) {
     return 1;
   }
 

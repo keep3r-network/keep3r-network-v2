@@ -23,6 +23,10 @@ interface IKeep3rAccountance is IKeep3rRoles {
 
   // Variables
 
+  /// @notice Tracks the total amount of bonded KP3Rs in the contract
+  /// @return _totalBonds The total amount of bonded KP3Rs in the contract
+  function totalBonds() external view returns (uint256 _totalBonds);
+
   /// @notice Tracks the total KP3R earnings of a keeper since it started working
   /// @param _keeper The address of the keeper
   /// @return _workCompleted Total KP3R earnings of a keeper since it started working

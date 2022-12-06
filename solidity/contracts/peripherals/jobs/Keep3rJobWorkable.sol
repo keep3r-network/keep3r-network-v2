@@ -121,6 +121,7 @@ abstract contract Keep3rJobWorkable is IKeep3rJobWorkable, Keep3rJobMigration {
     _jobLiquidityCredits[_job] -= _payment;
     bonds[_keeper][keep3rV1] += _payment;
     workCompleted[_keeper] += _payment;
+    totalBonds += _payment;
   }
 
   /// @notice Calculate amount to be payed in KP3R, taking into account multiple parameters
