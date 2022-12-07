@@ -6,7 +6,7 @@ Jobs as well can top-up their credits with ERC20 tokens, and then use them to re
 
 Anyone can add token credits to a job by approving a transfer of an ERC20 token and then calling:
 
-```text
+```solidity
 /// @notice Add credit to a job to be paid out for work
 /// @param _job The address of the job being credited
 /// @param _token The address of the token being credited
@@ -20,7 +20,7 @@ function addTokenCreditsToJob(
 
 This function will give the job token credits in a 1:1 relation to the transferred ERC20 tokens. Job token credit balance can be checked calling:
 
-```text
+```solidity
 /// @notice The current token credits available for a job
 /// @return _amount The amount of token credits available for a job
 function jobTokenCredits(address _job, address _token) external view returns (uint256 _amount);
@@ -34,7 +34,7 @@ The only way of adding KP3R credits to a job is by [Credit Mining](credit-mining
 
 A job owner can withdraw tokens credits from a job by calling:
 
-```text
+```solidity
 /// @notice Withdraw credit from a job
 /// @param _job The address of the job from which the credits are withdrawn
 /// @param _token The address of the token being withdrawn
@@ -57,7 +57,7 @@ This function can revert if:
 
 In order to reward keepers for their work with token credits jobs can call:
 
-```text
+```solidity
 /// @notice Implemented by jobs to show that a keeper performed work
 /// @dev Pays the keeper that performs the work with a specific token
 /// @param _token The asset being awarded to the keeper
@@ -69,6 +69,3 @@ function directTokenPayment(
   uint256 _amount
 ) external;
 ```
-
-
-

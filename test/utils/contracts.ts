@@ -2,7 +2,7 @@ import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { Contract, ContractFactory } from '@ethersproject/contracts';
 import { BigNumber, ContractInterface, Signer } from 'ethers';
 import { getStatic } from 'ethers/lib/utils';
-import { network } from 'hardhat';
+import { deployments, ethers, network } from 'hardhat';
 
 export const deploy = async (contract: ContractFactory, args: any[]): Promise<{ tx: TransactionResponse; contract: Contract }> => {
   const deploymentTransactionRequest = await contract.getDeployTransaction(...args);
@@ -20,4 +20,10 @@ export const deploy = async (contract: ContractFactory, args: any[]): Promise<{ 
 
 export const setBalance = async (address: string, amount: BigNumber): Promise<void> => {
   await network.provider.send('hardhat_setBalance', [address, amount.toHexString()]);
+};
+
+export const getContractFromFixture = async (deploymentName: string, contractName: string = deploymentName): Promise<Contract> => {
+  const deployment = await deployments.get(deploymentName);
+  const contract = await ethers.getContractAt(contractName, deployment.address);
+  return contract;
 };

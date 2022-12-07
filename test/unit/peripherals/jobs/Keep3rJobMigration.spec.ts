@@ -68,7 +68,7 @@ describe('Keep3rJobMigration', () => {
         .withArgs(fromJob, toJob);
     });
 
-    context('when sending zero address', async () => {
+    context('when sending zero address', () => {
       it('should cancel migration', async () => {
         await jobMigration.connect(fromJobOwner).migrateJob(fromJob, toJob);
         await jobMigration.connect(fromJobOwner).migrateJob(fromJob, ZERO_ADDRESS);

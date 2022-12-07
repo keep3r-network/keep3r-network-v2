@@ -238,6 +238,7 @@ describe('Keep3rKeeperFundable', () => {
         const lastBlock = await ethers.provider.getBlock('latest');
         await keeperFundable.setVariable('canWithdrawAfter', { [randomKeeper.address]: { [keep3rV1.address]: lastBlock.timestamp } });
         await keeperFundable.setVariable('pendingUnbonds', { [randomKeeper.address]: { [keep3rV1.address]: toUnit(1) } });
+        await keeperFundable.setVariable('totalBonds', toUnit(1));
 
         keep3rV1.transfer.returns(true);
       });

@@ -53,7 +53,7 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
 
   it('should pay the keeper with bonds from job credits', async () => {
     // add liquidity to pair
-    const { liquidity } = await common.addLiquidityToPair(jobOwner, pair, toUnit(10), jobOwner);
+    const { liquidity } = await common.mintLiquidity(jobOwner, pair, toUnit(10), jobOwner._address);
     // add credit to job
     await pair.connect(jobOwner).approve(keep3r.address, liquidity);
     await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, liquidity);
@@ -118,7 +118,7 @@ describe('@skip-on-coverage Keeper Job Interaction', () => {
 
   async function testKeeperPayment(expectedBoost: BigNumber, workFn: () => Promise<ContractTransaction>, baseFee: BigNumber) {
     // add liquidity to pair
-    const { liquidity } = await common.addLiquidityToPair(jobOwner, pair, toUnit(100), jobOwner);
+    const { liquidity } = await common.mintLiquidity(jobOwner, pair, toUnit(100), jobOwner._address);
     // add credit to job
     await pair.connect(jobOwner).approve(keep3r.address, liquidity);
     await keep3r.connect(jobOwner).addLiquidityToJob(job.address, pair.address, liquidity);

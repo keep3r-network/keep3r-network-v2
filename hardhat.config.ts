@@ -11,6 +11,7 @@ import { removeConsoleLog } from 'hardhat-preprocessor';
 import { HardhatUserConfig } from 'hardhat/types';
 import 'solidity-coverage';
 import 'tsconfig-paths/register';
+import { addressRegistry } from 'utils/constants';
 
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
@@ -28,17 +29,17 @@ const config: HardhatUserConfig = {
             url: process.env.MAINNET_HTTPS_URL as string,
           },
         },
-        localhost: {
-          url: process.env.LOCAL_MAINNET_HTTPS_URL,
-          accounts: [process.env.LOCAL_MAINNET_PRIVATE_KEY as string],
-        },
         mainnet: {
           url: process.env.MAINNET_HTTPS_URL,
           accounts: [process.env.MAINNET_PRIVATE_KEY as string],
         },
-        ropsten: {
-          url: process.env.ROPSTEN_HTTPS_URL,
-          accounts: [process.env.ROPSTEN_PRIVATE_KEY as string],
+        goerli: {
+          url: process.env.GOERLI_HTTPS_URL,
+          accounts: [process.env.GOERLI_PRIVATE_KEY as string],
+        },
+        optimisticGoerli: {
+          url: process.env.OP_GOERLI_HTTPS_URL,
+          accounts: [process.env.OP_GOERLI_PRIVATE_KEY as string],
         },
       },
   solidity: {
@@ -68,7 +69,10 @@ const config: HardhatUserConfig = {
     eachLine: removeConsoleLog((hre) => hre.network.name !== 'hardhat'),
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY as string,
+      optimisticGoerli: process.env.OP_GOERLI_ETHERSCAN_API_KEY as string,
+    },
   },
   typechain: {
     outDir: 'types',
@@ -76,8 +80,7 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
-    governor: 1,
-    feeRecipient: 2,
+    ...addressRegistry,
   },
   paths: {
     sources: './solidity',

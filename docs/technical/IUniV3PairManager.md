@@ -86,10 +86,22 @@ The collected fees will be sent to governance
 
 
 
+### `PoolKey`
+
+
+address token0
+
+
+address token1
+
+
+uint24 fee
+
+
 ### `MintCallbackData`
 
 
-struct PoolAddress.PoolKey _poolKey
+struct IUniV3PairManager.PoolKey _poolKey
 
 
 address payer

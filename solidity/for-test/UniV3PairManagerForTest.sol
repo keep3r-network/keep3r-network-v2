@@ -5,7 +5,6 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
 import '../contracts/libraries/LiquidityAmounts.sol';
-import '../contracts/libraries/PoolAddress.sol';
 import '../contracts/libraries/FixedPoint96.sol';
 import '../contracts/libraries/FullMath.sol';
 import '../contracts/libraries/TickMath.sol';

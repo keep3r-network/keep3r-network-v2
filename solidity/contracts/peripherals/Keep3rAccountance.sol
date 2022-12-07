@@ -12,6 +12,9 @@ abstract contract Keep3rAccountance is IKeep3rAccountance, Keep3rRoles {
   EnumerableSet.AddressSet internal _keepers;
 
   /// @inheritdoc IKeep3rAccountance
+  uint256 public override totalBonds;
+
+  /// @inheritdoc IKeep3rAccountance
   mapping(address => uint256) public override workCompleted;
 
   /// @inheritdoc IKeep3rAccountance
