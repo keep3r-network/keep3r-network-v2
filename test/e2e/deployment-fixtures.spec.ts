@@ -189,7 +189,7 @@ describe('@skip-on-coverage Fixture', () => {
       kp3rV1 = (await getContractFromFixture('KP3Rv1', 'ERC20')) as Type.ERC20ForTest;
       keep3r = (await getContractFromFixture('Keep3rSidechainForTestnet')) as Type.Keep3r;
       const keep3rEscrow = (await getContractFromFixture('Keep3rEscrow')) as Type.Keep3rEscrow;
-      const keep3rHelper = (await getContractFromFixture('Keep3rHelperSidechainForTestnet')) as Type.Keep3rHelperSidechain;
+      const keep3rHelper = (await getContractFromFixture('Keep3rHelperSidechain')) as Type.Keep3rHelperSidechain;
       const kp3rWethOracle = await getContractFromFixture('Kp3rWethOracle', 'IUniswapV3Pool');
 
       // instant keeper activation
@@ -197,6 +197,7 @@ describe('@skip-on-coverage Fixture', () => {
       await keep3r.activate(kp3rV1.address);
 
       wkLP = kp3rV1; // uses KP3Rv1 as wkLP (hardhat environment)
+      await keep3rEscrow.setMinter(keep3r.address);
       await keep3rHelper.setOracle(wkLP.address, kp3rWethOracle.address);
       await keep3r.approveLiquidity(wkLP.address);
 
@@ -207,6 +208,7 @@ describe('@skip-on-coverage Fixture', () => {
       const jobForTest = await common.createJobRatedForTest(keep3r.address, signer);
       await keep3r.addJob(jobForTest.address);
 
+      await evm.advanceTimeAndBlock(5 * 86400);
       await common.forceCreditsToJob(keep3r, jobForTest.address);
 
       await jobForTest.work();
@@ -231,10 +233,10 @@ describe('@skip-on-coverage Fixture', () => {
     it('should deploy a workable job', async () => {
       await kp3rV1.connect(whale).transfer(signer.address, toUnit(100));
 
+      await evm.advanceTimeAndBlock(86400);
       await deployments.fixture(['job-rated-for-test'], { keepExistingDeployments: true });
       const jobForTest = (await getContractFromFixture('BasicJob', 'JobRatedForTest')) as Type.BasicJob;
 
-      await evm.advanceTimeAndBlock(86400);
       await jobForTest.work();
     });
   });

@@ -13,6 +13,8 @@ Coded for The Keep3r Network with ♥ by
 
 https://defi.sucks
 
+Commit hash: ead559c8dc4361349b7222741c2399447e255d8e
+
 */
 
 pragma solidity >=0.8.4 <0.9.0;

@@ -5,7 +5,7 @@ import IERC20 from '../../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.s
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { kp3rV1 } = await hre.getNamedAccounts();
 
-  hre.deployments.save('KP3Rv1', {
+  await hre.deployments.save('KP3Rv1', {
     address: kp3rV1,
     abi: IERC20.abi,
   });

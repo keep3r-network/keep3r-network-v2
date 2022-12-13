@@ -20,6 +20,9 @@ const config: HardhatUserConfig = {
         hardhat: {
           hardfork: 'london',
           allowUnlimitedContractSize: true,
+          companionNetworks: {
+            mainnet: 'hardhat',
+          },
         },
       }
     : {
@@ -33,6 +36,13 @@ const config: HardhatUserConfig = {
           url: process.env.MAINNET_HTTPS_URL,
           accounts: [process.env.MAINNET_PRIVATE_KEY as string],
         },
+        optimisticEthereum: {
+          url: process.env.OPTIMISM_HTTPS_URL,
+          accounts: [process.env.OPTIMISM_PRIVATE_KEY as string],
+          companionNetworks: {
+            mainnet: 'mainnet',
+          },
+        },
         goerli: {
           url: process.env.GOERLI_HTTPS_URL,
           accounts: [process.env.GOERLI_PRIVATE_KEY as string],
@@ -40,6 +50,9 @@ const config: HardhatUserConfig = {
         optimisticGoerli: {
           url: process.env.OP_GOERLI_HTTPS_URL,
           accounts: [process.env.OP_GOERLI_PRIVATE_KEY as string],
+          companionNetworks: {
+            mainnet: 'goerli',
+          },
         },
       },
   solidity: {
@@ -49,7 +62,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 33,
+            runs: 200,
           },
           outputSelection: {
             '*': {
@@ -71,6 +84,8 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY as string,
+      optimisticEthereum: process.env.OPTIMISTIC_ETHERSCAN_API_KEY as string,
+      goerli: process.env.GOERLI_ETHERSCAN_API_KEY as string,
       optimisticGoerli: process.env.OP_GOERLI_ETHERSCAN_API_KEY as string,
     },
   },
