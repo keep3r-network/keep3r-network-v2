@@ -43,6 +43,4 @@ contract Keep3rJobWorkableForTest is Keep3rJobWorkable {
   function viewGas() external view returns (uint256) {
     return _initialGas;
   }
-
-  receive() external payable {}
 }

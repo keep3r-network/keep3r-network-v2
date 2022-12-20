@@ -451,7 +451,7 @@ describe('Keep3rJobWorkable', () => {
             await jobWorkable.setVariable('_jobLiquidityCredits', { [approvedJob.address]: toUnit(0) });
           });
 
-          context('when job has not minted enough credits to pay', async () => {
+          context('when job has not minted enough credits to pay', () => {
             beforeEach(async () => {
               jobWorkable.setVariable('rewardedAt', { [approvedJob.address]: blockTimestamp });
             });

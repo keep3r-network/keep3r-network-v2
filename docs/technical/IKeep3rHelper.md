@@ -32,6 +32,7 @@ Calculates the reward (in KP3R) that corresponds to a keeper for using gas
 Calculates the boost in the reward given to a keeper based on the amount of KP3R that keeper has bonded
 
 
+If the keeper has no bonds, boost should be +10% of gas cost, if keeper has max bonds, +20%
 
 
 ### `getRewardAmount(uint256 _gasUsed) → uint256 _amount` (external)

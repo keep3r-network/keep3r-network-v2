@@ -2,7 +2,6 @@
 pragma solidity >=0.8.4 <0.9.0;
 
 import './IPairManager.sol';
-import '../contracts/libraries/PoolAddress.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import './peripherals/IGovernable.sol';
 
@@ -11,10 +10,15 @@ import './peripherals/IGovernable.sol';
 ///         so that the user can use it as liquidity for a Keep3rJob
 interface IUniV3PairManager is IGovernable, IPairManager {
   // Structs
+  struct PoolKey {
+    address token0;
+    address token1;
+    uint24 fee;
+  }
 
   /// @notice The data to be decoded by the UniswapV3MintCallback function
   struct MintCallbackData {
-    PoolAddress.PoolKey _poolKey; // Struct that contains token0, token1, and fee of the pool passed into the constructor
+    PoolKey _poolKey; // Struct that contains token0, token1, and fee of the pool passed into the constructor
     address payer; // The address of the payer, which will be the msg.sender of the mint function
   }
 

@@ -1,5 +1,22 @@
 // SPDX-License-Identifier: MIT
 
+/*
+
+Coded for The Keep3r Network with ♥ by
+
+██████╗░███████╗███████╗██╗░░░██╗░░░░░░░██╗░█████╗░███╗░░██╗██████╗░███████╗██████╗░██╗░░░░░░█████╗░███╗░░██╗██████╗░
+██╔══██╗██╔════╝██╔════╝██║░░░██║░░██╗░░██║██╔══██╗████╗░██║██╔══██╗██╔════╝██╔══██╗██║░░░░░██╔══██╗████╗░██║██╔══██╗
+██║░░██║█████╗░░█████╗░░██║░░░╚██╗████╗██╔╝██║░░██║██╔██╗██║██║░░██║█████╗░░██████╔╝██║░░░░░███████║██╔██╗██║██║░░██║
+██║░░██║██╔══╝░░██╔══╝░░██║░░░░████╔═████║░██║░░██║██║╚████║██║░░██║██╔══╝░░██╔══██╗██║░░░░░██╔══██║██║╚████║██║░░██║
+██████╔╝███████╗██║░░░░░██║░░░░╚██╔╝░╚██╔╝░╚█████╔╝██║░╚███║██████╔╝███████╗██║░░██║███████╗██║░░██║██║░╚███║██████╔╝
+╚═════╝░╚══════╝╚═╝░░░░░╚═╝░░░░░╚═╝░░░╚═╝░░░╚════╝░╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░
+
+https://defi.sucks
+
+Commit hash: ead559c8dc4361349b7222741c2399447e255d8e
+
+*/
+
 pragma solidity >=0.8.4 <0.9.0;
 
 import '../Keep3rHelper.sol';
@@ -30,6 +47,7 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
     WETH = _weth;
     wethUSDPool = _validateOraclePool(_wethUsdOracle, _weth);
     _setQuoteTwapTime(1 days);
+    workExtraGas = 0;
   }
 
   /// @inheritdoc IKeep3rHelper
@@ -47,7 +65,7 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
   }
 
   /// @inheritdoc IKeep3rHelperSidechain
-  function quoteUsdToEth(uint256 _usd) public view override returns (uint256 _amountOut) {
+  function quoteUsdToEth(uint256 _usd) public view virtual override returns (uint256 _amountOut) {
     uint32[] memory _secondsAgos = new uint32[](2);
     _secondsAgos[1] = quoteTwapTime;
 
@@ -61,6 +79,23 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
   function setWethUsdPool(address _poolAddress) external override onlyGovernance {
     if (_poolAddress == address(0)) revert ZeroAddress();
     _setWethUsdPool(_poolAddress);
+  }
+
+  /// @inheritdoc IKeep3rHelper
+  function getPaymentParams(uint256 _bonds)
+    external
+    view
+    virtual
+    override(Keep3rHelper, IKeep3rHelper)
+    returns (
+      uint256 _boost,
+      uint256 _oneUsdQuote,
+      uint256 _extraGas
+    )
+  {
+    _oneUsdQuote = quote(quoteUsdToEth(1 ether));
+    _boost = getRewardBoostFor(_bonds);
+    _extraGas = workExtraGas;
   }
 
   function _setWethUsdPool(address _poolAddress) internal {

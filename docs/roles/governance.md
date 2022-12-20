@@ -17,14 +17,14 @@ When keepers or jobs act in bad faith, measures must be taken to keep the networ
 
 Adding a slasher.
 
-```text
+```solidity
 /// @notice Registers a slasher by updating the slashers mapping
 function addSlasher(address _slasher) external;
 ```
 
 Governance also has the ability to remove slashers.
 
-```text
+```solidity
 /// @notice Removes a slasher by updating the slashers mapping
 function removeSlasher(address _slasher) external;
 ```
@@ -37,14 +37,14 @@ When a keeper or a job is detected behaving strangely, actions must be taken to 
 
 Adding a disputer.
 
-```text
+```solidity
 /// @notice Registers a disputer by updating the disputers mapping
 function addDisputer(address _disputer) external;
 ```
 
 Removing a disputer.
 
-```text
+```solidity
 /// @notice Removes a disputer by updating the disputers mapping
 function removeDisputer(address _disputer) external;
 ```
@@ -57,7 +57,7 @@ There are certain protocol-specific parameters that can be changed by governance
 
 ### **Bond time**
 
-```text
+```solidity
 /// @notice Sets the bond time required to activate as a keeper
 /// @param _bond The new bond time
 function setBondTime(uint256 _bond) external;
@@ -65,7 +65,7 @@ function setBondTime(uint256 _bond) external;
 
 ### **Unbond Time**
 
-```text
+```solidity
 /// @notice Sets the unbond time required unbond what has been bonded
 /// @param _unbond The new unbond time
 function setUnbondTime(uint256 _unbond) external;
@@ -73,7 +73,7 @@ function setUnbondTime(uint256 _unbond) external;
 
 ### **Minimum Liquidity**
 
-```text
+```solidity
 /// @notice Sets the minimum amount of liquidity required to fund a job
 /// @param _liquidityMinimum The new minimum amount of liquidity
 function setLiquidityMinimum(uint256 _liquidityMinimum) external;
@@ -81,7 +81,7 @@ function setLiquidityMinimum(uint256 _liquidityMinimum) external;
 
 ### **Reward Period Time**
 
-```text
+```solidity
 /// @notice Sets the time required to pass between rewards for jobs
 /// @param _rewardPeriodTime The new amount of time required to pass between rewards
 function setRewardPeriodTime(uint256 _rewardPeriodTime) external;
@@ -89,7 +89,7 @@ function setRewardPeriodTime(uint256 _rewardPeriodTime) external;
 
 ### **Inflation Period**
 
-```text
+```solidity
 /// @notice Sets the new inflation period
 /// @param _inflationPeriod The new inflation period
 function setInflationPeriod(uint256 _inflationPeriod) external;
@@ -97,7 +97,7 @@ function setInflationPeriod(uint256 _inflationPeriod) external;
 
 ### **Fee**
 
-```text
+```solidity
 /// @notice Sets the new fee
 /// @param _fee The new fee
 function setFee(uint256 _fee) external;
@@ -105,7 +105,7 @@ function setFee(uint256 _fee) external;
 
 ### **KP3R-WETH Pool Address**
 
-```text
+```solidity
 /// @notice Sets the KP3R-WETH pool address
 /// @param _kp3rWethPool The KP3R-WETH pool address
 function setkp3rWethPool(address _kp3rWethPool) external;
@@ -113,7 +113,7 @@ function setkp3rWethPool(address _kp3rWethPool) external;
 
 ### **Keep3rV1Proxy Address**
 
-```text
+```solidity
 /// @notice Sets the Keep3rV1Proxy address
 /// @param _keep3rV1Proxy The Keep3rV1Proxy address
 function setKeep3rV1Proxy(address _keep3rV1Proxy) external;
@@ -121,7 +121,7 @@ function setKeep3rV1Proxy(address _keep3rV1Proxy) external;
 
 ### **Keep3rV1 Address**
 
-```text
+```solidity
 /// @notice Sets the Keep3rV1 address
 /// @param _keep3rV1 The Keep3rV1 address
 function setKeep3rV1(address _keep3rV1) external;
@@ -129,7 +129,7 @@ function setKeep3rV1(address _keep3rV1) external;
 
 ### **Keep3rHelper Address**
 
-```text
+```solidity
 /// @notice Sets the Keep3rHelper address
 /// @param _keep3rHelper The Keep3rHelper address
 function setKeep3rHelper(address _keep3rHelper) external;
@@ -139,13 +139,13 @@ function setKeep3rHelper(address _keep3rHelper) external;
 
 Governance is in charge of approving and removing what liquidity pairs are accepted in the network.
 
-```text
+```solidity
 /// @notice Approve a liquidity pair for being accepted in future
 /// @param _liquidity The address of the liquidity accepted
 function approveLiquidity(address _liquidity) external;
 ```
 
-```text
+```solidity
 /// @notice Revoke a liquidity pair from being accepted in future
 /// @param _liquidity The liquidity no longer accepted
 function revokeLiquidity(address _liquidity) external;
@@ -155,14 +155,9 @@ function revokeLiquidity(address _liquidity) external;
 
 Governance can temporarily give liquidity credits to jobs. These liquidity credits will expire after the current [reward period](../tokenomics/job-payment-mechanisms/credit-mining.md#reward-periods) has ended.
 
-```text
+```solidity
 /// @notice Gifts liquidity credits to the specified job
 /// @param _job The address of the job being credited
 /// @param _amount The amount of liquidity credits to gift
 function forceLiquidityCreditsToJob(address _job, uint256 _amount) external;
 ```
-
-
-
-
-

@@ -4,14 +4,16 @@
 
 Coded for The Keep3r Network with ♥ by
 
-██████╗░███████╗███████╗██╗  ░██╗░░░░░░░██╗░█████╗░███╗░░██╗██████╗░███████╗██████╗░██╗░░░░░░█████╗░███╗░░██╗██████╗░
-██╔══██╗██╔════╝██╔════╝██║  ░██║░░██╗░░██║██╔══██╗████╗░██║██╔══██╗██╔════╝██╔══██╗██║░░░░░██╔══██╗████╗░██║██╔══██╗
-██║░░██║█████╗░░█████╗░░██║  ░╚██╗████╗██╔╝██║░░██║██╔██╗██║██║░░██║█████╗░░██████╔╝██║░░░░░███████║██╔██╗██║██║░░██║
-██║░░██║██╔══╝░░██╔══╝░░██║  ░░████╔═████║░██║░░██║██║╚████║██║░░██║██╔══╝░░██╔══██╗██║░░░░░██╔══██║██║╚████║██║░░██║
-██████╔╝███████╗██║░░░░░██║  ░░╚██╔╝░╚██╔╝░╚█████╔╝██║░╚███║██████╔╝███████╗██║░░██║███████╗██║░░██║██║░╚███║██████╔╝
-╚═════╝░╚══════╝╚═╝░░░░░╚═╝  ░░░╚═╝░░░╚═╝░░░╚════╝░╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░
+██████╗░███████╗███████╗██╗░░░██╗░░░░░░░██╗░█████╗░███╗░░██╗██████╗░███████╗██████╗░██╗░░░░░░█████╗░███╗░░██╗██████╗░
+██╔══██╗██╔════╝██╔════╝██║░░░██║░░██╗░░██║██╔══██╗████╗░██║██╔══██╗██╔════╝██╔══██╗██║░░░░░██╔══██╗████╗░██║██╔══██╗
+██║░░██║█████╗░░█████╗░░██║░░░╚██╗████╗██╔╝██║░░██║██╔██╗██║██║░░██║█████╗░░██████╔╝██║░░░░░███████║██╔██╗██║██║░░██║
+██║░░██║██╔══╝░░██╔══╝░░██║░░░░████╔═████║░██║░░██║██║╚████║██║░░██║██╔══╝░░██╔══██╗██║░░░░░██╔══██║██║╚████║██║░░██║
+██████╔╝███████╗██║░░░░░██║░░░░╚██╔╝░╚██╔╝░╚█████╔╝██║░╚███║██████╔╝███████╗██║░░██║███████╗██║░░██║██║░╚███║██████╔╝
+╚═════╝░╚══════╝╚═╝░░░░░╚═╝░░░░░╚═╝░░░╚═╝░░░╚════╝░╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░
 
 https://defi.sucks
+
+Commit hash: ead559c8dc4361349b7222741c2399447e255d8e
 
 */
 
@@ -40,12 +42,9 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
   // Keep3rSidechainAccountance
 
   /// @inheritdoc IKeep3rSidechainAccountance
-  uint256 public override totalBonds;
-
-  /// @inheritdoc IKeep3rSidechainAccountance
-  function virtualReserves() external view override returns (uint256 _virtualReserves) {
+  function virtualReserves() external view override returns (int256 _virtualReserves) {
     // Queries wKP3R balanceOf escrow contract minus the totalBonds
-    return IERC20(keep3rV1).balanceOf(keep3rV1Proxy) - totalBonds;
+    return int256(IERC20(keep3rV1).balanceOf(keep3rV1Proxy)) - int256(totalBonds);
   }
 
   // Keep3rJobFundableLiquidity
@@ -104,7 +103,7 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
   function worked(address _keeper, uint256 _usdPerGasUnit) external override {
     if (_initialGas == 0) revert GasNotInitialized();
     // Gas used for quote calculations & payment is not rewarded
-    uint256 _gasRecord = _getGasLeft();
+    uint256 _gasLeft = _getGasLeft();
 
     address _job = msg.sender;
     if (disputes[_job]) revert JobDisputed();
@@ -114,43 +113,26 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
       emit LiquidityCreditsReward(_job, rewardedAt[_job], _jobLiquidityCredits[_job], _jobPeriodCredits[_job]);
     }
 
-    uint256 _boost = IKeep3rHelper(keep3rHelper).getRewardBoostFor(bonds[_keeper][keep3rV1]);
-    uint256 _ratedPayment = (_usdPerGasUnit * (_initialGas - _gasRecord) * _boost) / _BASE;
+    (uint256 _boost, uint256 _oneUsdQuote, uint256 _extraGas) = IKeep3rHelper(keep3rHelper).getPaymentParams(bonds[_keeper][keep3rV1]);
 
-    uint256 _ethPayment = IKeep3rHelperSidechain(keep3rHelper).quoteUsdToEth(_ratedPayment);
-    uint256 _kp3rPayment = IKeep3rHelper(keep3rHelper).quote(_ethPayment);
+    uint256 _kp3rPayment = _calculatePayment(_gasLeft, _extraGas, _oneUsdQuote * _usdPerGasUnit, _boost);
 
     if (_kp3rPayment > _jobLiquidityCredits[_job]) {
       _rewardJobCredits(_job);
       emit LiquidityCreditsReward(_job, rewardedAt[_job], _jobLiquidityCredits[_job], _jobPeriodCredits[_job]);
     }
 
-    totalBonds += _kp3rPayment;
     _bondedPayment(_job, _keeper, _kp3rPayment);
     delete _initialGas;
 
-    emit KeeperWork(keep3rV1, _job, _keeper, _kp3rPayment, _gasRecord);
+    emit KeeperWork(keep3rV1, _job, _keeper, _kp3rPayment, _gasLeft);
   }
 
   // Keep3rKeeperFundable
 
   /// @dev Sidechain implementation doesn't burn tokens, but deposit them in Keep3rEscrow
-  function _activate(
-    address _keeper,
-    address _bonding,
-    uint256 _amount
-  ) internal virtual override {
-    // bond provided tokens
-    bonds[_keeper][_bonding] += _amount;
-    if (_bonding == keep3rV1) {
-      totalBonds += _amount;
-      IKeep3rV1(keep3rV1).approve(keep3rV1Proxy, _amount);
-      IKeep3rEscrow(keep3rV1Proxy).deposit(_amount);
-    }
-  }
-
-  function _mint(uint256 _amount) internal virtual override {
-    totalBonds -= _amount;
-    super._mint(_amount);
+  function _depositBonds(uint256 _amount) internal virtual override {
+    IKeep3rV1(keep3rV1).approve(keep3rV1Proxy, _amount);
+    IKeep3rEscrow(keep3rV1Proxy).deposit(_amount);
   }
 }

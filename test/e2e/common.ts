@@ -1,4 +1,5 @@
 import { JsonRpcSigner } from '@ethersproject/providers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import {
   ERC20,
   ERC20ForTest,
@@ -100,8 +101,13 @@ export async function setupKeep3rV1(): Promise<{
   return { keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance };
 }
 
-export async function createJobForTest(keep3rAddress: string, jobOwner: JsonRpcSigner): Promise<JobForTest> {
+export async function createJobForTest(keep3rAddress: string, jobOwner: JsonRpcSigner | SignerWithAddress): Promise<JobForTest> {
   const jobFactory = (await ethers.getContractFactory('JobForTest')) as JobForTest__factory;
+  return await jobFactory.connect(jobOwner).deploy(keep3rAddress);
+}
+
+export async function createJobRatedForTest(keep3rAddress: string, jobOwner: JsonRpcSigner | SignerWithAddress): Promise<JobForTest> {
+  const jobFactory = (await ethers.getContractFactory('JobRatedForTest')) as JobForTest__factory;
   return await jobFactory.connect(jobOwner).deploy(keep3rAddress);
 }
 
@@ -112,11 +118,11 @@ export async function createLiquidityPair(governance: JsonRpcSigner): Promise<Un
   );
 }
 
-export async function addLiquidityToPair(
+export async function mintLiquidity(
   richGuy: JsonRpcSigner,
   pair: UniV3PairManager,
   amount: BigNumber,
-  jobOwner: JsonRpcSigner
+  recipient: string
 ): Promise<{
   liquidity: BigNumber;
   spentKp3rs: BigNumber;
@@ -126,7 +132,7 @@ export async function addLiquidityToPair(
 
   const initialBalance = await keep3rV1.balanceOf(richGuy._address);
   // fund RICH_KP3R address with WETH
-  await weth.connect(richGuy).deposit(amount, { value: amount });
+  await weth.connect(richGuy).deposit({ value: amount });
   // make ERC20 approvals to mint liquidity
   await weth.connect(richGuy).approve(pair.address, amount);
   await keep3rV1.connect(richGuy).approve(pair.address, amount);
@@ -135,9 +141,15 @@ export async function addLiquidityToPair(
   await pair.connect(richGuy).mint(amount, amount, 0, 0, richGuy._address);
 
   // transfers, approves and adds liquidity to job
-  await pair.connect(richGuy).transfer(jobOwner._address, liquidity);
+  await pair.connect(richGuy).transfer(recipient, liquidity);
 
   const spentKp3rs = initialBalance.sub(await keep3rV1.balanceOf(richGuy._address));
 
   return { liquidity, spentKp3rs };
+}
+
+export async function forceCreditsToJob(keep3rContract: Keep3r, jobAddress: string) {
+  const governor = await keep3rContract.governance();
+  const governorSigner = await wallet.impersonate(governor);
+  await keep3rContract.connect(governorSigner).forceLiquidityCreditsToJob(jobAddress, toUnit(100));
 }

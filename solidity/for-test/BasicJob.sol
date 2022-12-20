@@ -33,7 +33,7 @@ contract BasicJob {
   }
 
   modifier upkeep() {
-    IKeep3r(keep3r).isKeeper(msg.sender);
+    if (!IKeep3r(keep3r).isKeeper(msg.sender)) revert KeeperNotValid();
     _;
     IKeep3r(keep3r).worked(msg.sender);
   }

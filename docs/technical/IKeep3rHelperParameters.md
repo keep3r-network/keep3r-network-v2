@@ -221,6 +221,3 @@ address poolAddress
 
 
 bool isTKNToken0
-
-
-

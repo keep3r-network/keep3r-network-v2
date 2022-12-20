@@ -1,6 +1,6 @@
-import { FakeContract, smock } from '@defi-wonderland/smock';
+import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { Keep3rHelper, Keep3rParametersForTest, Keep3rParametersForTest__factory } from '@types';
+import { IKeep3rV1Proxy, Keep3rHelper, Keep3rParametersForTest, Keep3rParametersForTest__factory } from '@types';
 import { behaviours, wallet } from '@utils';
 import { toUnit } from '@utils/bn';
 import { ZERO_ADDRESS } from '@utils/constants';
@@ -9,24 +9,25 @@ import { Contract } from 'ethers';
 import { ethers } from 'hardhat';
 
 describe('Keep3rParameters', () => {
-  let parameters: Keep3rParametersForTest;
+  let parameters: MockContract<Keep3rParametersForTest>;
   let governance: SignerWithAddress;
-  let parametersFactory: Keep3rParametersForTest__factory;
+  let parametersFactory: MockContractFactory<Keep3rParametersForTest__factory>;
   let keep3rHelper: FakeContract<Keep3rHelper>;
+  let keep3rV1Proxy: FakeContract<IKeep3rV1Proxy>;
   const keep3rV1 = wallet.generateRandomAddress();
-  const keep3rV1Proxy = wallet.generateRandomAddress();
   const randomAddress = wallet.generateRandomAddress();
 
   before(async () => {
     [governance] = await ethers.getSigners();
 
-    parametersFactory = (await ethers.getContractFactory('Keep3rParametersForTest')) as Keep3rParametersForTest__factory;
+    keep3rV1Proxy = await smock.fake<IKeep3rV1Proxy>('IKeep3rV1Proxy');
+    parametersFactory = await smock.mock<Keep3rParametersForTest__factory>('Keep3rParametersForTest');
   });
 
   beforeEach(async () => {
     keep3rHelper = await smock.fake('Keep3rHelper');
 
-    parameters = await parametersFactory.deploy(keep3rHelper.address, keep3rV1, keep3rV1Proxy);
+    parameters = await parametersFactory.deploy(keep3rHelper.address, keep3rV1, keep3rV1Proxy.address);
   });
 
   [
@@ -41,22 +42,27 @@ describe('Keep3rParameters', () => {
     { name: 'setFee', parameter: 'fee', args: () => [10], event: 'FeeChange' },
   ].forEach((method) => {
     describe(method.name, () => {
+      let parametersContract: Contract;
       behaviours.onlyGovernance(() => parameters, method.name, governance, method.args);
+
+      beforeEach(async () => {
+        parametersContract = parameters as unknown as Contract;
+      });
 
       if (method.zero) {
         it('should revert when sending zero address', async () => {
-          await expect((parameters as Contract)[method.name](ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+          await expect(parametersContract[method.name](ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
         });
       }
 
       it('should assign specified value to variable', async () => {
-        expect(await (parameters as Contract)[method.parameter]()).not.to.be.equal(method.args()[0]);
-        await (parameters as Contract)[method.name](...method.args());
-        expect(await (parameters as Contract)[method.parameter]()).to.be.equal(method.args()[0]);
+        expect(await parametersContract[method.parameter]()).not.to.be.equal(method.args()[0]);
+        await parametersContract[method.name](...method.args());
+        expect(await parametersContract[method.parameter]()).to.be.equal(method.args()[0]);
       });
 
       it('should emit event', async () => {
-        await expect((parameters as Contract)[method.name](...method.args()))
+        await expect(parametersContract[method.name](...method.args()))
           .to.emit(parameters, method.event)
           .withArgs(...method.args());
       });
@@ -73,7 +79,26 @@ describe('Keep3rParameters', () => {
     });
 
     it('should set keep3rV1Proxy', async () => {
-      expect(await parameters.keep3rV1Proxy()).to.be.equal(keep3rV1Proxy);
+      expect(await parameters.keep3rV1Proxy()).to.be.equal(keep3rV1Proxy.address);
+    });
+  });
+
+  describe('setKeep3rV1', () => {
+    const BONDS = toUnit(10);
+
+    beforeEach(async () => {
+      await parameters.setVariable('totalBonds', BONDS);
+    });
+
+    it('should trigger settlement of totalBonds', async () => {
+      keep3rV1Proxy['mint(uint256)'].reset();
+      await parameters.setKeep3rV1(randomAddress);
+      expect(keep3rV1Proxy['mint(uint256)']).to.have.been.calledWith(BONDS);
+    });
+
+    it('should reset totalBonds', async () => {
+      await parameters.setKeep3rV1(randomAddress);
+      await parameters.setVariable('totalBonds', 0);
     });
   });
 });

@@ -6,7 +6,7 @@
 
 To setup a keeper function simply add the following modifier in your contract:
 
-```text
+```solidity
 modifier validateAndPayKeeper(address _keeper) {
   if (!IKeep3r(keep3r).isKeeper(_keeper)) revert KeeperNotValid();
   _;
@@ -16,7 +16,7 @@ modifier validateAndPayKeeper(address _keeper) {
 
 It could be then implement it like this:
 
-```text
+```solidity
 function work() external validateAndPayKeeper(msg.sender) {
   // ...
 }
@@ -28,7 +28,7 @@ The above will make sure the caller is a registered keeper as well as reward the
 
 Jobs can be created directly via [`addJob()`](https://github.com/defi-wonderland/keep3r-v2-public/blob/public/contracts/peripherals/jobs/Keep3rJobManager.sol).
 
-```text
+```solidity
   /// @notice Allows any caller to add a new job
   /// @param _job Address of the contract for which work should be performed
   function addJob(address _job) external;
@@ -42,7 +42,7 @@ Jobs need credit to be able to pay keepers, this credit can either be paid for d
 
 To start mining credits, you will need to provide [LP tokens](../tokenomics/keep3r-liquidity-pools.md) as liquidity by calling [`addLiquidityToJob()`](https://github.com/defi-wonderland/keep3r-v2-public/blob/public/contracts/interfaces/peripherals/IKeep3rJobs.sol). You receive all your LP tokens back when you no longer need to provide credit for a contract.
 
-```text
+```solidity
   /// @notice Allows anyone to fund a job with liquidity
   /// @param _job The address of the job to assign liquidity to
   /// @param _liquidity The liquidity being added
@@ -56,9 +56,9 @@ To start mining credits, you will need to provide [LP tokens](../tokenomics/keep
 
 ### Remove liquidity from a job
 
-To remove your liquidity from a job, you will need to call [`unbondLiquidityFromJob()`](https://github.com/defi-wonderland/keep3r-v2-public/blob/public/contracts/interfaces/peripherals/IKeep3rJobs.sol) 
+To remove your liquidity from a job, you will need to call [`unbondLiquidityFromJob()`](https://github.com/defi-wonderland/keep3r-v2-public/blob/public/contracts/interfaces/peripherals/IKeep3rJobs.sol)
 
-```text
+```solidity
   /// @notice Unbond liquidity for a job
   /// @dev Can only be called by the job's owner
   /// @param _job The address of the job being unbound from
@@ -73,7 +73,7 @@ To remove your liquidity from a job, you will need to call [`unbondLiquidityFrom
 
 Wait `UNBOND` \(default 14 days\) days and call [`withdrawLiquidityFromJob()`](https://github.com/defi-wonderland/keep3r-v2-public/blob/public/contracts/interfaces/peripherals/IKeep3rJobs.sol)\`\`
 
-```text
+```solidity
   /// @notice Withdraw liquidity from a job
   /// @param _job The address of the job being withdrawn from
   /// @param _liquidity The liquidity being withdrawn
@@ -87,13 +87,13 @@ Wait `UNBOND` \(default 14 days\) days and call [`withdrawLiquidityFromJob()`](h
 
 ### Adding credits directly \(non ETH\)
 
-To add Token Credits to your job, you will need to call [`addTokenCreditsToJob()`](https://github.com/defi-wonderland/keep3r-v2-public/blob/public/contracts/interfaces/peripherals/IKeep3rJobs.sol). 
+To add Token Credits to your job, you will need to call [`addTokenCreditsToJob()`](https://github.com/defi-wonderland/keep3r-v2-public/blob/public/contracts/interfaces/peripherals/IKeep3rJobs.sol).
 
 {% hint style="info" %}
 Adding KP3R tokens is not allowed this way, the only way is via liquidity mining.
 {% endhint %}
 
-```text
+```solidity
   /// @notice Add credit to a job to be paid out for work
   /// @param _job The address of the job being credited
   /// @param _token The address of the token being credited
@@ -113,7 +113,7 @@ Dependent on your requirements you might allow any keepers, or you want to limit
 
 Accept all keepers in the system.
 
-```text
+```solidity
 /// @notice Confirms if the current keeper is registered, can be used for general (non critical) functions
 /// @param _keeper The keeper being investigated
 /// @return _isKeeper Whether the address passed as a parameter is a keeper or not
@@ -124,7 +124,7 @@ function isKeeper(address _keeper) external returns (bool _isKeeper);
 
 Filter keepers based on bonded amount of tokens, earned funds, and age in system. For example a keeper might need to have `SNX` to be able to participate in the [Synthetix](https://synthetix.io/) ecosystem.
 
-```text
+```solidity
 /// @notice Confirms if the current keeper is registered and has a minimum bond of any asset. Should be used for protected functions
 /// @param _keeper The keeper to check
 /// @param _bond The bond token being evaluated
@@ -154,7 +154,7 @@ There are two primary payment mechanisms and these are based on the credit provi
 
 If you don't want to worry about calculating payment, you can simply let the system calculate the recommended payment itself.
 
-```text
+```solidity
 /// @notice Implemented by jobs to show that a keeper performed work
 /// @dev Automatically calculates the payment for the keeper
 /// @param _keeper Address of the keeper that performed the work
@@ -163,7 +163,7 @@ function worked(address _keeper) external;
 
 ### Pay with KP3R
 
-```text
+```solidity
 /// @notice Implemented by jobs to show that a keeper performed work
 /// @dev Pays the keeper that performs the work with KP3R
 /// @param _keeper Address of the keeper that performed the work
@@ -173,7 +173,7 @@ function bondedPayment(address _keeper, uint256 _payment) external;
 
 ### Pay with an ERC20 token
 
-```text
+```solidity
 /// @notice Implemented by jobs to show that a keeper performed work
 /// @dev Pays the keeper that performs the work with a specific token
 /// @param _token The asset being awarded to the keeper
@@ -192,7 +192,7 @@ There may be situations where a job needs to migrate all of their "assets" to an
 
 * `migrateJob`first to start the migration process. This function should be call by the owner of the job that currently holds the assets to migrate.
 
-```text
+```solidity
 /// @notice Initializes the migration process for a job by adding the request to the pendingJobMigrations mapping
 /// @param _fromJob The address of the job that is requesting to migrate
 /// @param _toJob The address at which the job is requesting to migrate
@@ -201,7 +201,7 @@ function migrateJob(address _fromJob, address _toJob) external;
 
 * `acceptJobMigration` to complete the migration process. This function should be call by the owner of the job that will receive the assets to migrate.
 
-```text
+```solidity
 /// @notice Completes the migration process for a job
 /// @dev Unbond/withdraw process doesn't get migrated
 /// @param _fromJob The address of the job that requested to migrate
@@ -219,6 +219,3 @@ There are some considerations the job wishing to migrate must take into account 
 Here's a graphic representation to visualize the resulting changes in the credits of a job that goes through a successful migration.
 
 ![](../.gitbook/assets/jobmigration.png)
-
-
-

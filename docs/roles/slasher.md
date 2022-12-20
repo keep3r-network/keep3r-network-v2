@@ -12,7 +12,7 @@ Slashers are governance-approved addresses with permission to exercise last reso
 
 Slash the bonded asset of a keeper.
 
-```text
+```solidity
 /// @notice Allows governance to slash a keeper based on a dispute
 /// @param _keeper The address being slashed
 /// @param _bonded The asset being slashed
@@ -28,7 +28,7 @@ function slash(
 
 Slash an array of tokens from a job.
 
-```text
+```solidity
 /// @notice Allows governance or slasher to slash a job specific token
 /// @param _job The address of the job from which the token will be slashed
 /// @param _tokens An array containing the token addresses that will be slashed
@@ -42,7 +42,7 @@ function slashTokenFromJob(
 
 Slash an array of liquidities from a job.
 
-```text
+```solidity
 /// @notice Allows governance or a slasher to slash liquidity from a job
 /// @param _job The address being slashed
 /// @param _liquidities An array containing the liquidity addresses that will be slashed
@@ -58,11 +58,8 @@ function slashLiquidityFromJob(
 
 Blacklists a keeper from the network.
 
-```text
+```solidity
 /// @notice Blacklists a keeper from participating in the network
 /// @param _keeper The address being slashed
 function revoke(address _keeper) external;
 ```
-
-
-

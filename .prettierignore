@@ -5,6 +5,7 @@
 .solhintignore
 .husky
 .gitignore
+.github/CODEOWNERS
 .gitattributes
 .versionrc
 .env
