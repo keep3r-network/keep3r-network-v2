@@ -2,7 +2,7 @@ import { FakeContract, smock } from '@defi-wonderland/smock';
 import { KP3R_V1_ADDRESS } from '@e2e/common';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { IUniswapV3Pool, Keep3rHelperParameters, Keep3rHelperParameters__factory } from '@types';
-import { behaviours } from '@utils';
+import { onlyGovernor } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
 import { ZERO_ADDRESS } from '@utils/constants';
 import { generateRandomAddress } from '@utils/wallet';
@@ -11,13 +11,13 @@ import { Contract } from 'ethers';
 import { ethers } from 'hardhat';
 
 describe('Keep3rHelperParameters', () => {
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let parametersFactory: Keep3rHelperParameters__factory;
   let parameters: Keep3rHelperParameters;
   let pool: FakeContract<IUniswapV3Pool>;
 
   before(async () => {
-    [, governance] = await ethers.getSigners();
+    [, governor] = await ethers.getSigners();
 
     parametersFactory = (await ethers.getContractFactory('Keep3rHelperParameters')) as Keep3rHelperParameters__factory;
     pool = await smock.fake('IUniswapV3Pool');
@@ -31,18 +31,18 @@ describe('Keep3rHelperParameters', () => {
     const randomKeep3rV2Address = generateRandomAddress();
 
     it('should assign keep3rV2 to given parameter', async () => {
-      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governor.address, pool.address);
       expect(await parameters.callStatic.keep3rV2()).to.equal(randomKeep3rV2Address);
     });
 
     it('should assign kp3rWethPool address', async () => {
-      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governor.address, pool.address);
       const assignedAddress = (await parameters.callStatic.kp3rWethPool()).poolAddress;
       expect(assignedAddress).to.equal(pool.address);
     });
 
     it('should set kp3rWethPool isTKNToken0 to true if KP3R is token0', async () => {
-      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governor.address, pool.address);
       const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
       expect(isTKNToken0).to.be.true;
     });
@@ -50,7 +50,7 @@ describe('Keep3rHelperParameters', () => {
     it('should set kp3rWethPool isTKNToken0 to false if KP3R is not token0', async () => {
       pool.token0.returns(generateRandomAddress());
       pool.token1.returns(KP3R_V1_ADDRESS);
-      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governor.address, pool.address);
       const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
       expect(isTKNToken0).to.be.false;
     });
@@ -64,23 +64,23 @@ describe('Keep3rHelperParameters', () => {
     });
 
     beforeEach(async () => {
-      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, generateRandomAddress(), governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, generateRandomAddress(), governor.address, pool.address);
       otherPool.token0.returns(KP3R_V1_ADDRESS);
     });
 
-    behaviours.onlyGovernance(
+    onlyGovernor(
       () => parameters,
       'setKp3rWethPool',
-      governance,
+      governor,
       () => [otherPool.address]
     );
 
     it('should revert if pool address is 0', async () => {
-      await expect(parameters.connect(governance).setKp3rWethPool(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+      await expect(parameters.connect(governor).setKp3rWethPool(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
     });
 
     it('should set kp3rWethPool isTKNToken0 to true if KP3R is token0', async () => {
-      await parameters.connect(governance).setKp3rWethPool(otherPool.address);
+      await parameters.connect(governor).setKp3rWethPool(otherPool.address);
       const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
       expect(isTKNToken0).to.be.true;
     });
@@ -89,7 +89,7 @@ describe('Keep3rHelperParameters', () => {
       otherPool.token0.returns(generateRandomAddress());
       otherPool.token1.returns(KP3R_V1_ADDRESS);
 
-      await parameters.connect(governance).setKp3rWethPool(otherPool.address);
+      await parameters.connect(governor).setKp3rWethPool(otherPool.address);
       const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
       expect(isTKNToken0).to.be.false;
     });
@@ -98,11 +98,11 @@ describe('Keep3rHelperParameters', () => {
       otherPool.token0.returns(generateRandomAddress());
       otherPool.token1.returns(generateRandomAddress());
 
-      await expect(parameters.connect(governance).setKp3rWethPool(otherPool.address)).to.be.revertedWith('InvalidOraclePool()');
+      await expect(parameters.connect(governor).setKp3rWethPool(otherPool.address)).to.be.revertedWith('InvalidOraclePool()');
     });
 
     it('should emit event', async () => {
-      await expect(parameters.connect(governance).setKp3rWethPool(otherPool.address))
+      await expect(parameters.connect(governor).setKp3rWethPool(otherPool.address))
         .to.emit(parameters, 'Kp3rWethPoolChange')
         .withArgs(otherPool.address, true);
     });
@@ -112,7 +112,7 @@ describe('Keep3rHelperParameters', () => {
     const randomKeep3rV2Address = generateRandomAddress();
 
     beforeEach(async () => {
-      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, generateRandomAddress(), governance.address, pool.address);
+      parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, generateRandomAddress(), governor.address, pool.address);
     });
 
     [
@@ -125,16 +125,16 @@ describe('Keep3rHelperParameters', () => {
       { name: 'setMinBaseFee', parameter: 'minBaseFee', args: () => [10e9], event: 'MinBaseFeeChange' },
     ].forEach((method) => {
       describe(method.name, () => {
-        behaviours.onlyGovernance(() => parameters, method.name, governance, method.args);
+        onlyGovernor(() => parameters, method.name, governor, method.args);
 
         it('should assign specified value to variable', async () => {
           expect(await (parameters as Contract)[method.parameter]()).not.to.be.equal(method.args()[0]);
-          await (parameters as Contract).connect(governance)[method.name](...method.args());
+          await (parameters as Contract).connect(governor)[method.name](...method.args());
           expect(await (parameters as Contract)[method.parameter]()).to.be.equal(method.args()[0]);
         });
 
         it('should emit event', async () => {
-          await expect((parameters as Contract).connect(governance)[method.name](...method.args()))
+          await expect((parameters as Contract).connect(governor)[method.name](...method.args()))
             .to.emit(parameters, method.event)
             .withArgs(...method.args());
         });

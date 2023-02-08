@@ -46,15 +46,15 @@ export const PAIR_MANAGER_ADDRESS = '0x3f6740b5898c5D3650ec6eAce9a649Ac791e44D7'
 
 export async function setupKeep3r(): Promise<{
   keep3r: Keep3r;
-  governance: JsonRpcSigner;
+  governor: JsonRpcSigner;
   keep3rV1: IKeep3rV1;
   keep3rV1Proxy: IKeep3rV1Proxy;
   keep3rV1ProxyGovernance: JsonRpcSigner;
   helper: Keep3rHelperForTest;
 }> {
-  // create governance with some eth
-  const governance = await wallet.impersonate(wallet.generateRandomAddress());
-  await contracts.setBalance(governance._address, toUnit(1000));
+  // create governor with some eth
+  const governor = await wallet.impersonate(wallet.generateRandomAddress());
+  await contracts.setBalance(governor._address, toUnit(1000));
 
   // deploy proxy and set it as Keep3rV1 governance
   const { keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance } = await setupKeep3rV1();
@@ -63,14 +63,12 @@ export async function setupKeep3r(): Promise<{
   const keep3rFactory = (await ethers.getContractFactory('Keep3r')) as Keep3r__factory;
 
   // calculate keep3rV2 deployment address
-  const currentNonce = await ethers.provider.getTransactionCount(governance._address);
-  const keeperV2Address = ethers.utils.getContractAddress({ from: governance._address, nonce: currentNonce + 1 });
+  const currentNonce = await ethers.provider.getTransactionCount(governor._address);
+  const keeperV2Address = ethers.utils.getContractAddress({ from: governor._address, nonce: currentNonce + 1 });
 
   // deploy Keep3rHelperForTest and Keep3r contract
-  const helper = await helperFactory
-    .connect(governance)
-    .deploy(keep3rV1.address, keeperV2Address, governance._address, KP3R_WETH_V3_POOL_ADDRESS);
-  const keep3r = await keep3rFactory.connect(governance).deploy(governance._address, helper.address, keep3rV1.address, keep3rV1Proxy.address);
+  const helper = await helperFactory.connect(governor).deploy(keep3rV1.address, keeperV2Address, governor._address, KP3R_WETH_V3_POOL_ADDRESS);
+  const keep3r = await keep3rFactory.connect(governor).deploy(governor._address, helper.address, keep3rV1.address, keep3rV1Proxy.address);
 
   await helper.setBaseFee(HELPER_FOR_TEST_BASE_FEE);
 
@@ -81,7 +79,7 @@ export async function setupKeep3r(): Promise<{
   await contracts.setBalance(keep3r.address, toUnit(1000));
   await contracts.setBalance(keep3rV1.address, toUnit(1000));
 
-  return { governance, keep3r, keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance, helper };
+  return { governor, keep3r, keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance, helper };
 }
 
 export async function setupKeep3rV1(): Promise<{
@@ -89,7 +87,7 @@ export async function setupKeep3rV1(): Promise<{
   keep3rV1Proxy: IKeep3rV1Proxy;
   keep3rV1ProxyGovernance: JsonRpcSigner;
 }> {
-  // get Keep3rV1 and it's governance
+  // get Keep3rV1 and its governance
   const keep3rV1 = (await ethers.getContractAt('IKeep3rV1', KP3R_V1_ADDRESS)) as IKeep3rV1;
   const keep3rV1Proxy = (await ethers.getContractAt('IKeep3rV1Proxy', KP3R_V1_PROXY_ADDRESS)) as IKeep3rV1Proxy;
   const keep3rV1ProxyGovernance = await wallet.impersonate(KP3R_V1_PROXY_GOVERNANCE_ADDRESS);
@@ -111,10 +109,10 @@ export async function createJobRatedForTest(keep3rAddress: string, jobOwner: Jso
   return await jobFactory.connect(jobOwner).deploy(keep3rAddress);
 }
 
-export async function createLiquidityPair(governance: JsonRpcSigner): Promise<UniV3PairManager> {
+export async function createLiquidityPair(governor: JsonRpcSigner): Promise<UniV3PairManager> {
   return await ((await ethers.getContractFactory('UniV3PairManager')) as UniV3PairManager__factory).deploy(
     KP3R_WETH_V3_POOL_ADDRESS,
-    governance._address
+    governor._address
   );
 }
 
@@ -149,7 +147,7 @@ export async function mintLiquidity(
 }
 
 export async function forceCreditsToJob(keep3rContract: Keep3r, jobAddress: string) {
-  const governor = await keep3rContract.governance();
+  const governor = await keep3rContract.governor();
   const governorSigner = await wallet.impersonate(governor);
   await keep3rContract.connect(governorSigner).forceLiquidityCreditsToJob(jobAddress, toUnit(100));
 }

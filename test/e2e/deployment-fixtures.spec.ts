@@ -243,7 +243,14 @@ describe('@skip-on-coverage Fixture', () => {
 });
 
 const setKp3rMinter = async (keep3r: Type.Keep3r) => {
-  const mintable = (await ethers.getContractAt('IMintable', await keep3r.keep3rV1Proxy())) as Type.Mintable;
-  const proxyGovernor = await wallet.impersonate(await mintable.governance());
+  let mintable;
+  let proxyGovernor;
+  try {
+    mintable = (await ethers.getContractAt('IMintable', await keep3r.keep3rV1Proxy())) as Type.Mintable;
+    proxyGovernor = await wallet.impersonate(await mintable.governor());
+  } catch {
+    mintable = (await ethers.getContractAt('IKeep3rV1Proxy', await keep3r.keep3rV1Proxy())) as Type.IKeep3rV1Proxy;
+    proxyGovernor = await wallet.impersonate(await mintable.governance());
+  }
   await mintable.connect(proxyGovernor).setMinter(keep3r.address);
 };

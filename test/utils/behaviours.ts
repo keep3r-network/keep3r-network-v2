@@ -9,8 +9,8 @@ chai.use(smock.matchers);
 
 export type Impersonator = Signer | Provider | string;
 
-export const onlyGovernance = createOnlyCallableCheck(['governance'], 'OnlyGovernance()');
-export const onlyPendingGovernance = createOnlyCallableCheck(['pending governance'], 'OnlyPendingGovernance()');
+export const onlyGovernor = createOnlyCallableCheck(['governor'], 'OnlyGovernor()');
+export const onlyPendingGovernor = createOnlyCallableCheck(['pending governor'], 'OnlyPendingGovernor()');
 export const onlyJobOwner = createOnlyCallableCheck(['job owner'], 'OnlyJobOwner()');
 export const onlyDisputer = createOnlyCallableCheck(['disputer'], 'OnlyDisputer()');
 export const onlySlasher = createOnlyCallableCheck(['slasher'], 'OnlySlasher()');

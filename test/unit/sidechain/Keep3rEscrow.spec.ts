@@ -2,14 +2,14 @@ import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wo
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { IERC20, Keep3rEscrow, Keep3rEscrow__factory } from '@types';
 import { wallet } from '@utils';
-import { onlyGovernance, onlyMinter } from '@utils/behaviours';
+import { onlyGovernor, onlyMinter } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
 import { ZERO_ADDRESS } from '@utils/constants';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
 describe('Keep3rEscrow', () => {
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let minter: SignerWithAddress;
   let randomUser: SignerWithAddress;
   let escrowFactory: MockContractFactory<Keep3rEscrow__factory>;
@@ -20,19 +20,19 @@ describe('Keep3rEscrow', () => {
   const randomAddress = wallet.generateRandomAddress();
 
   before(async () => {
-    [, governance, minter, randomUser] = await ethers.getSigners();
+    [, governor, minter, randomUser] = await ethers.getSigners();
     wKP3R = await smock.fake('IERC20');
     escrowFactory = await smock.mock<Keep3rEscrow__factory>('Keep3rEscrow');
   });
 
   beforeEach(async () => {
-    escrow = await escrowFactory.deploy(governance.address, wKP3R.address);
-    await escrow.connect(governance).setMinter(minter.address);
+    escrow = await escrowFactory.deploy(governor.address, wKP3R.address);
+    await escrow.connect(governor).setMinter(minter.address);
   });
 
   context('constructor', () => {
-    it('should set governance to the deployer address', async () => {
-      expect(await escrow.governance()).to.equal(governance.address);
+    it('should set governor to the deployer address', async () => {
+      expect(await escrow.governor()).to.equal(governor.address);
     });
 
     it('should set wKP3R to the right address', async () => {
@@ -41,19 +41,19 @@ describe('Keep3rEscrow', () => {
   });
 
   describe('setMinter', () => {
-    onlyGovernance(() => escrow, 'setMinter', governance, [randomAddress]);
+    onlyGovernor(() => escrow, 'setMinter', governor, [randomAddress]);
 
     it('should revert if minter is address 0', async () => {
-      await expect(escrow.connect(governance).setMinter(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+      await expect(escrow.connect(governor).setMinter(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
     });
 
     it('should set the minter address', async () => {
-      await escrow.connect(governance).setMinter(randomAddress);
+      await escrow.connect(governor).setMinter(randomAddress);
       expect(await escrow.minter()).to.eq(randomAddress);
     });
 
     it('should emit event', async () => {
-      const tx = await escrow.connect(governance).setMinter(randomAddress);
+      const tx = await escrow.connect(governor).setMinter(randomAddress);
       await expect(tx).to.emit(escrow, 'MinterSet').withArgs(randomAddress);
     });
   });
@@ -78,7 +78,7 @@ describe('Keep3rEscrow', () => {
 
   context('mint', () => {
     beforeEach(async () => {
-      await escrow.connect(governance).setWKP3R(wKP3R.address);
+      await escrow.connect(governor).setWKP3R(wKP3R.address);
       wKP3R.balanceOf.whenCalledWith(escrow.address).returns(oneToken);
       wKP3R.transfer.whenCalledWith(minter.address, oneToken).returns(true);
     });
@@ -104,24 +104,24 @@ describe('Keep3rEscrow', () => {
 
   context('setWKP3R', () => {
     const randomAddress = wallet.generateRandomAddress();
-    onlyGovernance(
+    onlyGovernor(
       () => escrow,
       'setWKP3R',
-      governance,
+      governor,
       () => [randomAddress]
     );
 
     it('should revert if wkp3r address is 0', async () => {
-      await expect(escrow.connect(governance).setWKP3R(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+      await expect(escrow.connect(governor).setWKP3R(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
     });
 
     it('should set wKP3R to a new address', async () => {
-      await escrow.connect(governance).setWKP3R(randomAddress);
+      await escrow.connect(governor).setWKP3R(randomAddress);
       expect(await escrow.wKP3R()).to.eq(randomAddress);
     });
 
     it('should emit an event', async () => {
-      expect(await escrow.connect(governance).setWKP3R(randomAddress))
+      expect(await escrow.connect(governor).setWKP3R(randomAddress))
         .to.emit(escrow, 'wKP3RSet')
         .withArgs(randomAddress);
     });

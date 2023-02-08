@@ -37,7 +37,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
   let deployer: SignerWithAddress;
   let stranger: SignerWithAddress;
   let keeper: SignerWithAddress;
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let kp3rWhale: JsonRpcSigner;
   let keep3r: Keep3rSidechain;
   let keep3rHelper: Keep3rHelperSidechain;
@@ -59,7 +59,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
   const oneETHinDAI = bn.toUnit(1254); // 1ETH ~ $1250 DAI
 
   before(async () => {
-    [deployer, stranger, keeper, governance] = await ethers.getSigners();
+    [deployer, stranger, keeper, governor] = await ethers.getSigners();
     await evm.reset({
       jsonRpcUrl: process.env.MAINNET_HTTPS_URL,
       blockNumber: 15100000,
@@ -82,7 +82,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     wKLP = await wKLPp3rFactory.deploy(pairManager.address);
 
     const keep3rEscrowFactory = (await ethers.getContractFactory('Keep3rEscrow')) as Keep3rEscrow__factory;
-    keep3rEscrow = await keep3rEscrowFactory.deploy(governance.address, wKP3R.address);
+    keep3rEscrow = await keep3rEscrowFactory.deploy(governor.address, wKP3R.address);
 
     const currentNonce: number = await ethers.provider.getTransactionCount(deployer.address);
     const precalculatedAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: currentNonce + 1 });
@@ -90,7 +90,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     const keep3rHelperFactory = (await ethers.getContractFactory('Keep3rHelperSidechain')) as Keep3rHelperSidechain__factory;
     keep3rHelper = await keep3rHelperFactory.deploy(
       precalculatedAddress,
-      governance.address,
+      governor.address,
       KP3R_V1_ADDRESS,
       WETH_ADDRESS,
       KP3R_WETH_V3_POOL_ADDRESS, // uses KP3R-WETH pool as oracle
@@ -99,15 +99,15 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
 
     const kp3rSidechainFactory = (await ethers.getContractFactory('Keep3rSidechain')) as Keep3rSidechain__factory;
     keep3r = await kp3rSidechainFactory.deploy(
-      governance.address,
+      governor.address,
       keep3rHelper.address,
       wKP3R.address,
       keep3rEscrow.address // replaces keep3rV1Proxy
     );
 
     // setup
-    await keep3rHelper.connect(governance).setOracle(wKLP.address, await pairManager.pool());
-    await keep3r.connect(governance).approveLiquidity(wKLP.address);
+    await keep3rHelper.connect(governor).setOracle(wKLP.address, await pairManager.pool());
+    await keep3r.connect(governor).approveLiquidity(wKLP.address);
 
     // mint kLPs
     await contracts.setBalance(kp3rWhale._address, bn.toUnit(1000));
@@ -127,7 +127,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     // fund escrow
     await wKP3R.connect(kp3rWhale).approve(keep3rEscrow.address, ESCROW_AMOUNT);
     await keep3rEscrow.connect(kp3rWhale).deposit(ESCROW_AMOUNT);
-    await keep3rEscrow.connect(governance).setMinter(keep3r.address);
+    await keep3rEscrow.connect(governor).setMinter(keep3r.address);
 
     // deploy job
     const jobFactory = (await ethers.getContractFactory('JobRatedForTest')) as JobRatedForTest__factory;

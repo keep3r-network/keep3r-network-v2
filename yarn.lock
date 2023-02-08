@@ -172,6 +172,15 @@
     rxjs "^7.2.0"
     semver "^7.3.5"
 
+"@defi-wonderland/solidity-utils@0.0.0-6c86c0fc":
+  version "0.0.0-6c86c0fc"
+  resolved "https://registry.yarnpkg.com/@defi-wonderland/solidity-utils/-/solidity-utils-0.0.0-6c86c0fc.tgz#36da2deab6e181299c4ec328a0719d044142cab3"
+  integrity sha512-JVRPMw06UiK0LRMi5wuIH9bkx33+3DSIUdN4QHhlqqGQa9rm9r6H/yVBWDOchACiJIfaShfLZZA0gAnL8tkkvA==
+  dependencies:
+    "@openzeppelin/contracts" "4.8.1"
+    ds-test "https://github.com/dapphub/ds-test"
+    forge-std "https://github.com/foundry-rs/forge-std"
+
 "@ensdomains/ens@^0.4.4":
   version "0.4.5"
   resolved "https://registry.yarnpkg.com/@ensdomains/ens/-/ens-0.4.5.tgz#e0aebc005afdc066447c6e22feb4eda89a5edbfc"
@@ -1239,6 +1248,11 @@
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.3.0.tgz#345236d4ec73ef381ab4907c6ef66fd55e5dedad"
   integrity sha512-+uBDl/TrmR0Kch6mq3tuxMex/fK7huR6+fQMae+zJk1K5T+dp0pFl12Hbc+1L6oYMXoyDSBJ8zqhRIntrREDFA==
+
+"@openzeppelin/contracts@4.8.1":
+  version "4.8.1"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.8.1.tgz#709cfc4bbb3ca9f4460d60101f15dac6b7a2d5e4"
+  integrity sha512-xQ6eUZl+RDyb/FiZe1h+U7qr/f4p/SrTSQcTPH2bjur3C5DbuW/zFgCU/b1P/xcIaEqJep+9ju4xDRi3rmChdQ==
 
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
@@ -3518,6 +3532,11 @@ commander@3.0.2:
   resolved "https://registry.yarnpkg.com/commander/-/commander-3.0.2.tgz#6837c3fb677ad9933d1cfba42dd14d5117d6b39e"
   integrity sha512-Gar0ASD4BDyKC4hl4DwHqDrmvjoxWKZigVnAbn5H1owvm4CxCPdb0HQDehwNYMJpla5+M2tPmPARzhtYuwpHow==
 
+commander@^8.1.0:
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-8.3.0.tgz#4837ea1b2da67b9c616a67afbb0fafee567bca66"
+  integrity sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==
+
 compare-func@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/compare-func/-/compare-func-2.0.0.tgz#fb65e75edbddfd2e568554e8b5b05fff7a51fcb3"
@@ -4265,6 +4284,10 @@ drbg.js@^1.0.1:
     browserify-aes "^1.0.6"
     create-hash "^1.1.2"
     create-hmac "^1.1.4"
+
+"ds-test@git+https://github.com/dapphub/ds-test.git":
+  version "1.0.0"
+  resolved "git+https://github.com/dapphub/ds-test.git#cd98eff28324bfac652e63a239a60632a761790b"
 
 duplexer3@^0.1.4:
   version "0.1.4"
@@ -5496,6 +5519,10 @@ forever-agent@~0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/forever-agent/-/forever-agent-0.6.1.tgz#fbc71f0c41adeb37f96c577ad1ed42d8fdacca91"
   integrity sha1-+8cfDEGt6zf5bFd60e1C2P2sypE=
+
+"forge-std@git+https://github.com/foundry-rs/forge-std.git":
+  version "1.2.0"
+  resolved "git+https://github.com/foundry-rs/forge-std.git#4a79aca83f8075f8b1b4fe9153945fef08375630"
 
 form-data@^2.2.0:
   version "2.5.1"
@@ -10010,13 +10037,13 @@ snapdragon@^0.8.1:
     source-map-resolve "^0.5.0"
     use "^3.1.0"
 
-"solc-0.8@npm:solc@0.8.7-fixed":
-  version "0.8.7-fixed"
-  resolved "https://registry.yarnpkg.com/solc/-/solc-0.8.7-fixed.tgz#76eb37d33637ad278ad858e2633e9da597d877ac"
-  integrity sha512-nWZRkdPwfBpimAelO30Bz7/hxoj+mylb30gEpBL8hhEWR4xqu2ezQAxWK1Hz5xx1NqesbgGjSgnGul49tRHWgQ==
+"solc-0.8@npm:solc@0.8.8":
+  version "0.8.8"
+  resolved "https://registry.yarnpkg.com/solc/-/solc-0.8.8.tgz#3902c496cc200fc83bf96ff42d798f3f41c9c489"
+  integrity sha512-u5N7fq4kABwyLKDbt9Xq99OiYBP7x56Pl/Oyz4TbNr9xbjgaMW2lhNIAZWtTme7Iuufw+3Tq5Ts3Bia56BOkvQ==
   dependencies:
     command-exists "^1.2.8"
-    commander "3.0.2"
+    commander "^8.1.0"
     follow-redirects "^1.12.1"
     fs-extra "^0.30.0"
     js-sha3 "0.8.0"

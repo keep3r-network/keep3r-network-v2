@@ -20,7 +20,7 @@ chai.use(smock.matchers);
 
 describe('Keep3rKeeperDisputable', () => {
   const randomKeeper = wallet.generateRandomAddress();
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let slasher: SignerWithAddress;
   let disputer: SignerWithAddress;
   let keeperDisputable: MockContract<Keep3rKeeperDisputableForTest>;
@@ -33,7 +33,7 @@ describe('Keep3rKeeperDisputable', () => {
   let snapshotId: string;
 
   before(async () => {
-    [governance, slasher, disputer] = await ethers.getSigners();
+    [governor, slasher, disputer] = await ethers.getSigners();
 
     keeperDisputableFactory = await smock.mock<Keep3rKeeperDisputableForTest__factory>('Keep3rKeeperDisputableForTest');
     helper = await smock.fake('IKeep3rHelper');
@@ -176,9 +176,9 @@ describe('Keep3rKeeperDisputable', () => {
         await expect(keeperDisputable.internalSlash(randomKeeper, erc20.address, toUnit(1), toUnit(1))).not.to.be.reverted;
       });
 
-      it('should transfer both bond and pending unbond tokens to governance', async () => {
+      it('should transfer both bond and pending unbond tokens to governor', async () => {
         await keeperDisputable.internalSlash(randomKeeper, erc20.address, bondAmount, unbondAmount);
-        expect(erc20.transfer).to.be.calledOnceWith(governance.address, bondAmount.add(unbondAmount));
+        expect(erc20.transfer).to.be.calledOnceWith(governor.address, bondAmount.add(unbondAmount));
       });
 
       it('should reduce keeper bonds', async () => {

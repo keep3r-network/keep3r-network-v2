@@ -32,18 +32,18 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
   address public immutable override WETH;
 
   /// @param _keep3rV2 Address of sidechain Keep3r implementation
-  /// @param _governance Address of governance
+  /// @param _governor Address of governor
   /// @param _kp3rWethOracle Address of oracle used for KP3R/WETH quote
   /// @param _wethUsdOracle Address of oracle used for WETH/USD quote
   /// @dev Oracle pools should use 18 decimals tokens
   constructor(
     address _keep3rV2,
-    address _governance,
+    address _governor,
     address _kp3r,
     address _weth,
     address _kp3rWethOracle,
     address _wethUsdOracle
-  ) Keep3rHelper(_kp3r, _keep3rV2, _governance, _kp3rWethOracle) {
+  ) Keep3rHelper(_kp3r, _keep3rV2, _governor, _kp3rWethOracle) {
     WETH = _weth;
     wethUSDPool = _validateOraclePool(_wethUsdOracle, _weth);
     _setQuoteTwapTime(1 days);
@@ -58,7 +58,7 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
   }
 
   /// @inheritdoc IKeep3rHelperSidechain
-  function setOracle(address _liquidity, address _oracle) external override onlyGovernance {
+  function setOracle(address _liquidity, address _oracle) external override onlyGovernor {
     if (_liquidity == address(0) || _oracle == address(0)) revert ZeroAddress();
     oracle[_liquidity] = _oracle;
     emit OracleSet(_liquidity, _oracle);
@@ -76,7 +76,7 @@ contract Keep3rHelperSidechain is IKeep3rHelperSidechain, Keep3rHelper {
   }
 
   /// @inheritdoc IKeep3rHelperSidechain
-  function setWethUsdPool(address _poolAddress) external override onlyGovernance {
+  function setWethUsdPool(address _poolAddress) external override onlyGovernor {
     if (_poolAddress == address(0)) revert ZeroAddress();
     _setWethUsdPool(_poolAddress);
   }

@@ -51,14 +51,14 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance {
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setKeep3rHelper(address _keep3rHelper) external override onlyGovernance {
+  function setKeep3rHelper(address _keep3rHelper) external override onlyGovernor {
     if (_keep3rHelper == address(0)) revert ZeroAddress();
     keep3rHelper = _keep3rHelper;
     emit Keep3rHelperChange(_keep3rHelper);
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setKeep3rV1(address _keep3rV1) public virtual override onlyGovernance {
+  function setKeep3rV1(address _keep3rV1) public virtual override onlyGovernor {
     if (_keep3rV1 == address(0)) revert ZeroAddress();
     _mint(totalBonds);
 
@@ -67,45 +67,45 @@ abstract contract Keep3rParameters is IKeep3rParameters, Keep3rAccountance {
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setKeep3rV1Proxy(address _keep3rV1Proxy) external override onlyGovernance {
+  function setKeep3rV1Proxy(address _keep3rV1Proxy) external override onlyGovernor {
     if (_keep3rV1Proxy == address(0)) revert ZeroAddress();
     keep3rV1Proxy = _keep3rV1Proxy;
     emit Keep3rV1ProxyChange(_keep3rV1Proxy);
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setBondTime(uint256 _bondTime) external override onlyGovernance {
+  function setBondTime(uint256 _bondTime) external override onlyGovernor {
     bondTime = _bondTime;
     emit BondTimeChange(_bondTime);
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setUnbondTime(uint256 _unbondTime) external override onlyGovernance {
+  function setUnbondTime(uint256 _unbondTime) external override onlyGovernor {
     unbondTime = _unbondTime;
     emit UnbondTimeChange(_unbondTime);
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setLiquidityMinimum(uint256 _liquidityMinimum) external override onlyGovernance {
+  function setLiquidityMinimum(uint256 _liquidityMinimum) external override onlyGovernor {
     liquidityMinimum = _liquidityMinimum;
     emit LiquidityMinimumChange(_liquidityMinimum);
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setRewardPeriodTime(uint256 _rewardPeriodTime) external override onlyGovernance {
+  function setRewardPeriodTime(uint256 _rewardPeriodTime) external override onlyGovernor {
     if (_rewardPeriodTime < _MIN_REWARD_PERIOD_TIME) revert MinRewardPeriod();
     rewardPeriodTime = _rewardPeriodTime;
     emit RewardPeriodTimeChange(_rewardPeriodTime);
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setInflationPeriod(uint256 _inflationPeriod) external override onlyGovernance {
+  function setInflationPeriod(uint256 _inflationPeriod) external override onlyGovernor {
     inflationPeriod = _inflationPeriod;
     emit InflationPeriodChange(_inflationPeriod);
   }
 
   /// @inheritdoc IKeep3rParameters
-  function setFee(uint256 _fee) external override onlyGovernance {
+  function setFee(uint256 _fee) external override onlyGovernor {
     fee = _fee;
     emit FeeChange(_fee);
   }

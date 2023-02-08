@@ -28,16 +28,16 @@ import '../../interfaces/sidechain/IKeep3rSidechainAccountance.sol';
 contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAccountance {
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  /// @param _governance Address of governance
+  /// @param _governor Address of governor
   /// @param _keep3rHelperSidechain Address of sidechain Keep3rHelper
   /// @param _wrappedKP3R Address of wrapped KP3R implementation
   /// @param _keep3rEscrow Address of sidechain Keep3rEscrow
   constructor(
-    address _governance, // governance
+    address _governor, // governor
     address _keep3rHelperSidechain, // helper
     address _wrappedKP3R, // keep3rV1
     address _keep3rEscrow // keep3rV1Proxy
-  ) Keep3r(_governance, _keep3rHelperSidechain, _wrappedKP3R, _keep3rEscrow) {}
+  ) Keep3r(_governor, _keep3rHelperSidechain, _wrappedKP3R, _keep3rEscrow) {}
 
   // Keep3rSidechainAccountance
 
@@ -52,7 +52,7 @@ contract Keep3rSidechain is Keep3r, IKeep3rJobWorkableRated, IKeep3rSidechainAcc
   /// @notice Sidechain implementation asks the Helper for an oracle, instead of reading it from the ERC-20
   /// @dev Function should be called after setting an oracle in Keep3rHelperSidechain
   /// @param _liquidity Address of the liquidity token being approved
-  function approveLiquidity(address _liquidity) external virtual override onlyGovernance {
+  function approveLiquidity(address _liquidity) external virtual override onlyGovernor {
     if (!_approvedLiquidities.add(_liquidity)) revert LiquidityPairApproved();
     _liquidityPool[_liquidity] = IKeep3rHelperSidechain(keep3rHelper).oracle(_liquidity);
     if (_liquidityPool[_liquidity] == address(0)) revert ZeroAddress();

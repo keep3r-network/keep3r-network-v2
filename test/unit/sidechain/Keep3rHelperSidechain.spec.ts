@@ -3,7 +3,7 @@ import { KP3R_V1_ADDRESS, WETH_ADDRESS } from '@e2e/common';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { IKeep3r, IUniswapV3Pool, Keep3rHelperSidechain, Keep3rHelperSidechain__factory } from '@types';
 import { bn, evm, wallet } from '@utils';
-import { onlyGovernance } from '@utils/behaviours';
+import { onlyGovernor } from '@utils/behaviours';
 import { ZERO_ADDRESS } from '@utils/constants';
 import chai, { expect } from 'chai';
 import { ethers } from 'hardhat';
@@ -13,7 +13,7 @@ chai.use(smock.matchers);
 const DAY = 86400;
 
 describe('Keep3rHelperSidechain', () => {
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let helper: MockContract<Keep3rHelperSidechain>;
   let keep3rHelperSidechainFactory: MockContractFactory<Keep3rHelperSidechain__factory>;
   let keep3r: FakeContract<IKeep3r>;
@@ -23,7 +23,7 @@ describe('Keep3rHelperSidechain', () => {
   let snapshotId: string;
 
   before(async () => {
-    [, governance] = await ethers.getSigners();
+    [, governor] = await ethers.getSigners();
     keep3r = await smock.fake('IKeep3r');
     kp3rWethOracle = await smock.fake('IUniswapV3Pool');
     wethUsdOracle = await smock.fake('IUniswapV3Pool');
@@ -40,7 +40,7 @@ describe('Keep3rHelperSidechain', () => {
     keep3rHelperSidechainFactory = await smock.mock<Keep3rHelperSidechain__factory>('Keep3rHelperSidechain');
     helper = await keep3rHelperSidechainFactory.deploy(
       keep3r.address,
-      governance.address,
+      governor.address,
       KP3R_V1_ADDRESS,
       WETH_ADDRESS,
       kp3rWethOracle.address,
@@ -59,8 +59,8 @@ describe('Keep3rHelperSidechain', () => {
       expect(await helper.keep3rV2()).to.eq(keep3r.address);
     });
 
-    it('should initialize governance to the address passed to the constructor', async () => {
-      expect(await helper.governance()).to.eq(governance.address);
+    it('should initialize governor to the address passed to the constructor', async () => {
+      expect(await helper.governor()).to.eq(governor.address);
     });
 
     it('should initialize kp3rWethOracle to the address passed to the constructor', async () => {
@@ -74,7 +74,7 @@ describe('Keep3rHelperSidechain', () => {
 
       const deployed = await keep3rHelperSidechainFactory.deploy(
         keep3r.address,
-        governance.address,
+        governor.address,
         KP3R_V1_ADDRESS,
         WETH_ADDRESS,
         kp3rWethOracle.address,
@@ -96,7 +96,7 @@ describe('Keep3rHelperSidechain', () => {
 
       const deployed = await keep3rHelperSidechainFactory.deploy(
         keep3r.address,
-        governance.address,
+        governor.address,
         KP3R_V1_ADDRESS,
         WETH_ADDRESS,
         kp3rWethOracle.address,
@@ -142,26 +142,26 @@ describe('Keep3rHelperSidechain', () => {
   });
 
   describe('setOracle', () => {
-    onlyGovernance(
+    onlyGovernor(
       () => helper,
       'setOracle',
-      () => governance,
+      () => governor,
       [wallet.generateRandomAddress(), wallet.generateRandomAddress()]
     );
 
     it('should revert if any address is 0', async () => {
       const randomAddress = wallet.generateRandomAddress();
 
-      await expect(helper.connect(governance).setOracle(randomAddress, ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
-      await expect(helper.connect(governance).setOracle(ZERO_ADDRESS, randomAddress)).to.be.revertedWith('ZeroAddress()');
-      await expect(helper.connect(governance).setOracle(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+      await expect(helper.connect(governor).setOracle(randomAddress, ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+      await expect(helper.connect(governor).setOracle(ZERO_ADDRESS, randomAddress)).to.be.revertedWith('ZeroAddress()');
+      await expect(helper.connect(governor).setOracle(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
     });
 
     it('should store oracle address for given liquidity', async () => {
       const liquidity = wallet.generateRandomAddress();
       const oracle = wallet.generateRandomAddress();
 
-      await helper.connect(governance).setOracle(liquidity, oracle);
+      await helper.connect(governor).setOracle(liquidity, oracle);
 
       expect(await helper.oracle(liquidity)).to.eq(oracle);
     });
@@ -184,20 +184,20 @@ describe('Keep3rHelperSidechain', () => {
   });
 
   context('setWethUsdPool', () => {
-    onlyGovernance(
+    onlyGovernor(
       () => helper,
       'setWethUsdPool',
-      governance,
+      governor,
       () => [otherPool.address]
     );
 
     it('should revert if pool address is 0', async () => {
-      await expect(helper.connect(governance).setWethUsdPool(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+      await expect(helper.connect(governor).setWethUsdPool(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
     });
 
     it('should set wethUSDPool isTKNToken0 to true if WETH is token0', async () => {
       otherPool.token0.returns(WETH_ADDRESS);
-      await helper.connect(governance).setWethUsdPool(otherPool.address);
+      await helper.connect(governor).setWethUsdPool(otherPool.address);
       const isTKNToken0 = (await helper.callStatic.wethUSDPool()).isTKNToken0;
       expect(isTKNToken0).to.be.true;
     });
@@ -206,7 +206,7 @@ describe('Keep3rHelperSidechain', () => {
       otherPool.token0.returns(wallet.generateRandomAddress());
       otherPool.token1.returns(WETH_ADDRESS);
 
-      await helper.connect(governance).setWethUsdPool(otherPool.address);
+      await helper.connect(governor).setWethUsdPool(otherPool.address);
       const isTKNToken0 = (await helper.callStatic.wethUSDPool()).isTKNToken0;
       expect(isTKNToken0).to.be.false;
     });
@@ -215,12 +215,12 @@ describe('Keep3rHelperSidechain', () => {
       otherPool.token0.returns(wallet.generateRandomAddress());
       otherPool.token1.returns(wallet.generateRandomAddress());
 
-      await expect(helper.connect(governance).setWethUsdPool(otherPool.address)).to.be.revertedWith('InvalidOraclePool()');
+      await expect(helper.connect(governor).setWethUsdPool(otherPool.address)).to.be.revertedWith('InvalidOraclePool()');
     });
 
     it('should emit event', async () => {
       otherPool.token0.returns(WETH_ADDRESS);
-      await expect(helper.connect(governance).setWethUsdPool(otherPool.address))
+      await expect(helper.connect(governor).setWethUsdPool(otherPool.address))
         .to.emit(helper, 'WethUSDPoolChange')
         .withArgs(otherPool.address, true);
     });

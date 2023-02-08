@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import './IBaseErrors.sol';
-import './IGovernable.sol';
-import './IDustCollector.sol';
+import '@defi-wonderland/solidity-utils/solidity/interfaces/IBaseErrors.sol';
+import '@defi-wonderland/solidity-utils/solidity/interfaces/IGovernable.sol';
+import '@defi-wonderland/solidity-utils/solidity/interfaces/IDustCollector.sol';
 
 /// @title Keep3rRoles contract
 /// @notice Manages the Keep3r specific roles
-interface IKeep3rRoles is IBaseErrors, IDustCollector, IGovernable {
+interface IKeep3rRoles is IBaseErrors, IGovernable, IDustCollector {
   // Events
 
   /// @notice Emitted when a slasher is added

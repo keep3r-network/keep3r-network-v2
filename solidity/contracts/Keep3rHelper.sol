@@ -30,9 +30,9 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
   constructor(
     address _kp3r,
     address _keep3rV2,
-    address _governance,
+    address _governor,
     address _kp3rWethPool
-  ) Keep3rHelperParameters(_kp3r, _keep3rV2, _governance, _kp3rWethPool) {}
+  ) Keep3rHelperParameters(_kp3r, _keep3rV2, _governor, _kp3rWethPool) {}
 
   /// @inheritdoc IKeep3rHelper
   function quote(uint256 _eth) public view override returns (uint256 _amountOut) {

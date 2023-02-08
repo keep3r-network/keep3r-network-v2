@@ -54,7 +54,7 @@ describe('UniV3PairManager', () => {
   let wbtc: IERC20;
 
   //signers
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let whale: JsonRpcSigner;
 
   //misc
@@ -86,7 +86,7 @@ describe('UniV3PairManager', () => {
       blockNumber: common.FORK_BLOCK_NUMBER,
     });
 
-    [, governance] = await ethers.getSigners();
+    [, governor] = await ethers.getSigners();
 
     dai = (await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20', common.DAI_ADDRESS)) as IERC20;
     weth = (await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20', common.WETH_ADDRESS)) as IERC20;
@@ -104,7 +104,7 @@ describe('UniV3PairManager', () => {
     uniV3PairManagerFactory = (await ethers.getContractFactory('UniV3PairManagerFactory')) as UniV3PairManagerFactory__factory;
     liquidityAmountsFactory = (await ethers.getContractFactory('LiquidityAmountsForTest')) as LiquidityAmountsForTest__factory;
 
-    uniPairFactory = await uniV3PairManagerFactory.deploy(governance.address);
+    uniPairFactory = await uniV3PairManagerFactory.deploy(governor.address);
 
     // deploying different pairs
     await uniPairFactory.createPairManager(KP3R_WETH_1);
@@ -230,12 +230,12 @@ describe('UniV3PairManager', () => {
         await provideLiquidityAndSwap();
       });
 
-      it('should send the collected fees to governance', async () => {
+      it('should send the collected fees to governor', async () => {
         const tokensOwed0 = (await firstPair.position()).tokensOwed0;
         const tokensOwed1 = (await firstPair.position()).tokensOwed1;
-        await firstPair.connect(governance).collect();
-        expect(await kp3r.balanceOf(governance.address)).to.equal(tokensOwed0);
-        expect(await weth.balanceOf(governance.address)).to.equal(tokensOwed1);
+        await firstPair.connect(governor).collect();
+        expect(await kp3r.balanceOf(governor.address)).to.equal(tokensOwed0);
+        expect(await weth.balanceOf(governor.address)).to.equal(tokensOwed1);
       });
     });
   });
@@ -254,14 +254,14 @@ describe('UniV3PairManager', () => {
 
       it('should send the gathered fees to recipient', async () => {
         //check the initial balance is 0
-        expect(await kp3r.balanceOf(governance.address)).to.equal(0);
-        expect(await weth.balanceOf(governance.address)).to.equal(0);
+        expect(await kp3r.balanceOf(governor.address)).to.equal(0);
+        expect(await weth.balanceOf(governor.address)).to.equal(0);
 
         //expect the balance to grow after liquidity is burned and tokens are sent to him
-        await firstPair.connect(whale).burn(liquidity, amount0MinIsZero, amount1MinIsZero, governance.address);
+        await firstPair.connect(whale).burn(liquidity, amount0MinIsZero, amount1MinIsZero, governor.address);
 
-        expect(await kp3r.balanceOf(governance.address)).to.be.gt(0);
-        expect(await weth.balanceOf(governance.address)).to.be.gt(0);
+        expect(await kp3r.balanceOf(governor.address)).to.be.gt(0);
+        expect(await weth.balanceOf(governor.address)).to.be.gt(0);
       });
 
       it('should burn credits from the user who burns liquidity', async () => {

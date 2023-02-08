@@ -7,7 +7,7 @@ Handles the actions that can be taken on a disputed keeper
 
 ### `slash(address _keeper, address _bonded, uint256 _bondAmount, uint256 _unbondAmount)` (external)
 
-Allows governance to slash a keeper based on a dispute
+Allows governor to slash a keeper based on a dispute
 
 
 

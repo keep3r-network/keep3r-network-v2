@@ -22,11 +22,11 @@ interface IKeep3rDisputable {
   /// @notice Throws when a job or keeper is not disputed and someone tries to resolve the dispute
   error NotDisputed();
 
-  /// @notice Allows governance to create a dispute for a given keeper/job
+  /// @notice Allows governor to create a dispute for a given keeper/job
   /// @param _jobOrKeeper The address in dispute
   function dispute(address _jobOrKeeper) external;
 
-  /// @notice Allows governance to resolve a dispute on a keeper/job
+  /// @notice Allows governor to resolve a dispute on a keeper/job
   /// @param _jobOrKeeper The address cleared
   function resolve(address _jobOrKeeper) external;
 }

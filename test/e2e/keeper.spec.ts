@@ -11,7 +11,7 @@ import * as common from './common';
 describe('@skip-on-coverage Keep3r', () => {
   let dai: IERC20;
   let keeper: JsonRpcSigner;
-  let governance: JsonRpcSigner;
+  let governor: JsonRpcSigner;
   let keep3r: Keep3r;
   let keep3rV1: IKeep3rV1;
   let keep3rV1Proxy: IKeep3rV1Proxy;
@@ -26,7 +26,7 @@ describe('@skip-on-coverage Keep3r', () => {
       blockNumber: common.FORK_BLOCK_NUMBER,
     });
 
-    ({ keep3r, governance, keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance } = await common.setupKeep3r());
+    ({ keep3r, governor, keep3rV1, keep3rV1Proxy, keep3rV1ProxyGovernance } = await common.setupKeep3r());
 
     keeper = await wallet.impersonate(common.RICH_ETH_DAI_ADDRESS);
 
@@ -102,7 +102,7 @@ describe('@skip-on-coverage Keep3r', () => {
 
       newERC20 = (await (await ethers.getContractFactory('ERC20ForTest')).deploy('NewKP3R', 'nKP3R', keeper._address, BONDS)) as IERC20;
 
-      await keep3r.connect(governance).setKeep3rV1(newERC20.address);
+      await keep3r.connect(governor).setKeep3rV1(newERC20.address);
       await keep3rV1Proxy.connect(keep3rV1ProxyGovernance).setKeep3rV1(newERC20.address);
     });
 

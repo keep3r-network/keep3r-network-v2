@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../peripherals/IGovernable.sol';
+import '@defi-wonderland/solidity-utils/solidity/interfaces/IBaseErrors.sol';
 
-interface IKeep3rV1Proxy is IGovernable {
+interface IKeep3rV1Proxy is IBaseErrors {
   // Structs
   struct Recipient {
     address recipient;
@@ -12,6 +12,10 @@ interface IKeep3rV1Proxy is IGovernable {
 
   // Variables
   function keep3rV1() external view returns (address);
+
+  function governance() external view returns (address);
+
+  function pendingGovernance() external view returns (address);
 
   function minter() external view returns (address);
 
@@ -26,8 +30,9 @@ interface IKeep3rV1Proxy is IGovernable {
   // Errors
   error Cooldown();
   error NoDrawableAmount();
-  error ZeroAddress();
   error OnlyMinter();
+  error OnlyGovernance();
+  error OnlyPendingGovernance();
 
   // Methods
   function addRecipient(address recipient, uint256 amount) external;
@@ -43,6 +48,10 @@ interface IKeep3rV1Proxy is IGovernable {
   function mint(uint256 _amount) external;
 
   function mint(address _account, uint256 _amount) external;
+
+  function setGovernance(address _governance) external;
+
+  function acceptGovernance() external;
 
   function setKeep3rV1Governance(address _governance) external;
 
