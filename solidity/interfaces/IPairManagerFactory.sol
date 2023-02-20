@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import './peripherals/IGovernable.sol';
+import '@defi-wonderland/solidity-utils/solidity/interfaces/IGovernable.sol';
 
 /// @title Factory of Pair Managers
 /// @notice This contract creates new pair managers

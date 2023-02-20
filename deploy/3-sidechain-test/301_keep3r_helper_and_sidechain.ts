@@ -2,7 +2,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployer, governor, kp3rV1, kp3rWethOracle, wethUsdOracle } = await hre.getNamedAccounts();
+  const { deployer, governor, kp3rV1, kp3rWethOracle, wethUsdOracle, usdDecimals } = await hre.getNamedAccounts();
   const { kp3rV1: mainnetKp3rV1, weth: mainnetWeth } = await hre.companionNetworks['mainnet'].getNamedAccounts();
 
   const keep3rEscrow = await hre.deployments.get('Keep3rEscrow');
@@ -11,7 +11,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   const currentNonce: number = await hre.ethers.provider.getTransactionCount(deployer);
   const keeperV2Address: string = hre.ethers.utils.getContractAddress({ from: deployer, nonce: currentNonce + 1 });
 
-  const keep3rHelperArgs = [keeperV2Address, governor, mainnetKp3rV1, mainnetWeth, kp3rWethOracle, wethUsdOracle];
+  const keep3rHelperArgs = [keeperV2Address, governor, mainnetKp3rV1, mainnetWeth, kp3rWethOracle, wethUsdOracle, usdDecimals];
 
   const keep3rHelper = await hre.deployments.deploy('Keep3rHelperSidechain', {
     from: deployer,

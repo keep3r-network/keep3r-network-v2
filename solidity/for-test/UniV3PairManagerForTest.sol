@@ -13,7 +13,7 @@ import '../interfaces/external/IWeth9.sol';
 import '../interfaces/IUniV3PairManager.sol';
 
 contract UniV3PairManagerForTest is UniV3PairManager {
-  constructor(address _pool, address _governance) UniV3PairManager(_pool, _governance) {}
+  constructor(address _pool, address _governor) UniV3PairManager(_pool, _governor) {}
 
   function internalAddLiquidity(
     uint256 amount0Desired,

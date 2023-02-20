@@ -5,9 +5,9 @@ import '../contracts/Keep3r.sol';
 
 contract Keep3rForTest is Keep3r {
   constructor(
-    address _governance,
+    address _governor,
     address _keep3rHelper,
     address _keep3rV1,
     address _keep3rV1Proxy
-  ) Keep3r(_governance, _keep3rHelper, _keep3rV1, _keep3rV1Proxy) {}
+  ) Keep3r(_governor, _keep3rHelper, _keep3rV1, _keep3rV1Proxy) {}
 }

@@ -9,14 +9,14 @@ Creates/resolves disputes for jobs or keepers
 
 ### `dispute(address _jobOrKeeper)` (external)
 
-Allows governance to create a dispute for a given keeper/job
+Allows governor to create a dispute for a given keeper/job
 
 
 
 
 ### `resolve(address _jobOrKeeper)` (external)
 
-Allows governance to resolve a dispute on a keeper/job
+Allows governor to resolve a dispute on a keeper/job
 
 
 

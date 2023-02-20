@@ -78,8 +78,8 @@ interface IKeep3rParameters is IKeep3rAccountance {
   /// @return _period The denominator used to regulate the emission of KP3R
   function inflationPeriod() external view returns (uint256 _period);
 
-  /// @notice The fee to be sent to governance when a user adds liquidity to a job
-  /// @return _amount The fee amount to be sent to governance when a user adds liquidity to a job
+  /// @notice The fee to be sent to governor when a user adds liquidity to a job
+  /// @return _amount The fee amount to be sent to governor when a user adds liquidity to a job
   function fee() external view returns (uint256 _amount);
 
   // Errors

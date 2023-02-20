@@ -15,7 +15,7 @@ describe('UniV3PairManagerFactory', () => {
   let createdManager: UniV3PairManager;
 
   //signers
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
 
   //misc
   let snapshotId: string;
@@ -26,11 +26,11 @@ describe('UniV3PairManagerFactory', () => {
       blockNumber: common.FORK_BLOCK_NUMBER,
     });
 
-    [, governance] = await ethers.getSigners();
+    [, governor] = await ethers.getSigners();
 
     uniV3PairManagerFactory = (await ethers.getContractFactory('UniV3PairManagerFactory')) as UniV3PairManagerFactory__factory;
 
-    uniPairFactory = await uniV3PairManagerFactory.deploy(governance.address);
+    uniPairFactory = await uniV3PairManagerFactory.deploy(governor.address);
 
     snapshotId = await snapshot.take();
   });
@@ -56,8 +56,8 @@ describe('UniV3PairManagerFactory', () => {
       expect(createdManagerAddress).to.eq(expectedAddress);
     });
 
-    it('should set the governance of the created pair manager to the owner of the factory', async () => {
-      expect(await createdManager.governance()).to.equal(governance.address);
+    it('should set the governor of the created pair manager to the owner of the factory', async () => {
+      expect(await createdManager.governor()).to.equal(governor.address);
     });
   });
 });
