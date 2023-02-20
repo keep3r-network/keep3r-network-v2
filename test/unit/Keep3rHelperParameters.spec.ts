@@ -41,18 +41,18 @@ describe('Keep3rHelperParameters', () => {
       expect(assignedAddress).to.equal(pool.address);
     });
 
-    it('should set kp3rWethPool isTKNToken0 to true if KP3R is token0', async () => {
+    it('should set kp3rWethPool isKP3RToken0 to true if KP3R is token0', async () => {
       parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governor.address, pool.address);
-      const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
-      expect(isTKNToken0).to.be.true;
+      const isKP3RToken0 = (await parameters.callStatic.kp3rWethPool()).isKP3RToken0;
+      expect(isKP3RToken0).to.be.true;
     });
 
-    it('should set kp3rWethPool isTKNToken0 to false if KP3R is not token0', async () => {
+    it('should set kp3rWethPool isKP3RToken0 to false if KP3R is not token0', async () => {
       pool.token0.returns(generateRandomAddress());
       pool.token1.returns(KP3R_V1_ADDRESS);
       parameters = await parametersFactory.deploy(KP3R_V1_ADDRESS, randomKeep3rV2Address, governor.address, pool.address);
-      const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
-      expect(isTKNToken0).to.be.false;
+      const isKP3RToken0 = (await parameters.callStatic.kp3rWethPool()).isKP3RToken0;
+      expect(isKP3RToken0).to.be.false;
     });
   });
 
@@ -79,19 +79,19 @@ describe('Keep3rHelperParameters', () => {
       await expect(parameters.connect(governor).setKp3rWethPool(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
     });
 
-    it('should set kp3rWethPool isTKNToken0 to true if KP3R is token0', async () => {
+    it('should set kp3rWethPool isKP3RToken0 to true if KP3R is token0', async () => {
       await parameters.connect(governor).setKp3rWethPool(otherPool.address);
-      const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
-      expect(isTKNToken0).to.be.true;
+      const isKP3RToken0 = (await parameters.callStatic.kp3rWethPool()).isKP3RToken0;
+      expect(isKP3RToken0).to.be.true;
     });
 
-    it('should set kp3rWethPool isTKNToken0 to false if KP3R is not token0', async () => {
+    it('should set kp3rWethPool isKP3RToken0 to false if KP3R is not token0', async () => {
       otherPool.token0.returns(generateRandomAddress());
       otherPool.token1.returns(KP3R_V1_ADDRESS);
 
       await parameters.connect(governor).setKp3rWethPool(otherPool.address);
-      const isTKNToken0 = (await parameters.callStatic.kp3rWethPool()).isTKNToken0;
-      expect(isTKNToken0).to.be.false;
+      const isKP3RToken0 = (await parameters.callStatic.kp3rWethPool()).isKP3RToken0;
+      expect(isKP3RToken0).to.be.false;
     });
 
     it('should revert if pool does not contain KP3R as token0 nor token1', async () => {

@@ -45,7 +45,7 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, IBaseErrors, Governa
   address public override keep3rV2;
 
   /// @inheritdoc IKeep3rHelperParameters
-  IKeep3rHelperParameters.TokenOraclePool public override kp3rWethPool;
+  IKeep3rHelperParameters.Kp3rWethOraclePool public override kp3rWethPool;
 
   constructor(
     address _kp3r,
@@ -57,8 +57,9 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, IBaseErrors, Governa
     keep3rV2 = _keep3rV2;
 
     // Immutable variables [KP3R] cannot be read during contract creation time [_setKp3rWethPool]
-    kp3rWethPool = _validateOraclePool(_kp3rWethPool, _kp3r);
-    emit Kp3rWethPoolChange(kp3rWethPool.poolAddress, kp3rWethPool.isTKNToken0);
+    bool _isKP3RToken0 = _validateOraclePool(_kp3rWethPool, KP3R);
+    kp3rWethPool = Kp3rWethOraclePool(_kp3rWethPool, _isKP3RToken0);
+    emit Kp3rWethPoolChange(_kp3rWethPool, _isKP3RToken0);
   }
 
   /// @inheritdoc IKeep3rHelperParameters
@@ -123,15 +124,13 @@ contract Keep3rHelperParameters is IKeep3rHelperParameters, IBaseErrors, Governa
   /// @notice Sets KP3R-WETH pool
   /// @param _poolAddress The address of the KP3R-WETH pool
   function _setKp3rWethPool(address _poolAddress) internal {
-    kp3rWethPool = _validateOraclePool(_poolAddress, KP3R);
-    emit Kp3rWethPoolChange(kp3rWethPool.poolAddress, kp3rWethPool.isTKNToken0);
+    bool _isKP3RToken0 = _validateOraclePool(_poolAddress, KP3R);
+    kp3rWethPool = Kp3rWethOraclePool(_poolAddress, _isKP3RToken0);
+    emit Kp3rWethPoolChange(_poolAddress, _isKP3RToken0);
   }
 
-  function _validateOraclePool(address _poolAddress, address _token) internal view virtual returns (TokenOraclePool memory _oraclePool) {
-    bool _isTKNToken0 = IUniswapV3Pool(_poolAddress).token0() == _token;
-
+  function _validateOraclePool(address _poolAddress, address _token) internal view virtual returns (bool _isTKNToken0) {
+    _isTKNToken0 = IUniswapV3Pool(_poolAddress).token0() == _token;
     if (!_isTKNToken0 && IUniswapV3Pool(_poolAddress).token1() != _token) revert InvalidOraclePool();
-
-    return TokenOraclePool(_poolAddress, _isTKNToken0);
   }
 }

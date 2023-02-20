@@ -21,7 +21,14 @@ import chai, { expect } from 'chai';
 import { solidity } from 'ethereum-waffle';
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
-import { KP3R_V1_ADDRESS, KP3R_WETH_V3_POOL_ADDRESS, PAIR_MANAGER_ADDRESS, WETH_ADDRESS, WETH_DAI_V3_POOL_ADDRESS } from './common';
+import {
+  KP3R_V1_ADDRESS,
+  KP3R_WETH_V3_POOL_ADDRESS,
+  PAIR_MANAGER_ADDRESS,
+  WETH_ADDRESS,
+  WETH_DAI_V3_POOL_ADDRESS,
+  WETH_USDC_V3_POOL_ADDRESS,
+} from './common';
 
 const kp3rWhaleAddress = '0xa0f75491720835b36edc92d06ddc468d201e9b73';
 
@@ -31,7 +38,7 @@ const DAY = 86400;
 const ONE = bn.toUnit(1);
 const BONDS = bn.toUnit(10);
 const ESCROW_AMOUNT = bn.toUnit(100);
-const DELTA = bn.toUnit(0.001).toNumber();
+const DELTA = bn.toUnit(0.001).toNumber(); // in KP3Rs (18 decimals)
 
 describe('Keep3r Sidechain @skip-on-coverage', () => {
   let deployer: SignerWithAddress;
@@ -94,7 +101,9 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
       KP3R_V1_ADDRESS,
       WETH_ADDRESS,
       KP3R_WETH_V3_POOL_ADDRESS, // uses KP3R-WETH pool as oracle
-      WETH_DAI_V3_POOL_ADDRESS // uses WETH-DAI pool as oracle
+      // helper uses WETH-USDC and test uses WETH-DAI to verify
+      WETH_USDC_V3_POOL_ADDRESS, // uses WETH-USDC pool as oracle
+      6 // USDC has 6 decimals
     );
 
     const kp3rSidechainFactory = (await ethers.getContractFactory('Keep3rSidechain')) as Keep3rSidechain__factory;

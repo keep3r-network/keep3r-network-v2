@@ -41,7 +41,7 @@ contract Keep3rHelper is IKeep3rHelper, Keep3rHelperParameters {
 
     (int56[] memory _tickCumulatives, ) = IUniswapV3Pool(kp3rWethPool.poolAddress).observe(_secondsAgos);
     int56 _difference = _tickCumulatives[0] - _tickCumulatives[1];
-    _amountOut = getQuoteAtTick(uint128(_eth), kp3rWethPool.isTKNToken0 ? _difference : -_difference, quoteTwapTime);
+    _amountOut = getQuoteAtTick(uint128(_eth), kp3rWethPool.isKP3RToken0 ? _difference : -_difference, quoteTwapTime);
   }
 
   /// @inheritdoc IKeep3rHelper

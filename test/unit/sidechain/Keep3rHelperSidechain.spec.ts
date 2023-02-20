@@ -22,6 +22,8 @@ describe('Keep3rHelperSidechain', () => {
   let otherPool: FakeContract<IUniswapV3Pool>;
   let snapshotId: string;
 
+  const USD_POOL_DECIMALS = 18;
+
   before(async () => {
     [, governor] = await ethers.getSigners();
     keep3r = await smock.fake('IKeep3r');
@@ -44,7 +46,8 @@ describe('Keep3rHelperSidechain', () => {
       KP3R_V1_ADDRESS,
       WETH_ADDRESS,
       kp3rWethOracle.address,
-      wethUsdOracle.address
+      wethUsdOracle.address,
+      USD_POOL_DECIMALS
     );
 
     snapshotId = await evm.snapshot.take();
@@ -66,7 +69,7 @@ describe('Keep3rHelperSidechain', () => {
     it('should initialize kp3rWethOracle to the address passed to the constructor', async () => {
       const kp3rWethPool = await helper.kp3rWethPool();
       expect(kp3rWethPool.poolAddress).to.eq(kp3rWethOracle.address);
-      expect(kp3rWethPool.isTKNToken0).to.eq(false);
+      expect(kp3rWethPool.isKP3RToken0).to.eq(false);
     });
 
     it('should initialize kp3rWethOracle with the correct token0', async () => {
@@ -78,17 +81,19 @@ describe('Keep3rHelperSidechain', () => {
         KP3R_V1_ADDRESS,
         WETH_ADDRESS,
         kp3rWethOracle.address,
-        wethUsdOracle.address
+        wethUsdOracle.address,
+        18
       );
 
       const kp3rWethPool = await deployed.kp3rWethPool();
-      expect(kp3rWethPool.isTKNToken0).to.eq(true);
+      expect(kp3rWethPool.isKP3RToken0).to.eq(true);
     });
 
     it('should initialize wethUsdOracle to the address passed to the constructor', async () => {
       const wethUSDPool = await helper.wethUSDPool();
       expect(wethUSDPool.poolAddress).to.eq(wethUsdOracle.address);
-      expect(wethUSDPool.isTKNToken0).to.eq(false);
+      expect(wethUSDPool.isWETHToken0).to.eq(false);
+      expect(wethUSDPool.usdDecimals).to.eq(USD_POOL_DECIMALS);
     });
 
     it('should initialize wethUsdOracle with the correct token0', async () => {
@@ -100,11 +105,12 @@ describe('Keep3rHelperSidechain', () => {
         KP3R_V1_ADDRESS,
         WETH_ADDRESS,
         kp3rWethOracle.address,
-        wethUsdOracle.address
+        wethUsdOracle.address,
+        USD_POOL_DECIMALS
       );
 
       const wethUSDPool = await deployed.wethUSDPool();
-      expect(wethUSDPool.isTKNToken0).to.eq(true);
+      expect(wethUSDPool.isWETHToken0).to.eq(true);
     });
 
     it('should initialize quote twap time to 1 day', async () => {
@@ -184,45 +190,56 @@ describe('Keep3rHelperSidechain', () => {
   });
 
   context('setWethUsdPool', () => {
+    const USD_POOL_DECIMALS = 6;
     onlyGovernor(
       () => helper,
       'setWethUsdPool',
       governor,
-      () => [otherPool.address]
+      () => [otherPool.address, USD_POOL_DECIMALS]
     );
 
     it('should revert if pool address is 0', async () => {
-      await expect(helper.connect(governor).setWethUsdPool(ZERO_ADDRESS)).to.be.revertedWith('ZeroAddress()');
+      await expect(helper.connect(governor).setWethUsdPool(ZERO_ADDRESS, USD_POOL_DECIMALS)).to.be.revertedWith('ZeroAddress()');
     });
 
-    it('should set wethUSDPool isTKNToken0 to true if WETH is token0', async () => {
+    it('should set wethUSDPool isWETHToken0 to true if WETH is token0', async () => {
       otherPool.token0.returns(WETH_ADDRESS);
-      await helper.connect(governor).setWethUsdPool(otherPool.address);
-      const isTKNToken0 = (await helper.callStatic.wethUSDPool()).isTKNToken0;
-      expect(isTKNToken0).to.be.true;
+      await helper.connect(governor).setWethUsdPool(otherPool.address, USD_POOL_DECIMALS);
+      const isWETHToken0 = (await helper.callStatic.wethUSDPool()).isWETHToken0;
+      expect(isWETHToken0).to.be.true;
     });
 
-    it('should set wethUSDPool isTKNToken0 to false if WETH is not token0', async () => {
+    it('should set wethUSDPool isWETHToken0 to false if WETH is not token0', async () => {
       otherPool.token0.returns(wallet.generateRandomAddress());
       otherPool.token1.returns(WETH_ADDRESS);
 
-      await helper.connect(governor).setWethUsdPool(otherPool.address);
-      const isTKNToken0 = (await helper.callStatic.wethUSDPool()).isTKNToken0;
-      expect(isTKNToken0).to.be.false;
+      await helper.connect(governor).setWethUsdPool(otherPool.address, USD_POOL_DECIMALS);
+      const isWETHToken0 = (await helper.callStatic.wethUSDPool()).isWETHToken0;
+      expect(isWETHToken0).to.be.false;
+    });
+
+    it('should set wethUSDPool parameters', async () => {
+      otherPool.token0.returns(WETH_ADDRESS);
+
+      await helper.connect(governor).setWethUsdPool(otherPool.address, USD_POOL_DECIMALS);
+      const wethUSDPool = await helper.callStatic.wethUSDPool();
+      expect(wethUSDPool.poolAddress).to.eq(otherPool.address);
+      expect(wethUSDPool.isWETHToken0).to.be.true;
+      expect(wethUSDPool.usdDecimals).to.eq(USD_POOL_DECIMALS);
     });
 
     it('should revert if pool does not contain KP3R as token0 nor token1', async () => {
       otherPool.token0.returns(wallet.generateRandomAddress());
       otherPool.token1.returns(wallet.generateRandomAddress());
 
-      await expect(helper.connect(governor).setWethUsdPool(otherPool.address)).to.be.revertedWith('InvalidOraclePool()');
+      await expect(helper.connect(governor).setWethUsdPool(otherPool.address, USD_POOL_DECIMALS)).to.be.revertedWith('InvalidOraclePool()');
     });
 
     it('should emit event', async () => {
       otherPool.token0.returns(WETH_ADDRESS);
-      await expect(helper.connect(governor).setWethUsdPool(otherPool.address))
+      await expect(helper.connect(governor).setWethUsdPool(otherPool.address, USD_POOL_DECIMALS))
         .to.emit(helper, 'WethUSDPoolChange')
-        .withArgs(otherPool.address, true);
+        .withArgs(otherPool.address, true, USD_POOL_DECIMALS);
     });
   });
 });
