@@ -22,7 +22,7 @@ Sets a new address to be the minter
 
 ### `MinterSet(address _minter)`
 
-Emitted when governance sets a new minter
+Emitted when governor sets a new minter
 
 
 

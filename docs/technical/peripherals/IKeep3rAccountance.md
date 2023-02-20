@@ -6,6 +6,13 @@ Disputes keepers, or if they're already disputed, it can resolve the case
 Argument `bonding` can be the address of either a token or a liquidity
 
 
+### `totalBonds() → uint256 _totalBonds` (external)
+
+Tracks the total amount of bonded KP3Rs in the contract
+
+
+
+
 ### `workCompleted(address _keeper) → uint256 _workCompleted` (external)
 
 Tracks the total KP3R earnings of a keeper since it started working

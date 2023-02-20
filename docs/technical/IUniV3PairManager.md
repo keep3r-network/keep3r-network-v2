@@ -75,7 +75,7 @@ Returns the pair manager's position in the corresponding UniswapV3 pool
 
 
 
-The collected fees will be sent to governance
+The collected fees will be sent to governor
 
 
 ### `burn(uint128 liquidity, uint256 amount0Min, uint256 amount1Min, address to) → uint256 amount0, uint256 amount1` (external)

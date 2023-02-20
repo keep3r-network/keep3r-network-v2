@@ -3,7 +3,7 @@ pragma solidity >=0.8.4 <0.9.0;
 
 import './IPairManager.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
-import './peripherals/IGovernable.sol';
+import '@defi-wonderland/solidity-utils/solidity/interfaces/IGovernable.sol';
 
 /// @title Pair Manager contract
 /// @notice Creates a UniswapV3 position, and tokenizes in an ERC20 manner
@@ -109,7 +109,7 @@ interface IUniV3PairManager is IGovernable, IPairManager {
 
   /// @notice Calls the UniswapV3 pool's collect function, which collects up to a maximum amount of fees
   //          owed to a specific position to the recipient, in this case, that recipient is the pair manager
-  /// @dev The collected fees will be sent to governance
+  /// @dev The collected fees will be sent to governor
   /// @return amount0 The amount of fees collected in token0
   /// @return amount1 The amount of fees collected in token1
   function collect() external returns (uint256 amount0, uint256 amount1);

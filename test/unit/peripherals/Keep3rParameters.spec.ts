@@ -1,7 +1,8 @@
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { IKeep3rV1Proxy, Keep3rHelper, Keep3rParametersForTest, Keep3rParametersForTest__factory } from '@types';
-import { behaviours, wallet } from '@utils';
+import { wallet } from '@utils';
+import { onlyGovernor } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
 import { ZERO_ADDRESS } from '@utils/constants';
 import { expect } from 'chai';
@@ -10,7 +11,7 @@ import { ethers } from 'hardhat';
 
 describe('Keep3rParameters', () => {
   let parameters: MockContract<Keep3rParametersForTest>;
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let parametersFactory: MockContractFactory<Keep3rParametersForTest__factory>;
   let keep3rHelper: FakeContract<Keep3rHelper>;
   let keep3rV1Proxy: FakeContract<IKeep3rV1Proxy>;
@@ -18,7 +19,7 @@ describe('Keep3rParameters', () => {
   const randomAddress = wallet.generateRandomAddress();
 
   before(async () => {
-    [governance] = await ethers.getSigners();
+    [governor] = await ethers.getSigners();
 
     keep3rV1Proxy = await smock.fake<IKeep3rV1Proxy>('IKeep3rV1Proxy');
     parametersFactory = await smock.mock<Keep3rParametersForTest__factory>('Keep3rParametersForTest');
@@ -43,7 +44,7 @@ describe('Keep3rParameters', () => {
   ].forEach((method) => {
     describe(method.name, () => {
       let parametersContract: Contract;
-      behaviours.onlyGovernance(() => parameters, method.name, governance, method.args);
+      onlyGovernor(() => parameters, method.name, governor, method.args);
 
       beforeEach(async () => {
         parametersContract = parameters as unknown as Contract;

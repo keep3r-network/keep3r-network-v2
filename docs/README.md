@@ -24,15 +24,15 @@ The Keep3r Network also supports staking in Optimism and Polygon, where the paym
 | Chain (`chainId`) | Implementation | Address |
 | -------- | -------- | -------- |
 | Ethereum (`1`)    | Keep3r     | `0xeb02addCfD8B773A5FFA6B9d1FE99c566f8c44CC`     |
-| Optimism (`10`)    | Keep3rSidechain     | `TBD`     |
+| Optimism (`10`)    | Keep3rSidechain     | `0x745a50320B6eB8FF281f1664Fc6713991661B129`     |
 | Polygon (`137`)    | Keep3rSidechain     | `TBD`     |
 
 #### Testnet environment
 | Chain (`chainId`) | Implementation | Address |
 | -------- | -------- | -------- |
-| Goerli (`5`)    | Keep3rForTestnet     | `0x229d018065019c3164B899F4B9c2d4ffEae9B92b`     |
-| Goerli (`5`)    | JobForTest     | `0x214DfEBeEfd0BeE69Aba7F22Ea5438797879a4a4`     |
-| OPGoerli (`420`)    | Keep3rSidechainForTestnet     | `0x3C9636ab56aced6C845d6D13805901A0a0B13b51`     |
-| OPGoerli (`420`)    | JobRatedForTest     | `0x8276688087b581A9e9d18FD88FbB5E66bAa43682`     |
+| Goerli (`5`)    | Keep3rForTestnet     | `0x85063437C02Ba7F4f82F898859e4992380DEd3bb`     |
+| Goerli (`5`)    | JobForTest     | `0xa2c7A15FFc02e00cdeedBba56c41dAaed84f8734`     |
+| OPGoerli (`420`)    | Keep3rSidechainForTestnet     | `0x85063437C02Ba7F4f82F898859e4992380DEd3bb`     |
+| OPGoerli (`420`)    | JobRatedForTest     | `0x9abB5cfF47b9F604351a6f0730d9fe39Fb620B2b`     |
 
 > ForTestnet implementations allow instant bonding and unbonding, and use a free-to-mint ERC20 as KP3Rv1.

@@ -9,8 +9,9 @@ import {
   Keep3rSidechainForTest,
   Keep3rSidechainForTest__factory,
 } from '@types';
-import { bn, constants, contracts, evm, wallet } from '@utils';
-import { onlyGovernance } from '@utils/behaviours';
+import { bn, contracts, evm, wallet } from '@utils';
+import { onlyGovernor } from '@utils/behaviours';
+import { ZERO_ADDRESS } from '@utils/constants';
 import { readArgFromEvent, readArgsFromEvent } from '@utils/event-utils';
 import { MathUtils, mathUtilsFactory } from '@utils/math';
 import chai, { expect } from 'chai';
@@ -20,7 +21,7 @@ import { ethers } from 'hardhat';
 chai.use(smock.matchers);
 
 describe('Keep3rSidechain', () => {
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let randomKeeper: SignerWithAddress;
   let keep3r: MockContract<Keep3rSidechainForTest>;
   let keep3rFactory: MockContractFactory<Keep3rSidechainForTest__factory>;
@@ -39,7 +40,7 @@ describe('Keep3rSidechain', () => {
   const DAY = 86400;
 
   before(async () => {
-    [, governance, randomKeeper] = await ethers.getSigners();
+    [, governor, randomKeeper] = await ethers.getSigners();
     keep3rFactory = await smock.mock('Keep3rSidechainForTest');
 
     helper = await smock.fake('Keep3rHelperSidechain');
@@ -55,7 +56,7 @@ describe('Keep3rSidechain', () => {
   });
 
   beforeEach(async () => {
-    keep3r = await keep3rFactory.deploy(governance.address, helper.address, wKP3R.address, escrow.address);
+    keep3r = await keep3rFactory.deploy(governor.address, helper.address, wKP3R.address, escrow.address);
 
     rewardPeriodTime = (await keep3r.rewardPeriodTime()).toNumber();
     const inflationPeriodTime = (await keep3r.inflationPeriod()).toNumber();
@@ -72,60 +73,60 @@ describe('Keep3rSidechain', () => {
       helper.oracle.returns(oraclePool);
     });
 
-    onlyGovernance(
+    onlyGovernor(
       () => keep3r,
       'approveLiquidity',
-      () => governance,
+      () => governor,
       [liquidity]
     );
 
     it('should add the liquidity to approved liquidities list', async () => {
-      await keep3r.connect(governance).approveLiquidity(liquidity);
+      await keep3r.connect(governor).approveLiquidity(liquidity);
       expect(await keep3r.approvedLiquidities()).to.contain(liquidity);
     });
 
     it('should revert when liquidity already approved', async () => {
-      await keep3r.connect(governance).approveLiquidity(liquidity);
-      await expect(keep3r.connect(governance).approveLiquidity(liquidity)).to.be.revertedWith('LiquidityPairApproved()');
+      await keep3r.connect(governor).approveLiquidity(liquidity);
+      await expect(keep3r.connect(governor).approveLiquidity(liquidity)).to.be.revertedWith('LiquidityPairApproved()');
     });
 
     it('should query keep3r helper for the correspondant oracle pool', async () => {
-      await keep3r.connect(governance).approveLiquidity(liquidity);
+      await keep3r.connect(governor).approveLiquidity(liquidity);
 
       expect(helper.oracle).to.have.been.calledOnceWith(liquidity);
     });
 
     it('should revert if helper has no oracle for liquidity', async () => {
-      helper.oracle.returns(constants.ZERO_ADDRESS);
-      await expect(keep3r.connect(governance).approveLiquidity(liquidity)).to.be.revertedWith('ZeroAddress');
+      helper.oracle.returns(ZERO_ADDRESS);
+      await expect(keep3r.connect(governor).approveLiquidity(liquidity)).to.be.revertedWith('ZeroAddress');
     });
 
     it('should store the correspondant oracle pool', async () => {
-      await keep3r.connect(governance).approveLiquidity(liquidity);
+      await keep3r.connect(governor).approveLiquidity(liquidity);
 
       expect(await keep3r.getVariable('_liquidityPool', [liquidity])).to.eq(oraclePool);
     });
 
     it('should query keep3r helper for the token order', async () => {
-      await keep3r.connect(governance).approveLiquidity(liquidity);
+      await keep3r.connect(governor).approveLiquidity(liquidity);
 
       expect(helper.isKP3RToken0).to.have.been.calledOnceWith(oraclePool);
     });
 
     it('should sort the tokens in the liquidity pair', async () => {
       helper.isKP3RToken0.returns(true);
-      await keep3r.connect(governance).approveLiquidity(liquidity);
+      await keep3r.connect(governor).approveLiquidity(liquidity);
 
       expect(await keep3r.getVariable('_isKP3RToken0', [liquidity])).to.eq(true);
     });
 
     it('should initialize twap for liquidity', async () => {
-      await keep3r.connect(governance).approveLiquidity(liquidity);
+      await keep3r.connect(governor).approveLiquidity(liquidity);
       expect(helper.observe).to.have.been.called;
     });
 
     it('should emit event', async () => {
-      await expect(keep3r.connect(governance).approveLiquidity(liquidity)).to.emit(keep3r, 'LiquidityApproval').withArgs(liquidity);
+      await expect(keep3r.connect(governor).approveLiquidity(liquidity)).to.emit(keep3r, 'LiquidityApproval').withArgs(liquidity);
     });
   });
 
@@ -232,7 +233,7 @@ describe('Keep3rSidechain', () => {
         blockTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
 
         helper.oracle.whenCalledWith(liquidity).returns(oraclePool.address);
-        await keep3r.connect(governance).approveLiquidity(liquidity);
+        await keep3r.connect(governor).approveLiquidity(liquidity);
 
         await keep3r.setVariables({
           _isKP3RToken0: { [oraclePool.address]: true },

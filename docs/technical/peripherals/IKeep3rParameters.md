@@ -63,7 +63,7 @@ The inflation period is the denominator used to regulate the emission of KP3R
 
 ### `fee() → uint256 _amount` (external)
 
-The fee to be sent to governance when a user adds liquidity to a job
+The fee to be sent to governor when a user adds liquidity to a job
 
 
 

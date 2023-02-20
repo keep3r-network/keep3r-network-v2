@@ -6,7 +6,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   const pairManager = await hre.deployments.get('UniV3PairManager');
   await verifyContract(hre, pairManager);
 
-  const keep3rHelper = await hre.deployments.get('Keep3rHelperForTestnet');
+  const keep3rHelper = await hre.deployments.get('Keep3rHelper');
   await verifyContract(hre, keep3rHelper);
 
   const keep3rV2 = await hre.deployments.get('Keep3rForTestnet');

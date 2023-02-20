@@ -146,7 +146,7 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   // Methods
 
   /// @inheritdoc IKeep3rJobFundableLiquidity
-  function forceLiquidityCreditsToJob(address _job, uint256 _amount) external override onlyGovernance {
+  function forceLiquidityCreditsToJob(address _job, uint256 _amount) external override onlyGovernor {
     if (!_jobs.contains(_job)) revert JobUnavailable();
     _settleJobAccountance(_job);
     _jobLiquidityCredits[_job] += _amount;
@@ -154,7 +154,7 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   }
 
   /// @inheritdoc IKeep3rJobFundableLiquidity
-  function approveLiquidity(address _liquidity) external virtual override onlyGovernance {
+  function approveLiquidity(address _liquidity) external virtual override onlyGovernor {
     if (!_approvedLiquidities.add(_liquidity)) revert LiquidityPairApproved();
     _liquidityPool[_liquidity] = IPairManager(_liquidity).pool();
     _isKP3RToken0[_liquidity] = IKeep3rHelper(keep3rHelper).isKP3RToken0(_liquidityPool[_liquidity]);
@@ -163,7 +163,7 @@ abstract contract Keep3rJobFundableLiquidity is IKeep3rJobFundableLiquidity, Ree
   }
 
   /// @inheritdoc IKeep3rJobFundableLiquidity
-  function revokeLiquidity(address _liquidity) external override onlyGovernance {
+  function revokeLiquidity(address _liquidity) external override onlyGovernor {
     if (!_approvedLiquidities.remove(_liquidity)) revert LiquidityPairUnexistent();
     delete _liquidityPool[_liquidity];
     delete _isKP3RToken0[_liquidity];

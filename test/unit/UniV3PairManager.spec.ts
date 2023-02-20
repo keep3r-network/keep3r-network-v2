@@ -36,7 +36,7 @@ describe('UniV3PairManager', () => {
 
   //signers
   let deployer: SignerWithAddress;
-  let newGovernance: SignerWithAddress;
+  let newGovernor: SignerWithAddress;
   let randomJobProvider: SignerWithAddress;
 
   //misc
@@ -56,7 +56,7 @@ describe('UniV3PairManager', () => {
   const MAX_TICK: number = 887272;
 
   before(async () => {
-    [deployer, newGovernance, randomJobProvider] = await ethers.getSigners();
+    [deployer, newGovernor, randomJobProvider] = await ethers.getSigners();
 
     uniV3PairManagerFactory = await smock.mock<UniV3PairManagerForTest__factory>('UniV3PairManagerForTest');
 
@@ -122,8 +122,8 @@ describe('UniV3PairManager', () => {
       expect(actualTickUpper).to.equal(upperTick);
     });
 
-    it('should assign governance to deployer', async () => {
-      expect(await uniV3PairManager.governance()).to.equal(deployer.address);
+    it('should assign governor to deployer', async () => {
+      expect(await uniV3PairManager.governor()).to.equal(deployer.address);
     });
   });
 
@@ -154,8 +154,8 @@ describe('UniV3PairManager', () => {
   });
 
   describe('collect', () => {
-    it('should revert if the caller is not governance', async () => {
-      await expect(uniV3PairManager.connect(randomJobProvider).collect()).to.be.revertedWith('OnlyGovernance()');
+    it('should revert if the caller is not governor', async () => {
+      await expect(uniV3PairManager.connect(randomJobProvider).collect()).to.be.revertedWith('OnlyGovernor()');
     });
 
     it('should call collect with the correct arguments', async () => {
@@ -182,7 +182,7 @@ describe('UniV3PairManager', () => {
 
       uniswapPool.burn.returns([10, 20]);
       uniV3PairManager.burn.returns([10, 20]);
-      await expect(uniV3PairManager.connect(randomJobProvider).burn(liquidity, amount0Min, amount1Min, newGovernance.address)).to.be.reverted;
+      await expect(uniV3PairManager.connect(randomJobProvider).burn(liquidity, amount0Min, amount1Min, newGovernor.address)).to.be.reverted;
     });
 
     context('when the caller has credits', () => {
@@ -202,13 +202,13 @@ describe('UniV3PairManager', () => {
       });
 
       it('should call the pools burn function with the correct arguments', async () => {
-        await uniV3PairManager.connect(deployer).burn(liquidity, amount0Min, amount1Min, newGovernance.address);
+        await uniV3PairManager.connect(deployer).burn(liquidity, amount0Min, amount1Min, newGovernor.address);
         expect(uniswapPool.burn).to.be.calledOnceWith(actualTickLower, actualTickUpper, liquidity);
       });
 
       it('should call the pools collect function with the correct arguments', async () => {
-        await uniV3PairManager.connect(deployer).burn(liquidity, amount0Min, amount1Min, newGovernance.address);
-        expect(uniswapPool.collect).to.be.calledOnceWith(newGovernance.address, actualTickLower, actualTickUpper, tokensOwed0, tokensOwed1);
+        await uniV3PairManager.connect(deployer).burn(liquidity, amount0Min, amount1Min, newGovernor.address);
+        expect(uniswapPool.collect).to.be.calledOnceWith(newGovernor.address, actualTickLower, actualTickUpper, tokensOwed0, tokensOwed1);
       });
 
       it('should revert if burn returns less than amountMin', async () => {
@@ -223,21 +223,21 @@ describe('UniV3PairManager', () => {
 
   describe('approve', () => {
     it('should increase the balance of the spender', async () => {
-      await uniV3PairManager.connect(deployer).approve(newGovernance.address, tenTokens);
-      expect(await uniV3PairManager.allowance(deployer.address, newGovernance.address)).to.equal(tenTokens);
+      await uniV3PairManager.connect(deployer).approve(newGovernor.address, tenTokens);
+      expect(await uniV3PairManager.allowance(deployer.address, newGovernor.address)).to.equal(tenTokens);
     });
 
     it('should emit an event if approve is successful', async () => {
-      await expect(await uniV3PairManager.connect(deployer).approve(newGovernance.address, tenTokens))
+      await expect(await uniV3PairManager.connect(deployer).approve(newGovernor.address, tenTokens))
         .to.emit(uniV3PairManager, 'Approval')
-        .withArgs(deployer.address, newGovernance.address, tenTokens);
+        .withArgs(deployer.address, newGovernor.address, tenTokens);
     });
   });
 
   describe('transfer', () => {
     context('when user does not have credits and tries to transfer', () => {
       it('should revert', async () => {
-        await expect(uniV3PairManager.connect(deployer).transfer(newGovernance.address, tenTokens)).to.be.reverted;
+        await expect(uniV3PairManager.connect(deployer).transfer(newGovernor.address, tenTokens)).to.be.reverted;
       });
     });
 
@@ -249,22 +249,22 @@ describe('UniV3PairManager', () => {
       });
 
       it('should transfer tokens from one account to another', async () => {
-        await uniV3PairManager.connect(deployer).transfer(newGovernance.address, tenTokens);
-        expect(await uniV3PairManager.balanceOf(newGovernance.address)).to.deep.equal(tenTokens);
+        await uniV3PairManager.connect(deployer).transfer(newGovernor.address, tenTokens);
+        expect(await uniV3PairManager.balanceOf(newGovernor.address)).to.deep.equal(tenTokens);
       });
 
       it('should emit an event when a transfer is successful', async () => {
-        await expect(uniV3PairManager.connect(deployer).transfer(newGovernance.address, tenTokens))
+        await expect(uniV3PairManager.connect(deployer).transfer(newGovernor.address, tenTokens))
           .to.emit(uniV3PairManager, 'Transfer')
-          .withArgs(deployer.address, newGovernance.address, tenTokens);
+          .withArgs(deployer.address, newGovernor.address, tenTokens);
       });
     });
   });
 
   describe('transferFrom', () => {
     it('it should revert when the user does not have funds and has approved an spender', async () => {
-      expect(await uniV3PairManager.connect(deployer).approve(newGovernance.address, tenTokens));
-      await expect(uniV3PairManager.connect(newGovernance).transferFrom(deployer.address, newGovernance.address, tenTokens)).to.be.reverted;
+      expect(await uniV3PairManager.connect(deployer).approve(newGovernor.address, tenTokens));
+      await expect(uniV3PairManager.connect(newGovernor).transferFrom(deployer.address, newGovernor.address, tenTokens)).to.be.reverted;
     });
 
     context('when user has funds and has approved an spender', () => {
@@ -272,29 +272,29 @@ describe('UniV3PairManager', () => {
         await uniV3PairManager.setVariable('balanceOf', {
           [deployer.address]: tenTokens,
         });
-        await uniV3PairManager.connect(deployer).approve(newGovernance.address, tenTokens);
+        await uniV3PairManager.connect(deployer).approve(newGovernor.address, tenTokens);
       });
 
       it('should transfer tokens from one account to another', async () => {
-        await uniV3PairManager.connect(newGovernance).transferFrom(deployer.address, newGovernance.address, tenTokens);
-        expect(await uniV3PairManager.balanceOf(newGovernance.address)).to.deep.equal(tenTokens);
+        await uniV3PairManager.connect(newGovernor).transferFrom(deployer.address, newGovernor.address, tenTokens);
+        expect(await uniV3PairManager.balanceOf(newGovernor.address)).to.deep.equal(tenTokens);
       });
 
       it('should emit an event when a transfer is successful', async () => {
-        await expect(await uniV3PairManager.connect(newGovernance).transferFrom(deployer.address, newGovernance.address, tenTokens))
+        await expect(await uniV3PairManager.connect(newGovernor).transferFrom(deployer.address, newGovernor.address, tenTokens))
           .to.emit(uniV3PairManager, 'Transfer')
-          .withArgs(deployer.address, newGovernance.address, tenTokens);
+          .withArgs(deployer.address, newGovernor.address, tenTokens);
       });
 
       it('should reduce the spenders allowance after a transferFrom', async () => {
-        await uniV3PairManager.connect(newGovernance).transferFrom(deployer.address, newGovernance.address, tenTokens);
-        expect(await uniV3PairManager.allowance(deployer.address, newGovernance.address)).to.deep.equal(0);
+        await uniV3PairManager.connect(newGovernor).transferFrom(deployer.address, newGovernor.address, tenTokens);
+        expect(await uniV3PairManager.allowance(deployer.address, newGovernor.address)).to.deep.equal(0);
       });
 
       it('should emit an event when the allowance is changed', async () => {
-        await expect(await uniV3PairManager.connect(newGovernance).transferFrom(deployer.address, newGovernance.address, tenTokens))
+        await expect(await uniV3PairManager.connect(newGovernor).transferFrom(deployer.address, newGovernor.address, tenTokens))
           .to.emit(uniV3PairManager, 'Approval')
-          .withArgs(deployer.address, newGovernance.address, 0);
+          .withArgs(deployer.address, newGovernor.address, 0);
       });
     });
   });
@@ -352,19 +352,19 @@ describe('UniV3PairManager', () => {
 
   describe('_mint', () => {
     it('should mint credits to the recipient', async () => {
-      await uniV3PairManager.internalMint(newGovernance.address, tenTokens);
-      expect(await uniV3PairManager.balanceOf(newGovernance.address)).to.equal(tenTokens);
+      await uniV3PairManager.internalMint(newGovernor.address, tenTokens);
+      expect(await uniV3PairManager.balanceOf(newGovernor.address)).to.equal(tenTokens);
     });
 
     it('should increase the contracts totalSupply', async () => {
-      await uniV3PairManager.internalMint(newGovernance.address, tenTokens);
+      await uniV3PairManager.internalMint(newGovernor.address, tenTokens);
       expect(await uniV3PairManager.totalSupply()).to.equal(tenTokens);
     });
 
     it('should emit an event if the credits have been minted successfuly', async () => {
-      await expect(await uniV3PairManager.internalMint(newGovernance.address, tenTokens))
+      await expect(await uniV3PairManager.internalMint(newGovernor.address, tenTokens))
         .to.emit(uniV3PairManager, 'Transfer')
-        .withArgs(ZERO_ADDRESS, newGovernance.address, tenTokens);
+        .withArgs(ZERO_ADDRESS, newGovernor.address, tenTokens);
     });
   });
 
@@ -402,12 +402,12 @@ describe('UniV3PairManager', () => {
   describe('_pay', () => {
     it('should transfer tokens to the recipient', async () => {
       await fakeERC20.connect(deployer).approve(uniV3PairManager.address, tenTokens);
-      await uniV3PairManager.internalPay(fakeERC20.address, deployer.address, newGovernance.address, tenTokens);
-      expect(await fakeERC20.balanceOf(newGovernance.address)).to.equal(tenTokens);
+      await uniV3PairManager.internalPay(fakeERC20.address, deployer.address, newGovernor.address, tenTokens);
+      expect(await fakeERC20.balanceOf(newGovernor.address)).to.equal(tenTokens);
     });
 
     it('should fail if payer did not approve the contract to spend his tokens', async () => {
-      await expect(uniV3PairManager.internalPay(fakeERC20.address, deployer.address, newGovernance.address, tenTokens)).to.be.revertedWith(
+      await expect(uniV3PairManager.internalPay(fakeERC20.address, deployer.address, newGovernor.address, tenTokens)).to.be.revertedWith(
         'UnsuccessfulTransfer()'
       );
     });
