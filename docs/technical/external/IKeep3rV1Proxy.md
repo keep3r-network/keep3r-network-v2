@@ -11,6 +11,18 @@
 
 
 
+### `governance() → address` (external)
+
+
+
+
+
+### `pendingGovernance() → address` (external)
+
+
+
+
+
 ### `minter() → address` (external)
 
 
@@ -78,6 +90,18 @@
 
 
 ### `mint(address _account, uint256 _amount)` (external)
+
+
+
+
+
+### `setGovernance(address _governance)` (external)
+
+
+
+
+
+### `acceptGovernance()` (external)
 
 
 

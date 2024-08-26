@@ -5,10 +5,9 @@ import IUniswapV3Factory from '../../artifacts/@uniswap/v3-core/contracts/interf
 import IUniswapV3Pool from '../../artifacts/@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json';
 
 const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployer, weth } = await hre.getNamedAccounts();
+  const { deployer, weth, uniV3Factory } = await hre.getNamedAccounts();
 
   const kp3RForTest = await hre.deployments.get('KP3Rv1');
-  const uniV3Factory = '0x1f98431c8ad98523631ae4a59f267346ea31f984';
 
   await hre.deployments.save('WETH', {
     address: weth,

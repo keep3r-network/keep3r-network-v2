@@ -12,7 +12,7 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
   const keep3rV2 = await hre.deployments.get('Keep3rSidechainForTestnet');
   await verifyContract(hre, keep3rV2);
 
-  const jobForTest = await hre.deployments.getOrNull('BasicJob');
+  const jobForTest = await hre.deployments.getOrNull('JobRatedForTest');
   if (jobForTest) {
     await verifyContract(hre, jobForTest);
   }

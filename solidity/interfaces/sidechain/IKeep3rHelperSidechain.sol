@@ -6,6 +6,16 @@ import '../IKeep3rHelper.sol';
 /// @title Keep3rHelperSidechain contract
 /// @notice Contains all the helper functions for sidechain keep3r implementations
 interface IKeep3rHelperSidechain is IKeep3rHelper {
+  // Structs
+
+  /// @dev WETH-USD Pool address, isWETHToken0 and usdDecimals
+  /// @dev Created in order to quote any kind of USD tokens
+  struct WethUsdOraclePool {
+    address poolAddress;
+    bool isWETHToken0;
+    uint8 usdDecimals;
+  }
+
   // Events
 
   /// @notice The oracle for a liquidity has been saved
@@ -16,7 +26,8 @@ interface IKeep3rHelperSidechain is IKeep3rHelper {
   /// @notice Emitted when the WETH USD pool is changed
   /// @param _address Address of the new WETH USD pool
   /// @param _isWETHToken0 True if calling the token0 method of the pool returns the WETH token address
-  event WethUSDPoolChange(address _address, bool _isWETHToken0);
+  /// @param _usdDecimals The amount of decimals of the USD token paired with ETH
+  event WethUSDPoolChange(address _address, bool _isWETHToken0, uint8 _usdDecimals);
 
   /// Variables
 
@@ -30,8 +41,16 @@ interface IKeep3rHelperSidechain is IKeep3rHelper {
 
   /// @notice WETH-USD pool that is being used as oracle
   /// @return poolAddress Address of the pool
-  /// @return isTKNToken0 True if calling the token0 method of the pool returns the WETH token address
-  function wethUSDPool() external view returns (address poolAddress, bool isTKNToken0);
+  /// @return isWETHToken0 True if calling the token0 method of the pool returns the WETH token address
+  /// @return usdDecimals The amount of decimals of the USD token paired with ETH
+  function wethUSDPool()
+    external
+    view
+    returns (
+      address poolAddress,
+      bool isWETHToken0,
+      uint8 usdDecimals
+    );
 
   /// @notice Quotes USD to ETH
   /// @dev Used to know how much ETH should be paid to keepers before converting it from ETH to KP3R
@@ -49,6 +68,7 @@ interface IKeep3rHelperSidechain is IKeep3rHelper {
 
   /// @notice Sets an oracle for querying WETH/USD quote
   /// @param _poolAddress The address of the pool used as oracle
+  /// @param _usdDecimals The amount of decimals of the USD token paired with ETH
   /// @dev The oracle must contain WETH as either token0 or token1
-  function setWethUsdPool(address _poolAddress) external;
+  function setWethUsdPool(address _poolAddress, uint8 _usdDecimals) external;
 }

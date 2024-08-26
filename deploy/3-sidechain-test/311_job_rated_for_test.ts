@@ -11,22 +11,24 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
     abi: IERC20.abi,
   });
 
-  const jobForTest = await hre.deployments.deploy('BasicJob', {
+  const jobForTest = await hre.deployments.deploy('JobRatedForTest', {
     from: deployer,
     contract: 'solidity/for-test/JobRatedForTest.sol:JobRatedForTest',
     args: [keep3rV2.address],
     log: true,
   });
 
-  // register job
-  if (jobForTest.newlyDeployed) {
+  const jobs = await hre.deployments.read('Keep3rSidechainForTestnet', 'jobs');
+
+  if (!jobs.includes(jobForTest.address)) {
     await hre.deployments.execute('Keep3rSidechainForTestnet', { from: deployer, log: true }, 'addJob', jobForTest.address);
   }
 
-  const LIQUIDITY = await hre.deployments.read('Keep3rSidechainForTestnet', 'liquidityAmount', jobForTest.address, wkLP);
-  if (LIQUIDITY == 0) {
+  const liquidity = await hre.deployments.read('Keep3rSidechainForTestnet', 'liquidityAmount', jobForTest.address, wkLP);
+  if (liquidity == 0) {
     // deployer needs to have kLP balance
     const keep3rSidechain = await hre.deployments.get('Keep3rSidechainForTestnet');
+
     await hre.deployments.execute('wkLP', { from: deployer, log: true }, 'approve', keep3rSidechain.address, toUnit(10));
     await hre.deployments.execute(
       'Keep3rSidechainForTestnet',
@@ -34,18 +36,23 @@ const deployFunction: DeployFunction = async function (hre: HardhatRuntimeEnviro
       'addLiquidityToJob',
       jobForTest.address,
       wkLP,
-      toUnit(1)
+      toUnit(10)
     );
   }
 
-  const IS_KEEPER = await hre.deployments.read('Keep3rSidechainForTestnet', 'isKeeper', deployer);
-  if (!IS_KEEPER) {
+  const isKeeper = await hre.deployments.read('Keep3rSidechainForTestnet', 'isKeeper', deployer);
+  if (!isKeeper) {
     // register deployer as keeper
     await hre.deployments.execute('Keep3rSidechainForTestnet', { from: deployer, log: true }, 'bond', kp3rV1, 0);
+
+    // wait for bond to be processed
+    console.log('waiting for bond to be processed');
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
+
     await hre.deployments.execute('Keep3rSidechainForTestnet', { from: deployer, log: true, gasLimit: 1e6 }, 'activate', kp3rV1);
   }
 
-  await hre.deployments.execute('BasicJob', { from: deployer, log: true, gasLimit: 1e6 }, 'work');
+  await hre.deployments.execute('JobRatedForTest', { from: deployer, log: true, gasLimit: 1e6 }, 'work');
 };
 
 deployFunction.dependencies = ['approve-testnet-liquidity'];

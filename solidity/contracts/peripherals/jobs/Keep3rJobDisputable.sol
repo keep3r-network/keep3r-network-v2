@@ -19,7 +19,7 @@ abstract contract Keep3rJobDisputable is IKeep3rJobDisputable, Keep3rDisputable,
     if (!_jobTokens[_job].contains(_token)) revert JobTokenUnexistent();
     if (jobTokenCredits[_job][_token] < _amount) revert JobTokenInsufficient();
 
-    try IERC20(_token).transfer(governance, _amount) {} catch {}
+    try IERC20(_token).transfer(governor, _amount) {} catch {}
     jobTokenCredits[_job][_token] -= _amount;
     if (jobTokenCredits[_job][_token] == 0) {
       _jobTokens[_job].remove(_token);
@@ -37,7 +37,7 @@ abstract contract Keep3rJobDisputable is IKeep3rJobDisputable, Keep3rDisputable,
     if (!disputes[_job]) revert NotDisputed();
 
     _unbondLiquidityFromJob(_job, _liquidity, _amount);
-    try IERC20(_liquidity).transfer(governance, _amount) {} catch {}
+    try IERC20(_liquidity).transfer(governor, _amount) {} catch {}
     emit JobSlashLiquidity(_job, _liquidity, msg.sender, _amount);
   }
 }

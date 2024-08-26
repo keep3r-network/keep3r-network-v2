@@ -9,8 +9,8 @@ import {
   Keep3rJobFundableLiquidityForTest__factory,
   UniV3PairManager,
 } from '@types';
-import { behaviours, evm, wallet } from '@utils';
-import { onlyJobOwner } from '@utils/behaviours';
+import { evm, wallet } from '@utils';
+import { onlyGovernor, onlyJobOwner } from '@utils/behaviours';
 import { toUnit } from '@utils/bn';
 import { ZERO_ADDRESS } from '@utils/constants';
 import { MathUtils, mathUtilsFactory } from '@utils/math';
@@ -23,7 +23,7 @@ chai.use(smock.matchers);
 
 describe('Keep3rJobFundableLiquidity', () => {
   const randomJob = wallet.generateRandomAddress();
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let provider: SignerWithAddress;
   let jobOwner: SignerWithAddress;
   let jobFundable: MockContract<Keep3rJobFundableLiquidityForTest>;
@@ -44,7 +44,7 @@ describe('Keep3rJobFundableLiquidity', () => {
   let snapshotId: string;
 
   before(async () => {
-    [governance, jobOwner, provider] = await ethers.getSigners();
+    [governor, jobOwner, provider] = await ethers.getSigners();
 
     jobFundableFactory = await smock.mock<Keep3rJobFundableLiquidityForTest__factory>('Keep3rJobFundableLiquidityForTest');
     helper = await smock.fake('IKeep3rHelper');
@@ -218,7 +218,7 @@ describe('Keep3rJobFundableLiquidity', () => {
       beforeEach(async () => {
         randomLiquidity.token0.returns(keep3rV1.address);
 
-        await jobFundable.connect(governance).approveLiquidity(randomLiquidity.address);
+        await jobFundable.connect(governor).approveLiquidity(randomLiquidity.address);
         await jobFundable.setJobLiquidity(randomJob, randomLiquidity.address);
         await jobFundable.setVariable('liquidityAmount', { [randomJob]: { [randomLiquidity.address]: liquidityAmount } });
 
@@ -638,7 +638,7 @@ describe('Keep3rJobFundableLiquidity', () => {
   });
 
   describe('forceLiquidityCreditsToJob', () => {
-    behaviours.onlyGovernance(() => jobFundable, 'forceLiquidityCreditsToJob', governance, [randomJob, 1]);
+    onlyGovernor(() => jobFundable, 'forceLiquidityCreditsToJob', governor, [randomJob, 1]);
 
     it('should revert when called with unallowed job', async () => {
       await expect(jobFundable.forceLiquidityCreditsToJob(randomJob, toUnit(1))).to.be.revertedWith('JobUnavailable()');
@@ -701,7 +701,7 @@ describe('Keep3rJobFundableLiquidity', () => {
 
       it('should emit event', async () => {
         const forcedLiquidityAmount = toUnit(1);
-        const tx = await jobFundable.connect(governance).forceLiquidityCreditsToJob(randomJob, forcedLiquidityAmount);
+        const tx = await jobFundable.connect(governor).forceLiquidityCreditsToJob(randomJob, forcedLiquidityAmount);
         const rewardedAt = (await ethers.provider.getBlock('latest')).timestamp;
 
         await expect(tx).to.emit(jobFundable, 'LiquidityCreditsForced').withArgs(randomJob, rewardedAt, forcedLiquidityAmount);
@@ -710,64 +710,64 @@ describe('Keep3rJobFundableLiquidity', () => {
   });
 
   describe('approveLiquidity', () => {
-    behaviours.onlyGovernance(
+    onlyGovernor(
       () => jobFundable,
       'approveLiquidity',
-      governance,
+      governor,
       () => [approvedLiquidity.address]
     );
 
     it('should revert when liquidity already approved', async () => {
-      await expect(jobFundable.connect(governance).approveLiquidity(approvedLiquidity.address)).to.be.revertedWith('LiquidityPairApproved()');
+      await expect(jobFundable.connect(governor).approveLiquidity(approvedLiquidity.address)).to.be.revertedWith('LiquidityPairApproved()');
     });
 
     it('should add the liquidity to approved liquidities list', async () => {
-      await jobFundable.connect(governance).approveLiquidity(randomLiquidity.address);
+      await jobFundable.connect(governor).approveLiquidity(randomLiquidity.address);
       expect(await jobFundable.approvedLiquidities()).to.contain(randomLiquidity.address);
     });
 
     it('should sort the tokens in the liquidity pair', async () => {
-      await jobFundable.connect(governance).approveLiquidity(randomLiquidity.address);
+      await jobFundable.connect(governor).approveLiquidity(randomLiquidity.address);
       expect(await jobFundable.viewTickOrder(randomLiquidity.address)).to.be.true;
     });
 
     it('should initialize twap for liquidity', async () => {
-      await jobFundable.connect(governance).approveLiquidity(randomLiquidity.address);
+      await jobFundable.connect(governor).approveLiquidity(randomLiquidity.address);
       expect(helper.observe).to.have.been.called;
     });
 
     it('should emit event', async () => {
-      await expect(jobFundable.connect(governance).approveLiquidity(randomLiquidity.address))
+      await expect(jobFundable.connect(governor).approveLiquidity(randomLiquidity.address))
         .to.emit(jobFundable, 'LiquidityApproval')
         .withArgs(randomLiquidity.address);
     });
   });
 
   describe('revokeLiquidity', () => {
-    behaviours.onlyGovernance(
+    onlyGovernor(
       () => jobFundable,
       'revokeLiquidity',
-      governance,
+      governor,
       () => [approvedLiquidity.address]
     );
 
     it('should not be able to remove unapproved liquidity', async () => {
-      await expect(jobFundable.connect(governance).revokeLiquidity(randomLiquidity.address)).to.be.revertedWith('LiquidityPairUnexistent()');
+      await expect(jobFundable.connect(governor).revokeLiquidity(randomLiquidity.address)).to.be.revertedWith('LiquidityPairUnexistent()');
     });
 
     it('should not be able to remove the same liquidity twice', async () => {
-      await jobFundable.connect(governance).revokeLiquidity(approvedLiquidity.address);
-      await expect(jobFundable.connect(governance).revokeLiquidity(approvedLiquidity.address)).to.be.revertedWith('LiquidityPairUnexistent()');
+      await jobFundable.connect(governor).revokeLiquidity(approvedLiquidity.address);
+      await expect(jobFundable.connect(governor).revokeLiquidity(approvedLiquidity.address)).to.be.revertedWith('LiquidityPairUnexistent()');
     });
 
     it('should remove liquidity', async () => {
-      await jobFundable.connect(governance).revokeLiquidity(approvedLiquidity.address);
+      await jobFundable.connect(governor).revokeLiquidity(approvedLiquidity.address);
       expect(await jobFundable.approvedLiquidities()).not.to.contain(approvedLiquidity.address);
     });
 
     it('should not remove other liquidities', async () => {
-      await jobFundable.connect(governance).approveLiquidity(randomLiquidity.address);
-      await jobFundable.connect(governance).revokeLiquidity(approvedLiquidity.address);
+      await jobFundable.connect(governor).approveLiquidity(randomLiquidity.address);
+      await jobFundable.connect(governor).revokeLiquidity(approvedLiquidity.address);
       expect(await jobFundable.approvedLiquidities()).to.contain(randomLiquidity.address);
     });
 
@@ -776,12 +776,12 @@ describe('Keep3rJobFundableLiquidity', () => {
       await jobFundable.connect(provider).addLiquidityToJob(randomJob, approvedLiquidity.address, toUnit(10));
 
       expect(await jobFundable.jobPeriodCredits(randomJob)).to.be.gt(0);
-      await jobFundable.connect(governance).revokeLiquidity(approvedLiquidity.address);
+      await jobFundable.connect(governor).revokeLiquidity(approvedLiquidity.address);
       expect(await jobFundable.jobPeriodCredits(randomJob)).to.be.eq(toUnit(0));
     });
 
     it('should emit event', async () => {
-      await expect(jobFundable.connect(governance).revokeLiquidity(approvedLiquidity.address))
+      await expect(jobFundable.connect(governor).revokeLiquidity(approvedLiquidity.address))
         .to.emit(jobFundable, 'LiquidityRevocation')
         .withArgs(approvedLiquidity.address);
     });
@@ -1093,8 +1093,8 @@ describe('Keep3rJobFundableLiquidity', () => {
       });
 
       it('should transfer unbonded liquidity to the receiver', async () => {
-        await jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address, governance.address);
-        expect(approvedLiquidity.transfer).to.have.been.calledOnceWith(governance.address, unbondedAmount);
+        await jobFundable.connect(jobOwner).withdrawLiquidityFromJob(randomJob, approvedLiquidity.address, governor.address);
+        expect(approvedLiquidity.transfer).to.have.been.calledOnceWith(governor.address, unbondedAmount);
       });
 
       it('should emit event', async () => {

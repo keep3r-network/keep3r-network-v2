@@ -17,6 +17,7 @@ https://defi.sucks
 
 pragma solidity >=0.8.4 <0.9.0;
 
+import '@defi-wonderland/solidity-utils/solidity/contracts/Governable.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
@@ -27,8 +28,6 @@ import './libraries/TickMath.sol';
 
 import '../interfaces/external/IWeth9.sol';
 import '../interfaces/IUniV3PairManager.sol';
-
-import './peripherals/Governable.sol';
 
 contract UniV3PairManager is IUniV3PairManager, Governable {
   /// @inheritdoc IERC20Metadata
@@ -87,7 +86,7 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
   /// @notice Struct that contains token0, token1, and fee of the Uniswap pool
   PoolKey private _poolKey;
 
-  constructor(address _pool, address _governance) Governable(_governance) {
+  constructor(address _pool, address _governor) Governable(_governor) {
     uint24 _fee = IUniswapV3Pool(_pool).fee();
     address _token0 = IUniswapV3Pool(_pool).token0();
     address _token1 = IUniswapV3Pool(_pool).token1();
@@ -152,11 +151,11 @@ contract UniV3PairManager is IUniV3PairManager, Governable {
   }
 
   /// @inheritdoc IUniV3PairManager
-  function collect() external override onlyGovernance returns (uint256 amount0, uint256 amount1) {
+  function collect() external override onlyGovernor returns (uint256 amount0, uint256 amount1) {
     (, , , uint128 tokensOwed0, uint128 tokensOwed1) = IUniswapV3Pool(pool).positions(
       keccak256(abi.encodePacked(address(this), tickLower, tickUpper))
     );
-    (amount0, amount1) = IUniswapV3Pool(pool).collect(governance, tickLower, tickUpper, tokensOwed0, tokensOwed1);
+    (amount0, amount1) = IUniswapV3Pool(pool).collect(governor, tickLower, tickUpper, tokensOwed0, tokensOwed1);
   }
 
   /// @inheritdoc IUniV3PairManager

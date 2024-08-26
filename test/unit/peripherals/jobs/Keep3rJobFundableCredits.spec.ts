@@ -22,7 +22,7 @@ chai.use(smock.matchers);
 describe('Keep3rJobFundableCredits', () => {
   const approvedJob = wallet.generateRandomAddress();
   const randomJob = wallet.generateRandomAddress();
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let provider: SignerWithAddress;
   let jobOwner: SignerWithAddress;
   let jobFundable: MockContract<Keep3rJobFundableCreditsForTest>;
@@ -35,7 +35,7 @@ describe('Keep3rJobFundableCredits', () => {
   let snapshotId: string;
 
   before(async () => {
-    [governance, provider, jobOwner] = await ethers.getSigners();
+    [governor, provider, jobOwner] = await ethers.getSigners();
 
     jobFundableFactory = await smock.mock<Keep3rJobFundableCreditsForTest__factory>('Keep3rJobFundableCreditsForTest');
     helper = await smock.fake('IKeep3rHelper');
@@ -101,9 +101,9 @@ describe('Keep3rJobFundableCredits', () => {
       expect(await jobFundable.jobTokenCreditsAddedAt(approvedJob, token.address)).to.equal(blockTimestamp);
     });
 
-    it('should transfer fee in tokens to governance', async () => {
+    it('should transfer fee in tokens to governor', async () => {
       await jobFundable.connect(provider).addTokenCreditsToJob(approvedJob, token.address, toUnit(1));
-      expect(await token.balanceOf(governance.address)).to.equal(toUnit(0.003));
+      expect(await token.balanceOf(governor.address)).to.equal(toUnit(0.003));
     });
 
     it('should emit event', async () => {

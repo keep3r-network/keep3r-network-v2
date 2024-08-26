@@ -11,6 +11,7 @@ cache
 artifacts
 deployments/hardhat
 deployments/localhost
+deployments/**/solcInputs
 
 # Config files
 .env

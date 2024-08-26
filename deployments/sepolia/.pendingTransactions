@@ -1,0 +1,19 @@
+{
+  "0x23dce779482d6fb369b96be6d9bac81dec10dc5ad7fb4f05951583247659aeb4": {
+    "decoded": {
+      "from": "0x169Cf949aB1B25453b70F2Fe874e2c65c10AE0f8",
+      "gasPrice": "6929119120",
+      "maxFeePerGas": "6929119120",
+      "maxPriorityFeePerGas": "1281852824",
+      "gasLimit": "1000000",
+      "to": "0x0676fb8D6d8c46D0542c28375dB4EaA84DedFc92",
+      "value": "0",
+      "nonce": 384,
+      "data": "0x322e9f04",
+      "r": "0xa2fc5ebe4a2c565f4fb063787fa6ab08f8e8b574b60bf05c2d8ebd480d497372",
+      "s": "0x3190cb3506c693f42c64e37132ebd2e3f48f212db23816652033e986ce2799be",
+      "v": 1,
+      "chainId": 11155111
+    }
+  }
+}

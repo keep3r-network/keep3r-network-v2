@@ -455,7 +455,7 @@ interface IKeep3rJobDisputable is IKeep3rDisputable, IKeep3rJobFundableCredits, 
 
   // Methods
 
-  /// @notice Allows governance or slasher to slash a job specific token
+  /// @notice Allows governor or slasher to slash a job specific token
   /// @param _job The address of the job from which the token will be slashed
   /// @param _token The address of the token that will be slashed
   /// @param _amount The amount of the token that will be slashed
@@ -465,7 +465,7 @@ interface IKeep3rJobDisputable is IKeep3rDisputable, IKeep3rJobFundableCredits, 
     uint256 _amount
   ) external;
 
-  /// @notice Allows governance or a slasher to slash liquidity from a job
+  /// @notice Allows governor or slasher to slash liquidity from a job
   /// @param _job The address being slashed
   /// @param _liquidity The address of the liquidity that will be slashed
   /// @param _amount The amount of liquidity that will be slashed
