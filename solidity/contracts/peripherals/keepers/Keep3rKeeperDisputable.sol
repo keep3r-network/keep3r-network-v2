@@ -37,7 +37,7 @@ abstract contract Keep3rKeeperDisputable is IKeep3rKeeperDisputable, Keep3rDispu
     uint256 _unbondAmount
   ) internal {
     if (_bonded != keep3rV1) {
-      try IERC20(_bonded).transfer(governance, _bondAmount + _unbondAmount) returns (bool) {} catch (bytes memory) {}
+      try IERC20(_bonded).transfer(governor, _bondAmount + _unbondAmount) returns (bool) {} catch (bytes memory) {}
     }
     bonds[_keeper][_bonded] -= _bondAmount;
     pendingUnbonds[_keeper][_bonded] -= _unbondAmount;

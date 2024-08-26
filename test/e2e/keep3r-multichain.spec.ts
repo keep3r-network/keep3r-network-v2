@@ -21,7 +21,14 @@ import chai, { expect } from 'chai';
 import { solidity } from 'ethereum-waffle';
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
-import { KP3R_V1_ADDRESS, KP3R_WETH_V3_POOL_ADDRESS, PAIR_MANAGER_ADDRESS, WETH_ADDRESS, WETH_DAI_V3_POOL_ADDRESS } from './common';
+import {
+  KP3R_V1_ADDRESS,
+  KP3R_WETH_V3_POOL_ADDRESS,
+  PAIR_MANAGER_ADDRESS,
+  WETH_ADDRESS,
+  WETH_DAI_V3_POOL_ADDRESS,
+  WETH_USDC_V3_POOL_ADDRESS,
+} from './common';
 
 const kp3rWhaleAddress = '0xa0f75491720835b36edc92d06ddc468d201e9b73';
 
@@ -31,13 +38,13 @@ const DAY = 86400;
 const ONE = bn.toUnit(1);
 const BONDS = bn.toUnit(10);
 const ESCROW_AMOUNT = bn.toUnit(100);
-const DELTA = bn.toUnit(0.001).toNumber();
+const DELTA = bn.toUnit(0.001).toNumber(); // in KP3Rs (18 decimals)
 
 describe('Keep3r Sidechain @skip-on-coverage', () => {
   let deployer: SignerWithAddress;
   let stranger: SignerWithAddress;
   let keeper: SignerWithAddress;
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let kp3rWhale: JsonRpcSigner;
   let keep3r: Keep3rSidechain;
   let keep3rHelper: Keep3rHelperSidechain;
@@ -59,7 +66,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
   const oneETHinDAI = bn.toUnit(1254); // 1ETH ~ $1250 DAI
 
   before(async () => {
-    [deployer, stranger, keeper, governance] = await ethers.getSigners();
+    [deployer, stranger, keeper, governor] = await ethers.getSigners();
     await evm.reset({
       jsonRpcUrl: process.env.MAINNET_HTTPS_URL,
       blockNumber: 15100000,
@@ -82,7 +89,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     wKLP = await wKLPp3rFactory.deploy(pairManager.address);
 
     const keep3rEscrowFactory = (await ethers.getContractFactory('Keep3rEscrow')) as Keep3rEscrow__factory;
-    keep3rEscrow = await keep3rEscrowFactory.deploy(governance.address, wKP3R.address);
+    keep3rEscrow = await keep3rEscrowFactory.deploy(governor.address, wKP3R.address);
 
     const currentNonce: number = await ethers.provider.getTransactionCount(deployer.address);
     const precalculatedAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: currentNonce + 1 });
@@ -90,24 +97,26 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     const keep3rHelperFactory = (await ethers.getContractFactory('Keep3rHelperSidechain')) as Keep3rHelperSidechain__factory;
     keep3rHelper = await keep3rHelperFactory.deploy(
       precalculatedAddress,
-      governance.address,
+      governor.address,
       KP3R_V1_ADDRESS,
       WETH_ADDRESS,
       KP3R_WETH_V3_POOL_ADDRESS, // uses KP3R-WETH pool as oracle
-      WETH_DAI_V3_POOL_ADDRESS // uses WETH-DAI pool as oracle
+      // helper uses WETH-USDC and test uses WETH-DAI to verify
+      WETH_USDC_V3_POOL_ADDRESS, // uses WETH-USDC pool as oracle
+      6 // USDC has 6 decimals
     );
 
     const kp3rSidechainFactory = (await ethers.getContractFactory('Keep3rSidechain')) as Keep3rSidechain__factory;
     keep3r = await kp3rSidechainFactory.deploy(
-      governance.address,
+      governor.address,
       keep3rHelper.address,
       wKP3R.address,
       keep3rEscrow.address // replaces keep3rV1Proxy
     );
 
     // setup
-    await keep3rHelper.connect(governance).setOracle(wKLP.address, await pairManager.pool());
-    await keep3r.connect(governance).approveLiquidity(wKLP.address);
+    await keep3rHelper.connect(governor).setOracle(wKLP.address, await pairManager.pool());
+    await keep3r.connect(governor).approveLiquidity(wKLP.address);
 
     // mint kLPs
     await contracts.setBalance(kp3rWhale._address, bn.toUnit(1000));
@@ -127,7 +136,7 @@ describe('Keep3r Sidechain @skip-on-coverage', () => {
     // fund escrow
     await wKP3R.connect(kp3rWhale).approve(keep3rEscrow.address, ESCROW_AMOUNT);
     await keep3rEscrow.connect(kp3rWhale).deposit(ESCROW_AMOUNT);
-    await keep3rEscrow.connect(governance).setMinter(keep3r.address);
+    await keep3rEscrow.connect(governor).setMinter(keep3r.address);
 
     // deploy job
     const jobFactory = (await ethers.getContractFactory('JobRatedForTest')) as JobRatedForTest__factory;

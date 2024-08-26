@@ -14,7 +14,7 @@ describe('@skip-on-coverage Keep3rEscrow', () => {
   let escrow: Keep3rEscrow;
   let escrowFactory: Keep3rEscrow__factory;
   let fakeWKP3R: IERC20;
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
   let minter: SignerWithAddress;
   let snapshotId: string;
   let whale: JsonRpcSigner;
@@ -28,15 +28,15 @@ describe('@skip-on-coverage Keep3rEscrow', () => {
       blockNumber: common.FORK_BLOCK_NUMBER,
     });
 
-    [, governance, minter, randomUser] = await ethers.getSigners();
+    [, governor, minter, randomUser] = await ethers.getSigners();
 
     fakeWKP3R = (await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20', common.DAI_ADDRESS)) as IERC20;
 
     escrowFactory = (await ethers.getContractFactory('Keep3rEscrow')) as Keep3rEscrow__factory;
-    escrow = await escrowFactory.deploy(governance.address, fakeWKP3R.address);
+    escrow = await escrowFactory.deploy(governor.address, fakeWKP3R.address);
     whale = await wallet.impersonate(DAI_WETH_WHALE);
 
-    await escrow.connect(governance).setMinter(minter.address);
+    await escrow.connect(governor).setMinter(minter.address);
     await fakeWKP3R.connect(whale).approve(escrow.address, oneToken);
 
     snapshotId = await snapshot.take();
@@ -72,14 +72,14 @@ describe('@skip-on-coverage Keep3rEscrow', () => {
     });
   });
 
-  it('should allow governance to withdraw any dust in the contract', async () => {
+  it('should allow governor to withdraw any dust in the contract', async () => {
     await escrow.connect(whale).deposit(oneToken);
-    await escrow.connect(governance).sendDust(fakeWKP3R.address, oneToken, governance.address);
-    expect(await fakeWKP3R.balanceOf(governance.address)).to.equal(oneToken);
+    await escrow.connect(governor).sendDust(fakeWKP3R.address, oneToken, governor.address);
+    expect(await fakeWKP3R.balanceOf(governor.address)).to.equal(oneToken);
   });
 
-  it('should only allow governance to withdraw dust in the contract', async () => {
+  it('should only allow governor to withdraw dust in the contract', async () => {
     await escrow.connect(whale).deposit(oneToken);
-    await expect(escrow.connect(randomUser).sendDust(fakeWKP3R.address, oneToken, governance.address)).to.be.revertedWith('OnlyGovernance()');
+    await expect(escrow.connect(randomUser).sendDust(fakeWKP3R.address, oneToken, governor.address)).to.be.revertedWith('OnlyGovernor()');
   });
 });

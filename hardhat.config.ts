@@ -43,22 +43,26 @@ const config: HardhatUserConfig = {
             mainnet: 'mainnet',
           },
         },
-        goerli: {
-          url: process.env.GOERLI_HTTPS_URL,
-          accounts: [process.env.GOERLI_PRIVATE_KEY as string],
-        },
-        optimisticGoerli: {
-          url: process.env.OP_GOERLI_HTTPS_URL,
-          accounts: [process.env.OP_GOERLI_PRIVATE_KEY as string],
+        polygon: {
+          url: process.env.POLYGON_HTTPS_URL,
+          accounts: [process.env.POLYGON_PRIVATE_KEY as string],
           companionNetworks: {
-            mainnet: 'goerli',
+            mainnet: 'mainnet',
           },
+        },
+        sepolia: {
+          url: process.env.SEPOLIA_HTTPS_URL,
+          accounts: [process.env.SEPOLIA_PRIVATE_KEY as string],
+        },
+        optimisticSepolia: {
+          url: process.env.OP_SEPOLIA_HTTPS_URL,
+          accounts: [process.env.OP_SEPOLIA_PRIVATE_KEY as string],
         },
       },
   solidity: {
     compilers: [
       {
-        version: '0.8.7',
+        version: '0.8.8',
         settings: {
           optimizer: {
             enabled: true,
@@ -85,9 +89,20 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY as string,
       optimisticEthereum: process.env.OPTIMISTIC_ETHERSCAN_API_KEY as string,
-      goerli: process.env.GOERLI_ETHERSCAN_API_KEY as string,
-      optimisticGoerli: process.env.OP_GOERLI_ETHERSCAN_API_KEY as string,
+      polygon: process.env.POLYGON_ETHERSCAN_API_KEY as string,
+      sepolia: process.env.SEPOLIA_ETHERSCAN_API_KEY as string,
+      optimisticSepolia: process.env.OP_SEPOLIA_ETHERSCAN_API_KEY as string,
     },
+    customChains: [
+      {
+        network: 'optimisticSepolia',
+        chainId: 11155420,
+        urls: {
+          apiURL: 'https://api-sepolia-optimistic.etherscan.io/api',
+          browserURL: 'https://sepolia-optimism.etherscan.io/',
+        },
+      },
+    ],
   },
   typechain: {
     outDir: 'types',

@@ -64,7 +64,7 @@ interface IKeep3rKeeperDisputable is IKeep3rDisputable, IKeep3rKeeperFundable {
 
   // Methods
 
-  /// @notice Allows governance to slash a keeper based on a dispute
+  /// @notice Allows governor to slash a keeper based on a dispute
   /// @param _keeper The address being slashed
   /// @param _bonded The asset being slashed
   /// @param _bondAmount The bonded amount being slashed

@@ -175,14 +175,14 @@ describe('@skip-on-coverage Fixture', () => {
 
     it('should deploy a workable job', async () => {
       await deployments.fixture(['job-for-test']);
-      const jobForTest = (await getContractFromFixture('BasicJob', 'JobForTest')) as Type.BasicJob;
+      const jobForTest = (await getContractFromFixture('JobForTest', 'JobForTest')) as Type.BasicJob;
 
       await evm.advanceTimeAndBlock(86400);
       await jobForTest.workHard(10);
     });
   });
 
-  describe('Keep3rSidechainForTestnet', () => {
+  describe.only('Keep3rSidechainForTestnet', () => {
     beforeEach(async () => {
       await deployments.fixture(['testnet-keep3r-sidechain']);
 
@@ -235,7 +235,7 @@ describe('@skip-on-coverage Fixture', () => {
 
       await evm.advanceTimeAndBlock(86400);
       await deployments.fixture(['job-rated-for-test'], { keepExistingDeployments: true });
-      const jobForTest = (await getContractFromFixture('BasicJob', 'JobRatedForTest')) as Type.BasicJob;
+      const jobForTest = (await getContractFromFixture('JobRatedForTest', 'JobRatedForTest')) as Type.BasicJob;
 
       await jobForTest.work();
     });
@@ -243,7 +243,14 @@ describe('@skip-on-coverage Fixture', () => {
 });
 
 const setKp3rMinter = async (keep3r: Type.Keep3r) => {
-  const mintable = (await ethers.getContractAt('IMintable', await keep3r.keep3rV1Proxy())) as Type.Mintable;
-  const proxyGovernor = await wallet.impersonate(await mintable.governance());
+  let mintable;
+  let proxyGovernor;
+  try {
+    mintable = (await ethers.getContractAt('IMintable', await keep3r.keep3rV1Proxy())) as Type.Mintable;
+    proxyGovernor = await wallet.impersonate(await mintable.governor());
+  } catch {
+    mintable = (await ethers.getContractAt('IKeep3rV1Proxy', await keep3r.keep3rV1Proxy())) as Type.IKeep3rV1Proxy;
+    proxyGovernor = await wallet.impersonate(await mintable.governance());
+  }
   await mintable.connect(proxyGovernor).setMinter(keep3r.address);
 };

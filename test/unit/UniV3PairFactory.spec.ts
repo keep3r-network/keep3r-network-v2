@@ -18,10 +18,10 @@ describe('UniV3PairManagerFactory', () => {
   let uniPairFactory: MockContract<UniV3PairManagerFactory>;
 
   //signers
-  let governance: SignerWithAddress;
+  let governor: SignerWithAddress;
 
   before(async () => {
-    [, governance] = await ethers.getSigners();
+    [, governor] = await ethers.getSigners();
 
     uniV3PairManagerFactory = await smock.mock<UniV3PairManagerFactory__factory>('UniV3PairManagerFactory');
     pair = await smock.fake<IUniV3PairManager>('UniV3PairManager');
@@ -37,12 +37,12 @@ describe('UniV3PairManagerFactory', () => {
   });
 
   beforeEach(async () => {
-    uniPairFactory = await uniV3PairManagerFactory.deploy(governance.address);
+    uniPairFactory = await uniV3PairManagerFactory.deploy(governor.address);
   });
 
   describe('constructor', () => {
-    it('should set the governance to the deployer', async () => {
-      expect(await uniPairFactory.governance()).to.equal(governance.address);
+    it('should set the governor to the deployer', async () => {
+      expect(await uniPairFactory.governor()).to.equal(governor.address);
     });
   });
 

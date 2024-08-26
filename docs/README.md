@@ -25,14 +25,14 @@ The Keep3r Network also supports staking in Optimism and Polygon, where the paym
 | -------- | -------- | -------- |
 | Ethereum (`1`)    | Keep3r     | `0xeb02addCfD8B773A5FFA6B9d1FE99c566f8c44CC`     |
 | Optimism (`10`)    | Keep3rSidechain     | `0x745a50320B6eB8FF281f1664Fc6713991661B129`     |
-| Polygon (`137`)    | Keep3rSidechain     | `TBD`     |
+| Polygon (`137`)    | Keep3rSidechain     | `0x745a50320B6eB8FF281f1664Fc6713991661B129`     |
 
 #### Testnet environment
 | Chain (`chainId`) | Implementation | Address |
 | -------- | -------- | -------- |
-| Goerli (`5`)    | Keep3rForTestnet     | `0x85063437C02Ba7F4f82F898859e4992380DEd3bb`     |
-| Goerli (`5`)    | JobForTest     | `0xa2c7A15FFc02e00cdeedBba56c41dAaed84f8734`     |
-| OPGoerli (`420`)    | Keep3rSidechainForTestnet     | `0x85063437C02Ba7F4f82F898859e4992380DEd3bb`     |
-| OPGoerli (`420`)    | JobRatedForTest     | `0x9abB5cfF47b9F604351a6f0730d9fe39Fb620B2b`     |
+| Sepolia (`11155111`)    | Keep3rForTestnet     | `0xbC855B9Ad7398360999Bd176edBC98EB53F9E26F`     |
+| Sepolia (`11155111`)    | JobForTest     | `0x0676fb8D6d8c46D0542c28375dB4EaA84DedFc92`     |
+| OPSepolia (`11155420`)    | Keep3rSidechainForTestnet     | `0xC3377b30feD174e65778e7E1DaFBb7686082B428`     |
+| OPSepolia (`11155420`)    | JobRatedForTest     | `0xbAba0774d23Cbc8CbDE744a9829c22469c1395E0`     |
 
 > ForTestnet implementations allow instant bonding and unbonding, and use a free-to-mint ERC20 as KP3Rv1.

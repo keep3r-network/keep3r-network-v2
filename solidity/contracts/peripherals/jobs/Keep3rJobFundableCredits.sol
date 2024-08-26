@@ -36,7 +36,7 @@ abstract contract Keep3rJobFundableCredits is IKeep3rJobFundableCredits, Reentra
     uint256 _tokenFee = (_received * fee) / _BASE;
     jobTokenCredits[_job][_token] += _received - _tokenFee;
     jobTokenCreditsAddedAt[_job][_token] = block.timestamp;
-    IERC20(_token).safeTransfer(governance, _tokenFee);
+    IERC20(_token).safeTransfer(governor, _tokenFee);
     _jobTokens[_job].add(_token);
 
     emit TokenCreditAddition(_job, _token, msg.sender, _received);

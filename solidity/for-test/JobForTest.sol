@@ -5,6 +5,7 @@ import '../interfaces/IKeep3r.sol';
 
 contract JobForTest {
   error InvalidKeeper();
+
   address public keep3r;
   uint256 public nonce;
 
